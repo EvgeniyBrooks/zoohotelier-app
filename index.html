@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Зоохотельер</title>
+
+  <title>УПРАВЛЕНИЕ ВНИМАНИЕМ</title>
 
   <style>
     * {
@@ -12,7 +13,7 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f5f5f5;
       color: #111;
     }
@@ -20,86 +21,230 @@
     .app {
       max-width: 600px;
       margin: 0 auto;
-      min-height: 100vh;
-      padding: 24px 18px;
+      padding: 20px 16px 40px;
     }
 
-    .logo {
-      font-size: 28px;
-      font-weight: 800;
-      margin-bottom: 8px;
+    .header {
+      margin-bottom: 24px;
     }
 
-    .subtitle {
+    .brand {
+      font-size: 14px;
       color: #777;
-      margin-bottom: 30px;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.1;
+      margin: 0;
     }
 
     .card {
       background: white;
-      border-radius: 20px;
-      padding: 22px;
+      border-radius: 18px;
+      padding: 20px;
       margin-bottom: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
     }
 
-    .card h2 {
-      margin-top: 0;
+    .label {
+      font-size: 13px;
+      color: #888;
       margin-bottom: 8px;
     }
 
-    .card p {
-      color: #666;
-      line-height: 1.5;
+    .lesson-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 14px;
     }
 
-    button {
+    .description {
+      font-size: 16px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .homework {
+      font-size: 16px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .button {
       width: 100%;
       border: 0;
       border-radius: 14px;
       padding: 15px;
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 600;
+      cursor: pointer;
       background: #111;
       color: white;
-      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .status {
+      text-align: center;
+      color: #777;
+      padding: 30px 10px;
+    }
+
+    .error {
+      color: #b00020;
+      line-height: 1.5;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="app">
+<div class="app">
 
-    <div class="logo">
-      Зоохотельер
-    </div>
-
-    <div class="subtitle">
-      Обучение собак
-    </div>
-
-    <div class="card">
-      <h2>Управление вниманием 5.0</h2>
-      <p>
-        Система обучения, которая помогает владельцу
-        выстроить понятные отношения с собакой.
-      </p>
-
-      <button>
-        Перейти к обучению
-      </button>
-    </div>
-
-    <div class="card">
-      <h2>Мои курсы</h2>
-      <p>
-        Здесь будут отображаться ваши программы обучения,
-        уроки и задания.
-      </p>
-    </div>
-
+  <div class="header">
+    <div class="brand">Зоохотельер</div>
+    <h1>УПРАВЛЕНИЕ ВНИМАНИЕМ</h1>
   </div>
+
+  <div id="app">
+    <div class="status">Загружаем урок...</div>
+  </div>
+
+</div>
+
+<script>
+
+  const SUPABASE_URL =
+    "https://imvtdholjeclyznonpdc.supabase.co";
+
+  const SUPABASE_PUBLISHABLE_KEY =
+    const SUPABASE_PUBLISHABLE_KEY = sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET';
+
+
+  async function loadLesson() {
+
+    const app = document.getElementById("app");
+
+    try {
+
+      const response = await fetch(
+        SUPABASE_URL +
+        "/rest/v1/lessons" +
+        "?select=title,description,homework,crystal_reward,is_published" +
+        "&title=eq.Предобучение%20%E2%80%94%20Неделя%201",
+        {
+          headers: {
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Ошибка Supabase: " + response.status
+        );
+      }
+
+      const lessons = await response.json();
+
+      if (!lessons.length) {
+        app.innerHTML = `
+          <div class="card">
+            <div class="error">
+              Урок не найден.
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const lesson = lessons[0];
+
+      app.innerHTML = `
+
+        <div class="card">
+
+          <div class="label">
+            ПРЕДОБУЧЕНИЕ · НЕДЕЛЯ 1
+          </div>
+
+          <div class="lesson-title">
+            ${escapeHtml(lesson.title)}
+          </div>
+
+          <div class="description">
+            ${escapeHtml(lesson.description || "")}
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="label">
+            📝 ДОМАШНЕЕ ЗАДАНИЕ
+          </div>
+
+          <div class="homework">
+            ${escapeHtml(lesson.homework || "")}
+          </div>
+
+          <button
+            class="button"
+            onclick="alert('Здесь позже появится отправка выполнения кинологу')"
+          >
+            📤 Отправить выполнение
+          </button>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="label">
+            💎 НАГРАДА
+          </div>
+
+          <div style="font-size:22px;font-weight:700;">
+            +${lesson.crystal_reward} кристаллов
+          </div>
+
+        </div>
+
+      `;
+
+    } catch (error) {
+
+      console.error(error);
+
+      app.innerHTML = `
+        <div class="card">
+          <div class="error">
+            Не удалось загрузить урок.<br><br>
+            ${escapeHtml(error.message)}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+
+  function escapeHtml(value) {
+
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+
+  loadLesson();
+
+</script>
 
 </body>
 </html>
