@@ -83,16 +83,17 @@ export default async function handler(req, res) {
   data: supabaseData
 });
 
-    if (!supabaseResponse.ok) {
-      console.error(
-        "Supabase student error:",
-        supabaseData
-      );
+ if (!supabaseResponse.ok) {
+  console.error(
+    "Supabase student error:",
+    supabaseData
+  );
 
-      return res.status(500).json({
-        error: "Failed to save student"
-      });
-    }
+  return res.status(500).json({
+    error: "Failed to save student",
+    details: supabaseData
+  });
+}
 
     const student = Array.isArray(supabaseData)
       ? supabaseData[0]
