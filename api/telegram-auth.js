@@ -77,6 +77,11 @@ export default async function handler(req, res) {
     );
 
     const supabaseData = await supabaseResponse.json();
+    console.log("SUPABASE STUDENT RESPONSE:", {
+  status: supabaseResponse.status,
+  ok: supabaseResponse.ok,
+  data: supabaseData
+});
 
     if (!supabaseResponse.ok) {
       console.error(
