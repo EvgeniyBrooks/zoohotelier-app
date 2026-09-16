@@ -60,12 +60,7 @@
       margin-bottom: 14px;
     }
 
-    .description {
-      font-size: 16px;
-      line-height: 1.55;
-      white-space: pre-line;
-    }
-
+    .description,
     .homework {
       font-size: 16px;
       line-height: 1.55;
@@ -95,6 +90,21 @@
       color: #b00020;
       line-height: 1.5;
     }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 14px;
+      background: #000;
+    }
+
+    .video-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
   </style>
 </head>
 
@@ -117,7 +127,13 @@
 
   const SUPABASE_URL = "https://imvtdholjeclyznonpdc.supabase.co";
 
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET";
+  const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET";
+
+  const CLOUDFLARE_CUSTOMER =
+    "customer-9y0wom20nneqpu4g.cloudflarestream.com";
+
+
   async function loadLesson() {
 
     const app = document.getElementById("app");
@@ -127,10 +143,10 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET
       const response = await fetch(
         SUPABASE_URL +
         "/rest/v1/lessons" +
-        "?select=title,description,homework,crystal_reward,is_published" +
-"&block_id=eq.8b15fa47-7e16-4796-82c3-f648e5a79486" +
-"&is_published=eq.true" +
-"&limit=1",
+        "?select=title,description,homework,crystal_reward,is_published,video_url" +
+        "&block_id=eq.8b15fa47-7e16-4796-82c3-f648e5a79486" +
+        "&is_published=eq.true" +
+        "&limit=1",
         {
           headers: {
             "apikey": SUPABASE_PUBLISHABLE_KEY,
@@ -160,7 +176,53 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET
 
       const lesson = lessons[0];
 
+      let videoHtml = "";
+
+      if (lesson.video_url) {
+
+        const tokenResponse = await fetch(
+          "/api/stream-token?videoId=" +
+          encodeURIComponent(lesson.video_url)
+        );
+
+        if (!tokenResponse.ok) {
+          throw new Error(
+            "Не удалось получить доступ к видео: " +
+            tokenResponse.status
+          );
+        }
+
+        const tokenData = await tokenResponse.json();
+
+        if (!tokenData.token) {
+          throw new Error(
+            "Cloudflare не вернул токен видео"
+          );
+        }
+
+        videoHtml = `
+          <div class="card">
+
+            <div class="label">
+              🎬 ВИДЕО УРОКА
+            </div>
+
+            <div class="video-wrapper">
+              <iframe
+                src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allowfullscreen>
+              </iframe>
+            </div>
+
+          </div>
+        `;
+      }
+
+
       app.innerHTML = `
+
+        ${videoHtml}
 
         <div class="card">
 
