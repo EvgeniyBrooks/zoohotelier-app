@@ -42,14 +42,69 @@ export default async function handler(req, res) {
       });
     }
 
-    const user = JSON.parse(params.get("user") || "{}");
+    const user = JSON.parse(
+      params.get("user") || "{}"
+    );
+
+    if (!user.id) {
+      return res.status(400).json({
+        error: "Telegram user not found"
+      });
+    }
+
+    // Создаём или обновляем студента в Supabase
+
+    const supabaseResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/students?on_conflict=telegram_id`,
+      {
+        method: "POST",
+
+        headers: {
+          "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY,
+          "Authorization":
+            `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "resolution=merge-duplicates,return=representation"
+        },
+
+        body: JSON.stringify({
+          telegram_id: user.id,
+          first_name: user.first_name || null,
+          last_name: user.last_name || null,
+          username: user.username || null
+        })
+      }
+    );
+
+    const supabaseData = await supabaseResponse.json();
+
+    if (!supabaseResponse.ok) {
+      console.error(
+        "Supabase student error:",
+        supabaseData
+      );
+
+      return res.status(500).json({
+        error: "Failed to save student"
+      });
+    }
+
+    const student = Array.isArray(supabaseData)
+      ? supabaseData[0]
+      : supabaseData;
 
     return res.status(200).json({
       ok: true,
+
       user: {
         id: user.id,
         first_name: user.first_name,
+        last_name: user.last_name,
         username: user.username
+      },
+
+      student: {
+        id: student.id
       }
     });
 
