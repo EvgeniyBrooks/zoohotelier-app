@@ -184,16 +184,22 @@
       );
 
 
-      if (!response.ok) {
+     if (!response.ok) {
 
-        const errorData = await response.json()
-          .catch(() => ({}));
+  const errorData = await response.json()
+    .catch(() => ({}));
 
-        throw new Error(
+  console.error("AUTH ERROR:", errorData);
+
+  throw new Error(
+    errorData.details
+      ? JSON.stringify(errorData.details)
+      : (
           errorData.error ||
           "Telegram не удалось подтвердить."
-        );
-      }
+        )
+  );
+}
 
 
       const data = await response.json();
