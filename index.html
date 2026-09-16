@@ -128,7 +128,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET
         SUPABASE_URL +
         "/rest/v1/lessons" +
         "?select=title,description,homework,crystal_reward,is_published" +
-        "&title=eq.Предобучение%20%E2%80%94%20Неделя%201",
+        "&title=eq." + encodeURIComponent("Предобучение — Неделя 1"),
         {
           headers: {
             "apikey": SUPABASE_PUBLISHABLE_KEY,
