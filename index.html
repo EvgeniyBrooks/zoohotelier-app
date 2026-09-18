@@ -334,8 +334,12 @@ async function authenticateTelegram() {
     }
 
 
-    currentUser =
-      data.user;
+   currentUser =
+  data.user;
+
+window.isAdmin = Boolean(
+  data.admin && data.admin.isAdmin
+);
 
 
     return data;
