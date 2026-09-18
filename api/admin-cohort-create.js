@@ -426,25 +426,30 @@ module.exports = async (
 
 
     if (
-      !cohortResponse.ok
-    ) {
+  !cohortResponse.ok
+) {
 
-      const errorText =
-        await cohortResponse.text();
+  const errorText =
+    await cohortResponse.text();
 
+  console.error(
+    "COHORT CREATE ERROR:",
+    errorText
+  );
 
-      console.error(
-        "COHORT CREATE ERROR:",
-        errorText
-      );
+  return res.status(500).json({
 
+    ok: false,
 
-     return res.status(500).json({
-  error: error.message || "Не удалось создать поток",
-  details: error
-});
+    error:
+      "Не удалось создать поток",
 
-    }
+    details:
+      errorText
+
+  });
+
+}
 
 
     const cohorts =
