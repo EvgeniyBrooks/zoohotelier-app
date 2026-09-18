@@ -790,10 +790,39 @@ async function loadNews() {
 // УРОКИ БЛОКА
 // ==================================================
 
-async function loadLessons(
-  blockId,
-  blockTitle
-) {
+async function loadLessons(blockId) {
+  try {
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/lessons" +
+        "?select=id,title,day_number,is_published" +
+        "&block_id=eq." +
+        encodeURIComponent(blockId) +
+        "&is_published=eq.true" +
+        "&order=day_number.asc",
+        {
+          headers: {
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
+          }
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки уроков: " + response.status);
+    }
+
+    const lessons = await response.json();
+
+    return lessons;
+
+  } catch (error) {
+    console.error("Ошибка loadLessons:", error);
+    alert("Не удалось загрузить уроки");
+    return [];
+  }
+}
 
   const app =
     document.getElementById("app");
