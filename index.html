@@ -635,25 +635,19 @@ async function loadNews() {
   try {
 
     const response =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/news" +
-        "?select=id,title,content,image_url,created_at" +
-        "&is_published=eq.true" +
-        "&order=created_at.desc",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
-        }
-      );
+  await fetch(
+    "/api/admin-students",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        initData:
+          Telegram.WebApp.initData
+      })
+    }
+  );
 
 
     if (!response.ok) {
