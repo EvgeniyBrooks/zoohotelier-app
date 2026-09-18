@@ -473,7 +473,19 @@ async function loadCourse() {
       await newsResponse.json();
 
 
-    let html = "";
+   let html = "";
+
+if (window.isAdmin) {
+  html += `
+    <button
+      class="button"
+      onclick="alert('АДМИНКА')"
+      style="margin-bottom:16px;"
+    >
+      👨‍💼 Админка
+    </button>
+  `;
+}
 
 
     // ----------------------------------------------
