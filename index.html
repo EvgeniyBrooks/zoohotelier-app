@@ -1391,7 +1391,39 @@ function escapeHtml(value) {
 // ==================================================
 // START
 // ==================================================
+async function loadAdmin() {
 
+  const app =
+    document.getElementById("app");
+
+  app.innerHTML = `
+    <button
+      class="button back-button"
+      onclick="loadCourse()"
+    >
+      ← Назад
+    </button>
+
+    <div class="card">
+
+      <div class="label">
+        👨‍💼 АДМИНКА
+      </div>
+
+      <div class="lesson-title">
+        Панель администратора
+      </div>
+
+      <button
+        class="button"
+        onclick="loadStudents()"
+      >
+        👥 Ученики
+      </button>
+
+    </div>
+  `;
+}
 startApp();
 
 </script>
