@@ -2,20 +2,29 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>УПРАВЛЕНИЕ ВНИМАНИЕМ</title>
 
+  <!-- Telegram Mini App -->
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
       background: #f5f5f5;
       color: #111;
     }
@@ -47,12 +56,14 @@
       border-radius: 18px;
       padding: 20px;
       margin-bottom: 16px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+      box-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.06);
     }
 
     .block-card {
       cursor: pointer;
-      transition: transform 0.15s ease;
+      transition:
+        transform 0.15s ease;
     }
 
     .block-card:active {
@@ -149,23 +160,65 @@
       height: 100%;
       border: 0;
     }
+
+    .news-card {
+      cursor: pointer;
+    }
+
+    .news-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .news-date {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .news-preview {
+      font-size: 15px;
+      line-height: 1.45;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .news-image {
+      width: 100%;
+      display: block;
+      border-radius: 14px;
+      margin-bottom: 14px;
+    }
+
   </style>
 </head>
 
 <body>
 
-<div class="app">
+  <div class="app">
 
-  <div class="header">
-    <div class="brand">Зоохотельер</div>
-    <h1>УПРАВЛЕНИЕ ВНИМАНИЕМ</h1>
+    <div class="header">
+
+      <div class="brand">
+        Зоохотельер
+      </div>
+
+      <h1>
+        УПРАВЛЕНИЕ ВНИМАНИЕМ
+      </h1>
+
+    </div>
+
+    <div id="app">
+
+      <div class="status">
+        Подключаем Telegram...
+      </div>
+
+    </div>
+
   </div>
 
-  <div id="app">
-    <div class="status">Подключаем Telegram...</div>
-  </div>
-
-</div>
 
 <script>
 
@@ -182,17 +235,21 @@ const CLOUDFLARE_CUSTOMER =
 let currentUser = null;
 
 
-// ========================================
+// ==================================================
 // TELEGRAM АВТОРИЗАЦИЯ
-// ========================================
+// ==================================================
 
 async function authenticateTelegram() {
 
-  const app = document.getElementById("app");
+  const app =
+    document.getElementById("app");
 
   try {
 
-    if (!window.Telegram || !window.Telegram.WebApp) {
+    if (
+      !window.Telegram ||
+      !window.Telegram.WebApp
+    ) {
 
       throw new Error(
         "Приложение нужно открыть внутри Telegram."
@@ -200,12 +257,14 @@ async function authenticateTelegram() {
 
     }
 
-    const tg = window.Telegram.WebApp;
+    const tg =
+      window.Telegram.WebApp;
 
     tg.ready();
     tg.expand();
 
-    const initData = tg.initData;
+    const initData =
+      tg.initData;
 
     if (!initData) {
 
@@ -215,25 +274,30 @@ async function authenticateTelegram() {
 
     }
 
-    const response = await fetch(
-      "/api/telegram-auth",
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        "/api/telegram-auth",
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-        body: JSON.stringify({
-          initData: initData
-        })
-      }
-    );
+          body: JSON.stringify({
+            initData: initData
+          })
+        }
+      );
+
 
     if (!response.ok) {
 
       const errorData =
-        await response.json().catch(() => ({}));
+        await response
+          .json()
+          .catch(() => ({}));
 
       console.error(
         "AUTH ERROR:",
@@ -242,7 +306,9 @@ async function authenticateTelegram() {
 
       throw new Error(
         errorData.details
-          ? JSON.stringify(errorData.details)
+          ? JSON.stringify(
+              errorData.details
+            )
           : (
               errorData.error ||
               "Telegram не удалось подтвердить."
@@ -251,9 +317,15 @@ async function authenticateTelegram() {
 
     }
 
-    const data = await response.json();
 
-    if (!data.ok || !data.user) {
+    const data =
+      await response.json();
+
+
+    if (
+      !data.ok ||
+      !data.user
+    ) {
 
       throw new Error(
         "Пользователь не подтверждён."
@@ -261,141 +333,464 @@ async function authenticateTelegram() {
 
     }
 
-    currentUser = data.user;
+
+    currentUser =
+      data.user;
+
 
     return data;
+
 
   } catch (error) {
 
     console.error(error);
 
+
     app.innerHTML = `
+
       <div class="card">
 
         <div class="error">
-          ${escapeHtml(error.message)}
+          ${escapeHtml(
+            error.message
+          )}
         </div>
 
       </div>
+
     `;
 
+
     return null;
+
   }
+
 }
 
 
-// ========================================
-// ПОЛУЧЕНИЕ БЛОКОВ
-// ========================================
+// ==================================================
+// ГЛАВНЫЙ ЭКРАН КУРСА
+// ==================================================
 
 async function loadCourse() {
 
-  const app = document.getElementById("app");
+  const app =
+    document.getElementById("app");
+
 
   app.innerHTML = `
+
     <div class="status">
       Загружаем курс...
     </div>
+
   `;
+
 
   try {
 
-    const response = await fetch(
-  SUPABASE_URL +
-  "/rest/v1/course_blocks" +
-  "?select=id,title,block_number" +
-  "&order=block_number.asc",
-  {
-    headers: {
-      "apikey": SUPABASE_PUBLISHABLE_KEY,
-      "Authorization":
-        "Bearer " + SUPABASE_PUBLISHABLE_KEY
+    // ----------------------------------------------
+    // БЛОКИ
+    // ----------------------------------------------
+
+    const blocksResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/course_blocks" +
+        "?select=id,title,block_number" +
+        "&order=block_number.asc",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
+        }
+      );
+
+
+    if (!blocksResponse.ok) {
+
+      throw new Error(
+        "Ошибка загрузки блоков: " +
+        blocksResponse.status
+      );
+
     }
+
+
+    const blocks =
+      await blocksResponse.json();
+
+
+    // ----------------------------------------------
+    // НОВОСТИ
+    // ----------------------------------------------
+
+    const newsResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/news" +
+        "?select=id,title,content,image_url,created_at" +
+        "&is_published=eq.true" +
+        "&order=created_at.desc" +
+        "&limit=5",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
+        }
+      );
+
+
+    if (!newsResponse.ok) {
+
+      throw new Error(
+        "Ошибка загрузки новостей: " +
+        newsResponse.status
+      );
+
+    }
+
+
+    const news =
+      await newsResponse.json();
+
+
+    let html = "";
+
+
+    // ----------------------------------------------
+    // НОВОСТИ
+    // ----------------------------------------------
+
+    html += `
+
+      <div
+        class="card news-card"
+        onclick="loadNews()"
+      >
+
+        <div class="label">
+          📰 НОВОСТИ
+        </div>
+
+        <div class="news-title">
+          Новости и объявления
+        </div>
+
+        <div class="news-preview">
+          ${
+            news.length
+              ? "Есть новые сообщения →"
+              : "Пока новостей нет →"
+          }
+        </div>
+
+      </div>
+
+    `;
+
+
+    // ----------------------------------------------
+    // БЛОКИ
+    // ----------------------------------------------
+
+    if (!blocks.length) {
+
+      html += `
+
+        <div class="card">
+
+          <div class="status">
+            Блоки курса пока не созданы.
+          </div>
+
+        </div>
+
+      `;
+
+    } else {
+
+      blocks.forEach(
+        (block, index) => {
+
+          html += `
+
+            <div
+              class="card block-card"
+              onclick="loadLessons(
+                '${block.id}',
+                '${escapeHtml(
+                  block.title
+                )}'
+              )"
+            >
+
+              <div class="label">
+                ${index + 1} БЛОК
+              </div>
+
+              <div class="block-title">
+                ${escapeHtml(
+                  block.title
+                )}
+              </div>
+
+              <div class="block-info">
+                Открыть уроки →
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      );
+
+    }
+
+
+    app.innerHTML =
+      html;
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    app.innerHTML = `
+
+      <div class="card">
+
+        <div class="error">
+
+          Не удалось загрузить курс.
+
+          <br><br>
+
+          ${escapeHtml(
+            error.message
+          )}
+
+        </div>
+
+      </div>
+
+    `;
+
   }
-);
+
+}
+
+
+// ==================================================
+// НОВОСТИ
+// ==================================================
+
+async function loadNews() {
+
+  const app =
+    document.getElementById("app");
+
+
+  app.innerHTML = `
+
+    <div class="status">
+      Загружаем новости...
+    </div>
+
+  `;
+
+
+  try {
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/news" +
+        "?select=id,title,content,image_url,created_at" +
+        "&is_published=eq.true" +
+        "&order=created_at.desc",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
+        }
+      );
+
 
     if (!response.ok) {
 
       throw new Error(
-        "Ошибка загрузки блоков: " +
+        "Ошибка загрузки новостей: " +
         response.status
       );
 
     }
 
-    const blocks = await response.json();
 
-    if (!blocks.length) {
+    const news =
+      await response.json();
 
-      app.innerHTML = `
-        <div class="card">
-          <div class="error">
-            Блоки курса пока не созданы.
-          </div>
-        </div>
-      `;
 
-      return;
-    }
+    let html = `
 
-    let html = "";
+      <button
+        class="button back-button"
+        onclick="loadCourse()"
+      >
+        ← Назад
+      </button>
 
-    blocks.forEach((block, index) => {
+    `;
+
+
+    if (!news.length) {
 
       html += `
-        <div
-          class="card block-card"
-          onclick="loadLessons('${block.id}', '${escapeHtml(block.title)}')"
-        >
 
-          <div class="label">
-            ${index + 1} БЛОК
-          </div>
+        <div class="card">
 
-          <div class="block-title">
-            ${escapeHtml(block.title)}
-          </div>
-
-          <div class="block-info">
-            Открыть уроки →
+          <div class="status">
+            Новостей пока нет.
           </div>
 
         </div>
+
       `;
 
-    });
+    } else {
 
-    app.innerHTML = html;
+      news.forEach(
+        item => {
+
+          const date =
+            new Date(
+              item.created_at
+            ).toLocaleDateString(
+              "ru-RU",
+              {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric"
+              }
+            );
+
+
+          html += `
+
+            <div class="card">
+
+              <div class="label">
+                📰 ${date}
+              </div>
+
+              <div class="lesson-title">
+                ${escapeHtml(
+                  item.title
+                )}
+              </div>
+
+              ${
+                item.image_url
+                  ? `
+                    <img
+                      class="news-image"
+                      src="${escapeHtml(
+                        item.image_url
+                      )}"
+                      alt=""
+                    >
+                  `
+                  : ""
+              }
+
+              <div class="description">
+                ${escapeHtml(
+                  item.content
+                )}
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      );
+
+    }
+
+
+    app.innerHTML =
+      html;
+
 
   } catch (error) {
 
     console.error(error);
 
+
     app.innerHTML = `
+
       <div class="card">
 
         <div class="error">
-          Не удалось загрузить курс.
+
+          Не удалось загрузить новости.
+
           <br><br>
-          ${escapeHtml(error.message)}
+
+          ${escapeHtml(
+            error.message
+          )}
+
         </div>
 
       </div>
+
     `;
 
   }
+
 }
 
 
-// ========================================
+// ==================================================
 // УРОКИ БЛОКА
-// ========================================
+// ==================================================
 
-async function loadLessons(blockId, blockTitle) {
+async function loadLessons(
+  blockId,
+  blockTitle
+) {
 
-  const app = document.getElementById("app");
+  const app =
+    document.getElementById("app");
+
 
   app.innerHTML = `
+
     <button
       class="button back-button"
       onclick="loadCourse()"
@@ -410,7 +805,9 @@ async function loadLessons(blockId, blockTitle) {
       </div>
 
       <div class="lesson-title">
-        ${escapeHtml(blockTitle)}
+        ${escapeHtml(
+          blockTitle
+        )}
       </div>
 
     </div>
@@ -418,26 +815,37 @@ async function loadLessons(blockId, blockTitle) {
     <div class="status">
       Загружаем уроки...
     </div>
+
   `;
+
 
   try {
 
-    const response = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/lessons" +
-     "?select=id,title,day_number,is_published" +
-"&block_id=eq." +
-      encodeURIComponent(blockId) +
-      "&is_published=eq.true" +
-      "&order=day_number.asc",
-      {
-        headers: {
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization":
-            "Bearer " + SUPABASE_PUBLISHABLE_KEY
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/lessons" +
+        "?select=id,title,day_number,is_published" +
+        "&block_id=eq." +
+        encodeURIComponent(
+          blockId
+        ) +
+        "&is_published=eq.true" +
+        "&order=day_number.asc",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
         }
-      }
-    );
+      );
+
 
     if (!response.ok) {
 
@@ -448,9 +856,13 @@ async function loadLessons(blockId, blockTitle) {
 
     }
 
-    const lessons = await response.json();
+
+    const lessons =
+      await response.json();
+
 
     let html = `
+
       <button
         class="button back-button"
         onclick="loadCourse()"
@@ -465,15 +877,20 @@ async function loadLessons(blockId, blockTitle) {
         </div>
 
         <div class="lesson-title">
-          ${escapeHtml(blockTitle)}
+          ${escapeHtml(
+            blockTitle
+          )}
         </div>
 
       </div>
+
     `;
+
 
     if (!lessons.length) {
 
       html += `
+
         <div class="card">
 
           <div class="status">
@@ -481,88 +898,133 @@ async function loadLessons(blockId, blockTitle) {
           </div>
 
         </div>
+
       `;
 
-      app.innerHTML = html;
+      app.innerHTML =
+        html;
 
       return;
+
     }
 
-    lessons.forEach((lesson, index) => {
 
-      html += `
-        <div
-          class="card lesson-card"
-          onclick="loadLesson('${lesson.id}', '${escapeHtml(blockTitle)}')"
-        >
+    lessons.forEach(
+      (lesson, index) => {
 
-          <div class="lesson-number">
-            УРОК ${index + 1}
+        html += `
+
+          <div
+            class="card lesson-card"
+            onclick="loadLesson(
+              '${lesson.id}',
+              '${escapeHtml(
+                blockTitle
+              )}'
+            )"
+          >
+
+            <div class="lesson-number">
+              УРОК ${index + 1}
+            </div>
+
+            <div class="lesson-name">
+              ${escapeHtml(
+                lesson.title
+              )}
+            </div>
+
           </div>
 
-          <div class="lesson-name">
-            ${escapeHtml(lesson.title)}
-          </div>
+        `;
 
-        </div>
-      `;
+      }
+    );
 
-    });
 
-    app.innerHTML = html;
+    app.innerHTML =
+      html;
+
 
   } catch (error) {
 
     console.error(error);
 
+
     app.innerHTML = `
+
       <div class="card">
 
         <div class="error">
+
           Не удалось загрузить уроки.
+
           <br><br>
-          ${escapeHtml(error.message)}
+
+          ${escapeHtml(
+            error.message
+          )}
+
         </div>
 
       </div>
+
     `;
 
   }
+
 }
 
 
-// ========================================
+// ==================================================
 // ОТКРЫТИЕ УРОКА
-// ========================================
+// ==================================================
 
-async function loadLesson(lessonId, blockTitle) {
+async function loadLesson(
+  lessonId,
+  blockTitle
+) {
 
-  const app = document.getElementById("app");
+  const app =
+    document.getElementById("app");
+
 
   app.innerHTML = `
+
     <div class="status">
       Загружаем урок...
     </div>
+
   `;
+
 
   try {
 
-    const response = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/lessons" +
-      "?select=id,title,description,homework,crystal_reward,is_published,video_url" +
-      "&id=eq." +
-      encodeURIComponent(lessonId) +
-      "&is_published=eq.true" +
-      "&limit=1",
-      {
-        headers: {
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization":
-            "Bearer " + SUPABASE_PUBLISHABLE_KEY
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/lessons" +
+        "?select=id,title,description,homework,crystal_reward,is_published,video_url" +
+        "&id=eq." +
+        encodeURIComponent(
+          lessonId
+        ) +
+        "&is_published=eq.true" +
+        "&limit=1",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
         }
-      }
-    );
+      );
+
 
     if (!response.ok) {
 
@@ -573,7 +1035,10 @@ async function loadLesson(lessonId, blockTitle) {
 
     }
 
-    const lessons = await response.json();
+
+    const lessons =
+      await response.json();
+
 
     if (!lessons.length) {
 
@@ -583,16 +1048,29 @@ async function loadLesson(lessonId, blockTitle) {
 
     }
 
-    const lesson = lessons[0];
 
-    let videoHtml = "";
+    const lesson =
+      lessons[0];
+
+
+    let videoHtml =
+      "";
+
+
+    // ----------------------------------------------
+    // ВИДЕО
+    // ----------------------------------------------
 
     if (lesson.video_url) {
 
-      const tokenResponse = await fetch(
-        "/api/stream-token?videoId=" +
-        encodeURIComponent(lesson.video_url)
-      );
+      const tokenResponse =
+        await fetch(
+          "/api/stream-token?videoId=" +
+          encodeURIComponent(
+            lesson.video_url
+          )
+        );
+
 
       if (!tokenResponse.ok) {
 
@@ -603,8 +1081,10 @@ async function loadLesson(lessonId, blockTitle) {
 
       }
 
+
       const tokenData =
         await tokenResponse.json();
+
 
       if (!tokenData.token) {
 
@@ -614,7 +1094,9 @@ async function loadLesson(lessonId, blockTitle) {
 
       }
 
+
       videoHtml = `
+
         <div class="card">
 
           <div class="label">
@@ -625,16 +1107,28 @@ async function loadLesson(lessonId, blockTitle) {
 
             <iframe
               src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allow="
+                accelerometer;
+                gyroscope;
+                autoplay;
+                encrypted-media;
+                picture-in-picture;
+              "
               allowfullscreen>
             </iframe>
 
           </div>
 
         </div>
+
       `;
 
     }
+
+
+    // ----------------------------------------------
+    // КОНТЕНТ УРОКА
+    // ----------------------------------------------
 
     app.innerHTML = `
 
@@ -648,22 +1142,29 @@ async function loadLesson(lessonId, blockTitle) {
       <div class="card">
 
         <div class="label">
-          ${escapeHtml(blockTitle)}
+          ${escapeHtml(
+            blockTitle
+          )}
         </div>
 
         <div class="lesson-title">
-          ${escapeHtml(lesson.title)}
+          ${escapeHtml(
+            lesson.title
+          )}
         </div>
 
         <div class="description">
           ${escapeHtml(
-            lesson.description || ""
+            lesson.description ||
+            ""
           )}
         </div>
 
       </div>
 
+
       ${videoHtml}
+
 
       <div class="card">
 
@@ -673,18 +1174,22 @@ async function loadLesson(lessonId, blockTitle) {
 
         <div class="homework">
           ${escapeHtml(
-            lesson.homework || ""
+            lesson.homework ||
+            ""
           )}
         </div>
 
         <button
           class="button"
-          onclick="alert('Здесь позже появится отправка выполнения кинологу')"
+          onclick="alert(
+            'Здесь позже появится отправка выполнения кинологу'
+          )"
         >
           📤 Отправить выполнение
         </button>
 
       </div>
+
 
       <div class="card">
 
@@ -696,18 +1201,22 @@ async function loadLesson(lessonId, blockTitle) {
           font-size:22px;
           font-weight:700;
         ">
-          +${lesson.crystal_reward || 0} кристаллов
+          +${lesson.crystal_reward || 0}
+          кристаллов
         </div>
 
       </div>
 
     `;
 
+
   } catch (error) {
 
     console.error(error);
 
+
     app.innerHTML = `
+
       <div class="card">
 
         <div class="error">
@@ -716,39 +1225,47 @@ async function loadLesson(lessonId, blockTitle) {
 
           <br><br>
 
-          ${escapeHtml(error.message)}
+          ${escapeHtml(
+            error.message
+          )}
 
         </div>
 
       </div>
+
     `;
 
   }
+
 }
 
 
-// ========================================
-// ЭКРАН ПРИ ЗАПУСКЕ
-// ========================================
+// ==================================================
+// ЗАПУСК
+// ==================================================
 
 async function startApp() {
 
   const authResult =
     await authenticateTelegram();
 
+
   if (!authResult) {
     return;
   }
+
 
   console.log(
     "Telegram user:",
     authResult.user
   );
 
+
   console.log(
     "Course access:",
     authResult.access
   );
+
 
   if (
     !authResult.access ||
@@ -758,7 +1275,9 @@ async function startApp() {
     const app =
       document.getElementById("app");
 
+
     app.innerHTML = `
+
       <div class="card">
 
         <div class="lesson-title">
@@ -771,36 +1290,59 @@ async function startApp() {
         </div>
 
       </div>
+
     `;
 
+
     return;
+
   }
+
 
   await loadCourse();
 
 }
 
 
-// ========================================
+// ==================================================
 // ЭКРАНИРОВАНИЕ HTML
-// ========================================
+// ==================================================
 
 function escapeHtml(value) {
 
   return String(value)
 
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
 
 
-// ========================================
-// ЗАПУСК
-// ========================================
+// ==================================================
+// START
+// ==================================================
 
 startApp();
 
