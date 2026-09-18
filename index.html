@@ -301,18 +301,18 @@ async function loadCourse() {
   try {
 
     const response = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/course_blocks" +
-      "?select=id,title,sort_order" +
-      "&order=sort_order.asc",
-      {
-        headers: {
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization":
-            "Bearer " + SUPABASE_PUBLISHABLE_KEY
-        }
-      }
-    );
+  SUPABASE_URL +
+  "/rest/v1/course_blocks" +
+  "?select=id,title,block_number" +
+  "&order=block_number.asc",
+  {
+    headers: {
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+      "Authorization":
+        "Bearer " + SUPABASE_PUBLISHABLE_KEY
+    }
+  }
+);
 
     if (!response.ok) {
 
