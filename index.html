@@ -841,198 +841,96 @@ async function loadLessons(
   blockTitle
 ) {
 
-  const app =
-    document.getElementById("app");
-
+  const app = document.getElementById("app");
 
   app.innerHTML = `
-
-    <button
-      class="button back-button"
-      onclick="loadCourse()"
-    >
+    <button class="button back-button" onclick="loadCourse()">
       ← Назад к курсу
     </button>
 
-
     <div class="card">
-
-      <div class="label">
-        БЛОК
-      </div>
-
-      <div class="lesson-title">
-        ${escapeHtml(blockTitle)}
-      </div>
-
+      <div class="label">БЛОК</div>
+      <div class="lesson-title">${escapeHtml(blockTitle)}</div>
     </div>
 
-
-    <div class="status">
-      Загружаем уроки...
-    </div>
-
+    <div class="status">Загружаем уроки...</div>
   `;
 
-
   try {
-
-    const response =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/lessons" +
-        "?select=id,title,day_number,is_published" +
-        "&block_id=eq." +
-        encodeURIComponent(blockId) +
-        "&is_published=eq.true" +
-        "&order=day_number.asc",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/lessons" +
+      "?select=id,title,day_number,is_published,block_id" +
+      "&block_id=eq." + encodeURIComponent(blockId) +
+      "&is_published=eq.true" +
+      "&order=day_number.asc",
+      {
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
         }
-      );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        "Ошибка загрузки уроков: " +
-        response.status
-      );
-
-    }
-
-
-    const lessons =
-      await response.json();
-
-
-    let html = `
-
-      <button
-        class="button back-button"
-        onclick="loadCourse()"
-      >
-        ← Назад к курсу
-      </button>
-
-
-      <div class="card">
-
-        <div class="label">
-          БЛОК
-        </div>
-
-        <div class="lesson-title">
-          ${escapeHtml(blockTitle)}
-        </div>
-
-      </div>
-
-    `;
-
-
-    if (!lessons.length) {
-
-      html += `
-
-        <div class="card">
-
-          <div class="status">
-            Уроки пока не опубликованы.
-          </div>
-
-        </div>
-
-      `;
-
-
-      app.innerHTML =
-        html;
-
-
-      return;
-
-    }
-
-
-    lessons.forEach(
-      (lesson, index) => {
-
-        html += `
-
-          <div
-            class="card lesson-card"
-            onclick="loadLesson(
-  '${lesson.id}',
-  '${blockId}',
-  '${escapeHtml(blockTitle)}'
-)"
-          >
-
-            <div class="lesson-number">
-              УРОК ${index + 1}
-            </div>
-
-            <div class="lesson-name">
-              ${escapeHtml(
-                lesson.title
-              )}
-            </div>
-
-          </div>
-
-        `;
-
       }
     );
 
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки уроков: " + response.status);
+    }
 
-    app.innerHTML =
-      html;
+    const lessons = await response.json();
 
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    app.innerHTML = `
+    let html = `
+      <button class="button back-button" onclick="loadCourse()">
+        ← Назад к курсу
+      </button>
 
       <div class="card">
-
-        <div class="error">
-
-          Не удалось загрузить уроки.
-
-          <br><br>
-
-          ${escapeHtml(
-            error.message
-          )}
-
-        </div>
-
+        <div class="label">БЛОК</div>
+        <div class="lesson-title">${escapeHtml(blockTitle)}</div>
       </div>
-
     `;
 
-  }
+    if (!lessons.length) {
+      html += `
+        <div class="card">
+          <div class="status">Уроки пока не опубликованы.</div>
+        </div>
+      `;
+      app.innerHTML = html;
+      return;
+    }
 
+    lessons.forEach((lesson, index) => {
+      html += `
+        <div
+          class="card lesson-card"
+          onclick="loadLesson(
+            '${lesson.id}',
+            '${lesson.block_id}',
+            '${escapeHtml(blockTitle)}'
+          )"
+        >
+          <div class="lesson-number">УРОК ${index + 1}</div>
+          <div class="lesson-name">${escapeHtml(lesson.title)}</div>
+        </div>
+      `;
+    });
+
+    app.innerHTML = html;
+
+  } catch (error) {
+    console.error(error);
+    app.innerHTML = `
+      <div class="card">
+        <div class="error">
+          Не удалось загрузить уроки.
+          <br><br>
+          ${escapeHtml(error.message)}
+        </div>
+      </div>
+    `;
+  }
 }
 
-
-// ==================================================
-// ОТКРЫТИЕ УРОКА
-// ==================================================
 
 // ==================================================
 // ОТКРЫТИЕ УРОКА
@@ -1044,161 +942,74 @@ async function loadLesson(
   blockTitle
 ) {
 
-  const app =
-    document.getElementById("app");
-
+  const app = document.getElementById("app");
 
   app.innerHTML = `
-
-    <div class="status">
-      Загружаем урок...
-    </div>
-
+    <div class="status">Загружаем урок...</div>
   `;
 
-
   try {
-
-    const response =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/lessons" +
-        "?select=id,title,description,homework,crystal_reward,is_published,video_url,block_id" +
-        "&id=eq." +
-        encodeURIComponent(
-          lessonId
-        ) +
-        "&is_published=eq.true" +
-        "&limit=1",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/lessons" +
+      "?select=id,title,description,homework,crystal_reward,is_published,video_url,block_id" +
+      "&id=eq." + encodeURIComponent(lessonId) +
+      "&is_published=eq.true" +
+      "&limit=1",
+      {
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
         }
-      );
-
+      }
+    );
 
     if (!response.ok) {
-
-      throw new Error(
-        "Ошибка Supabase: " +
-        response.status
-      );
-
+      throw new Error("Ошибка Supabase: " + response.status);
     }
 
-
-    const lessons =
-      await response.json();
-
+    const lessons = await response.json();
 
     if (!lessons.length) {
-
-      throw new Error(
-        "Урок не найден."
-      );
-
+      throw new Error("Урок не найден.");
     }
 
-
-    const lesson =
-      lessons[0];
-
-
-    // Если blockId не передали,
-    // берём его непосредственно из урока
-
-    const currentBlockId =
-      blockId ||
-      lesson.block_id;
-
-
-    let videoHtml =
-      "";
-
-
-    // ----------------------------------------------
-    // ВИДЕО
-    // ----------------------------------------------
+    const lesson = lessons[0];
+    const currentBlockId = blockId || lesson.block_id;
+    let videoHtml = "";
 
     if (lesson.video_url) {
-
-      const tokenResponse =
-        await fetch(
-          "/api/stream-token?videoId=" +
-          encodeURIComponent(
-            lesson.video_url
-          )
-        );
-
+      const tokenResponse = await fetch(
+        "/api/stream-token?videoId=" + encodeURIComponent(lesson.video_url)
+      );
 
       if (!tokenResponse.ok) {
-
         throw new Error(
-          "Не удалось получить доступ к видео: " +
-          tokenResponse.status
+          "Не удалось получить доступ к видео: " + tokenResponse.status
         );
-
       }
 
-
-      const tokenData =
-        await tokenResponse.json();
-
+      const tokenData = await tokenResponse.json();
 
       if (!tokenData.token) {
-
-        throw new Error(
-          "Cloudflare не вернул токен видео."
-        );
-
+        throw new Error("Cloudflare не вернул токен видео.");
       }
 
-
       videoHtml = `
-
         <div class="card">
-
-          <div class="label">
-            🎬 ВИДЕО УРОКА
-          </div>
-
+          <div class="label">🎬 ВИДЕО УРОКА</div>
           <div class="video-wrapper">
-
             <iframe
               src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
-              allow="
-                accelerometer;
-                gyroscope;
-                autoplay;
-                encrypted-media;
-                picture-in-picture;
-              "
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
               allowfullscreen>
             </iframe>
-
           </div>
-
         </div>
-
       `;
-
     }
 
-
-    // ----------------------------------------------
-    // КОНТЕНТ УРОКА
-    // ----------------------------------------------
-
     app.innerHTML = `
-
       <button
         class="button back-button"
         onclick="loadLessons(
@@ -1209,365 +1020,57 @@ async function loadLesson(
         ← К урокам
       </button>
 
-
       <div class="card">
-
-        <div class="label">
-          ${escapeHtml(blockTitle)}
-        </div>
-
-        <div class="lesson-title">
-          ${escapeHtml(
-            lesson.title
-          )}
-        </div>
-
-        <div class="description">
-          ${escapeHtml(
-            lesson.description || ""
-          )}
-        </div>
-
+        <div class="label">${escapeHtml(blockTitle)}</div>
+        <div class="lesson-title">${escapeHtml(lesson.title)}</div>
+        ${lesson.description ? `
+          <div class="description">${escapeHtml(lesson.description)}</div>
+        ` : ""}
       </div>
-
 
       ${videoHtml}
 
-
       <div class="card">
-
-        <div class="label">
-          📝 ДОМАШНЕЕ ЗАДАНИЕ
-        </div>
-
-        <div class="homework">
-          ${escapeHtml(
-            lesson.homework || ""
-          )}
-        </div>
-
+        <div class="label">📝 ДОМАШНЕЕ ЗАДАНИЕ</div>
+        <div class="homework">${escapeHtml(lesson.homework || "")}</div>
         <button
           class="button"
-          onclick="
-            alert(
-              'Здесь позже появится отправка выполнения кинологу'
-            )
-          "
+          onclick="alert('Здесь позже появится отправка выполнения кинологу')"
         >
           📤 Отправить выполнение
         </button>
-
       </div>
-
 
       <div class="card">
-
-        <div class="label">
-          💎 НАГРАДА
+        <div class="label">💎 НАГРАДА</div>
+        <div style="font-size:22px;font-weight:700;">
+          +${lesson.crystal_reward || 0} кристаллов
         </div>
-
-        <div
-          style="
-            font-size:22px;
-            font-weight:700;
-          "
-        >
-
-          +${lesson.crystal_reward || 0}
-          кристаллов
-
-        </div>
-
       </div>
-
     `;
-
 
   } catch (error) {
-
     console.error(error);
-
-
     app.innerHTML = `
-
-      <div class="card">
-
-        <div class="error">
-
-          Не удалось загрузить урок.
-
-          <br><br>
-
-          ${escapeHtml(
-            error.message
-          )}
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-}
-
-  const app =
-    document.getElementById("app");
-
-
-  app.innerHTML = `
-
-    <div class="status">
-      Загружаем урок...
-    </div>
-
-  `;
-
-
-  try {
-
-    const response =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/lessons" +
-        "?select=id,title,description,homework,crystal_reward,is_published,video_url" +
-        "&id=eq." +
-        encodeURIComponent(
-          lessonId
-        ) +
-        "&is_published=eq.true" +
-        "&limit=1",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
-        }
-      );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        "Ошибка Supabase: " +
-        response.status
-      );
-
-    }
-
-
-    const lessons =
-      await response.json();
-
-
-    if (!lessons.length) {
-
-      throw new Error(
-        "Урок не найден."
-      );
-
-    }
-
-
-    const lesson =
-      lessons[0];
-
-
-    let videoHtml =
-      "";
-
-
-    // ----------------------------------------------
-    // ВИДЕО
-    // ----------------------------------------------
-
-    if (lesson.video_url) {
-
-      const tokenResponse =
-        await fetch(
-          "/api/stream-token?videoId=" +
-          encodeURIComponent(
-            lesson.video_url
-          )
-        );
-
-
-      if (!tokenResponse.ok) {
-
-        throw new Error(
-          "Не удалось получить доступ к видео: " +
-          tokenResponse.status
-        );
-
-      }
-
-
-      const tokenData =
-        await tokenResponse.json();
-
-
-      if (!tokenData.token) {
-
-        throw new Error(
-          "Cloudflare не вернул токен видео."
-        );
-
-      }
-
-
-      videoHtml = `
-
-        <div class="card">
-
-          <div class="label">
-            🎬 ВИДЕО УРОКА
-          </div>
-
-          <div class="video-wrapper">
-
-            <iframe
-              src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
-              allow="
-                accelerometer;
-                gyroscope;
-                autoplay;
-                encrypted-media;
-                picture-in-picture;
-              "
-              allowfullscreen>
-            </iframe>
-
-          </div>
-
-        </div>
-
-      `;
-
-    }
-
-
-    // ----------------------------------------------
-    // КОНТЕНТ УРОКА
-    // ----------------------------------------------
-
-    app.innerHTML = `
-
       <button
         class="button back-button"
         onclick="loadLessons(
-          '${lesson.block_id || ""}',
+          '${blockId || ""}',
           '${escapeHtml(blockTitle)}'
         )"
       >
         ← К урокам
       </button>
 
-
       <div class="card">
-
-        <div class="label">
-          ${escapeHtml(blockTitle)}
-        </div>
-
-        <div class="lesson-title">
-          ${escapeHtml(
-            lesson.title
-          )}
-        </div>
-
-        <div class="description">
-          ${escapeHtml(
-            lesson.description || ""
-          )}
-        </div>
-
-      </div>
-
-
-      ${videoHtml}
-
-
-      <div class="card">
-
-        <div class="label">
-          📝 ДОМАШНЕЕ ЗАДАНИЕ
-        </div>
-
-        <div class="homework">
-          ${escapeHtml(
-            lesson.homework || ""
-          )}
-        </div>
-
-        <button
-          class="button"
-          onclick="alert(
-            'Здесь позже появится отправка выполнения кинологу'
-          )"
-        >
-          📤 Отправить выполнение
-        </button>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="label">
-          💎 НАГРАДА
-        </div>
-
-        <div
-          style="
-            font-size:22px;
-            font-weight:700;
-          "
-        >
-
-          +${lesson.crystal_reward || 0}
-          кристаллов
-
-        </div>
-
-      </div>
-
-    `;
-
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    app.innerHTML = `
-
-      <div class="card">
-
         <div class="error">
-
           Не удалось загрузить урок.
-
           <br><br>
-
-          ${escapeHtml(
-            error.message
-          )}
-
+          ${escapeHtml(error.message)}
         </div>
-
       </div>
-
     `;
-
   }
-
 }
 
 
