@@ -1134,6 +1134,10 @@ async function loadAdmin() {
 // УЧЕНИКИ
 // ==================================================
 
+// ==================================================
+// УЧЕНИКИ
+// ==================================================
+
 async function loadStudents() {
 
   if (!window.isAdmin) {
@@ -1267,6 +1271,10 @@ async function loadStudents() {
             "Без имени";
 
 
+          const certificateName =
+            student.certificate_name || "";
+
+
           html += `
 
             <div class="card">
@@ -1275,9 +1283,11 @@ async function loadStudents() {
                 УЧЕНИК ${index + 1}
               </div>
 
+
               <div class="lesson-title">
                 ${escapeHtml(name)}
               </div>
+
 
               <div class="description">
 
@@ -1294,27 +1304,68 @@ async function loadStudents() {
                     : ""
                 }
 
-                ${
-                  student.certificate_name
-                    ? `<br>Сертификат: ${escapeHtml(
-                        student.certificate_name
-                      )}`
-                    : ""
-                }
+              </div>
+
+
+              <div
+                style="
+                  margin-top:16px;
+                "
+              >
+
+                <div
+                  class="label"
+                  style="
+                    margin-bottom:6px;
+                  "
+                >
+                  Фамилия и имя для сертификата
+                </div>
+
+
+                <input
+                  id="certificate-name-${student.id}"
+                  type="text"
+                  value="${escapeHtml(
+                    certificateName
+                  )}"
+                  placeholder="Например: Петров Иван"
+                  maxlength="100"
+                  style="
+                    width:100%;
+                    padding:14px;
+                    border:1px solid #ddd;
+                    border-radius:12px;
+                    font-size:16px;
+                    outline:none;
+                    box-sizing:border-box;
+                  "
+                >
+
+
+                <button
+                  class="button"
+                  onclick="
+                    saveCertificateName(
+                      '${student.id}'
+                    )
+                  "
+                >
+                  💾 Сохранить ФИО
+                </button>
 
               </div>
 
 
-              <button
-                class="button"
-                onclick="
-                  alert(
-                    'Управление доступом добавим следующим шагом'
-                  )
+              <div
+                id="student-save-status-${student.id}"
+                style="
+                  margin-top:10px;
+                  font-size:14px;
+                  color:#777;
                 "
-              >
-                🚫 Управление доступом
-              </button>
+              ></div>
+
 
             </div>
 
@@ -1362,6 +1413,115 @@ async function loadStudents() {
       </div>
 
     `;
+
+  }
+
+}
+
+
+// ==================================================
+// СОХРАНЕНИЕ ФИО ДЛЯ СЕРТИФИКАТА
+// ==================================================
+
+async function saveCertificateName(
+  studentId
+) {
+
+  const input =
+    document.getElementById(
+      "certificate-name-" +
+      studentId
+    );
+
+
+  const status =
+    document.getElementById(
+      "student-save-status-" +
+      studentId
+    );
+
+
+  if (!input) {
+
+    return;
+
+  }
+
+
+  const certificateName =
+    input.value.trim();
+
+
+  status.textContent =
+    "Сохраняем...";
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin-student-update",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            initData:
+              Telegram.WebApp.initData,
+
+            studentId:
+              studentId,
+
+            certificateName:
+              certificateName
+
+          })
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Не удалось сохранить данные"
+      );
+
+    }
+
+
+    status.textContent =
+      "✅ ФИО сохранено";
+
+
+    status.style.color =
+      "#16803c";
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    status.textContent =
+      "❌ " +
+      error.message;
+
+
+    status.style.color =
+      "#b00020";
 
   }
 
