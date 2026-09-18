@@ -1391,6 +1391,169 @@ function escapeHtml(value) {
 // ==================================================
 // START
 // ==================================================
+  async function loadStudents() {
+
+  const app =
+    document.getElementById("app");
+
+  app.innerHTML = `
+    <button
+      class="button back-button"
+      onclick="loadAdmin()"
+    >
+      ← Админка
+    </button>
+
+    <div class="card">
+
+      <div class="label">
+        👥 УЧЕНИКИ
+      </div>
+
+      <div class="lesson-title">
+        Загрузка...
+      </div>
+
+    </div>
+  `;
+
+  try {
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/students" +
+        "?select=id,telegram_id,first_name,last_name,username,certificate_name,created_at" +
+        "&order=created_at.desc",
+        {
+          headers: {
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+          }
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "Ошибка загрузки учеников: " +
+        response.status
+      );
+    }
+
+    const students =
+      await response.json();
+
+    let html = `
+      <button
+        class="button back-button"
+        onclick="loadAdmin()"
+      >
+        ← Админка
+      </button>
+    `;
+
+    if (!students.length) {
+
+      html += `
+        <div class="card">
+          <div class="status">
+            Учеников пока нет.
+          </div>
+        </div>
+      `;
+
+    } else {
+
+      students.forEach(
+        (student, index) => {
+
+          const name =
+            [
+              student.first_name,
+              student.last_name
+            ]
+              .filter(Boolean)
+              .join(" ") ||
+            "Без имени";
+
+          html += `
+            <div class="card">
+
+              <div class="label">
+                УЧЕНИК ${index + 1}
+              </div>
+
+              <div class="lesson-title">
+                ${escapeHtml(name)}
+              </div>
+
+              <div class="description">
+
+                Telegram ID:
+                ${escapeHtml(
+                  student.telegram_id
+                )}
+
+                ${
+                  student.username
+                    ? `<br>Username: @${escapeHtml(
+                        student.username
+                      )}`
+                    : ""
+                }
+
+              </div>
+
+              <button
+                class="button"
+                onclick="alert('Удаление доступа добавим следующим шагом')"
+              >
+                🚫 Управление доступом
+              </button>
+
+            </div>
+          `;
+        }
+      );
+
+    }
+
+    app.innerHTML =
+      html;
+
+  } catch (error) {
+
+    console.error(error);
+
+    app.innerHTML = `
+      <button
+        class="button back-button"
+        onclick="loadAdmin()"
+      >
+        ← Админка
+      </button>
+
+      <div class="card">
+
+        <div class="error">
+          Не удалось загрузить учеников.
+
+          <br><br>
+
+          ${escapeHtml(
+            error.message
+          )}
+        </div>
+
+      </div>
+    `;
+
+  }
+}
 async function loadAdmin() {
 
   const app =
@@ -1424,6 +1587,7 @@ async function loadAdmin() {
     </div>
   `;
 }
+  
 startApp();
 
 </script>
