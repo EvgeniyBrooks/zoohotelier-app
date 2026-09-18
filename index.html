@@ -6,7 +6,6 @@
 
   <title>УПРАВЛЕНИЕ ВНИМАНИЕМ</title>
 
-  <!-- Telegram Mini App -->
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 
   <style>
@@ -51,6 +50,42 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.06);
     }
 
+    .block-card {
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .block-card:active {
+      transform: scale(0.98);
+    }
+
+    .block-title {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .block-info {
+      font-size: 14px;
+      color: #777;
+    }
+
+    .lesson-card {
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .lesson-number {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 5px;
+    }
+
+    .lesson-name {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
     .label {
       font-size: 13px;
       color: #888;
@@ -81,6 +116,12 @@
       background: #111;
       color: white;
       margin-top: 12px;
+    }
+
+    .back-button {
+      background: #e9e9e9;
+      color: #111;
+      margin-bottom: 16px;
     }
 
     .status {
@@ -128,331 +169,572 @@
 
 <script>
 
-  const SUPABASE_URL =
-    "https://imvtdholjeclyznonpdc.supabase.co";
+const SUPABASE_URL =
+  "https://imvtdholjeclyznonpdc.supabase.co";
 
-  const SUPABASE_PUBLISHABLE_KEY =
-    "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET";
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET";
 
-  const CLOUDFLARE_CUSTOMER =
-    "customer-9y0wom20nneqpu4g.cloudflarestream.com";
-
-
-  async function authenticateTelegram() {
-
-    const app = document.getElementById("app");
-
-    try {
-
-      if (!window.Telegram || !window.Telegram.WebApp) {
-
-        throw new Error(
-          "Приложение нужно открыть внутри Telegram."
-        );
-
-      }
-
-      const tg = window.Telegram.WebApp;
-
-      tg.ready();
-      tg.expand();
-
-      const initData = tg.initData;
-
-      if (!initData) {
-
-        throw new Error(
-          "Telegram не передал данные пользователя. Открой приложение через Telegram."
-        );
-
-      }
+const CLOUDFLARE_CUSTOMER =
+  "customer-9y0wom20nneqpu4g.cloudflarestream.com";
 
 
-      const response = await fetch(
-        "/api/telegram-auth",
-        {
-          method: "POST",
+let currentUser = null;
 
-          headers: {
-            "Content-Type": "application/json"
-          },
 
-          body: JSON.stringify({
-            initData: initData
-          })
-        }
+// ========================================
+// TELEGRAM АВТОРИЗАЦИЯ
+// ========================================
+
+async function authenticateTelegram() {
+
+  const app = document.getElementById("app");
+
+  try {
+
+    if (!window.Telegram || !window.Telegram.WebApp) {
+
+      throw new Error(
+        "Приложение нужно открыть внутри Telegram."
       );
 
+    }
 
-     if (!response.ok) {
+    const tg = window.Telegram.WebApp;
 
-  const errorData = await response.json()
-    .catch(() => ({}));
+    tg.ready();
+    tg.expand();
 
-  console.error("AUTH ERROR:", errorData);
+    const initData = tg.initData;
 
-  throw new Error(
-    errorData.details
-      ? JSON.stringify(errorData.details)
-      : (
-          errorData.error ||
-          "Telegram не удалось подтвердить."
-        )
-  );
+    if (!initData) {
+
+      throw new Error(
+        "Telegram не передал данные пользователя."
+      );
+
+    }
+
+    const response = await fetch(
+      "/api/telegram-auth",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          initData: initData
+        })
+      }
+    );
+
+    if (!response.ok) {
+
+      const errorData =
+        await response.json().catch(() => ({}));
+
+      console.error(
+        "AUTH ERROR:",
+        errorData
+      );
+
+      throw new Error(
+        errorData.details
+          ? JSON.stringify(errorData.details)
+          : (
+              errorData.error ||
+              "Telegram не удалось подтвердить."
+            )
+      );
+
+    }
+
+    const data = await response.json();
+
+    if (!data.ok || !data.user) {
+
+      throw new Error(
+        "Пользователь не подтверждён."
+      );
+
+    }
+
+    currentUser = data.user;
+
+    return data;
+
+  } catch (error) {
+
+    console.error(error);
+
+    app.innerHTML = `
+      <div class="card">
+
+        <div class="error">
+          ${escapeHtml(error.message)}
+        </div>
+
+      </div>
+    `;
+
+    return null;
+  }
 }
 
 
-      const data = await response.json();
+// ========================================
+// ПОЛУЧЕНИЕ БЛОКОВ
+// ========================================
 
+async function loadCourse() {
 
-      if (!data.ok || !data.user) {
+  const app = document.getElementById("app");
 
-        throw new Error(
-          "Пользователь не подтверждён."
-        );
+  app.innerHTML = `
+    <div class="status">
+      Загружаем курс...
+    </div>
+  `;
 
-      }
+  try {
 
-
-      return data;
-
-
-    } catch (error) {
-
-      console.error(error);
-
-      app.innerHTML = `
-        <div class="card">
-
-          <div class="error">
-            ${escapeHtml(error.message)}
-          </div>
-
-        </div>
-      `;
-
-      return null;
-    }
-  }
-
-
-
-  async function loadLesson(user) {
-
-    const app = document.getElementById("app");
-
-    try {
-
-      app.innerHTML = `
-        <div class="status">
-          Загружаем урок...
-        </div>
-      `;
-
-
-      const response = await fetch(
-        SUPABASE_URL +
-        "/rest/v1/lessons" +
-        "?select=title,description,homework,crystal_reward,is_published,video_url" +
-        "&block_id=eq.8b15fa47-7e16-4796-82c3-f648e5a79486" +
-        "&is_published=eq.true" +
-        "&limit=1",
-        {
-          headers: {
-            "apikey": SUPABASE_PUBLISHABLE_KEY,
-            "Authorization":
-              "Bearer " + SUPABASE_PUBLISHABLE_KEY
-          }
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/course_blocks" +
+      "?select=id,title,sort_order" +
+      "&order=sort_order.asc",
+      {
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization":
+            "Bearer " + SUPABASE_PUBLISHABLE_KEY
         }
+      }
+    );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Ошибка загрузки блоков: " +
+        response.status
       );
 
+    }
 
-      if (!response.ok) {
+    const blocks = await response.json();
 
-        throw new Error(
-          "Ошибка Supabase: " + response.status
-        );
-
-      }
-
-
-      const lessons = await response.json();
-
-
-      if (!lessons.length) {
-
-        app.innerHTML = `
-          <div class="card">
-            <div class="error">
-              Урок не найден.
-            </div>
-          </div>
-        `;
-
-        return;
-      }
-
-
-      const lesson = lessons[0];
-
-
-      let videoHtml = "";
-
-
-      if (lesson.video_url) {
-
-        const tokenResponse = await fetch(
-          "/api/stream-token?videoId=" +
-          encodeURIComponent(lesson.video_url)
-        );
-
-
-        if (!tokenResponse.ok) {
-
-          throw new Error(
-            "Не удалось получить доступ к видео: " +
-            tokenResponse.status
-          );
-
-        }
-
-
-        const tokenData =
-          await tokenResponse.json();
-
-
-        if (!tokenData.token) {
-
-          throw new Error(
-            "Cloudflare не вернул токен видео"
-          );
-
-        }
-
-
-        videoHtml = `
-          <div class="card">
-
-            <div class="label">
-              🎬 ВИДЕО УРОКА
-            </div>
-
-            <div class="video-wrapper">
-
-              <iframe
-                src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                allowfullscreen>
-              </iframe>
-
-            </div>
-
-          </div>
-        `;
-      }
-
+    if (!blocks.length) {
 
       app.innerHTML = `
-
-        ${videoHtml}
-
         <div class="card">
+          <div class="error">
+            Блоки курса пока не созданы.
+          </div>
+        </div>
+      `;
+
+      return;
+    }
+
+    let html = "";
+
+    blocks.forEach((block, index) => {
+
+      html += `
+        <div
+          class="card block-card"
+          onclick="loadLessons('${block.id}', '${escapeHtml(block.title)}')"
+        >
 
           <div class="label">
-            ПРЕДОБУЧЕНИЕ · НЕДЕЛЯ 1
+            ${index + 1} БЛОК
           </div>
 
-          <div class="lesson-title">
+          <div class="block-title">
+            ${escapeHtml(block.title)}
+          </div>
+
+          <div class="block-info">
+            Открыть уроки →
+          </div>
+
+        </div>
+      `;
+
+    });
+
+    app.innerHTML = html;
+
+  } catch (error) {
+
+    console.error(error);
+
+    app.innerHTML = `
+      <div class="card">
+
+        <div class="error">
+          Не удалось загрузить курс.
+          <br><br>
+          ${escapeHtml(error.message)}
+        </div>
+
+      </div>
+    `;
+
+  }
+}
+
+
+// ========================================
+// УРОКИ БЛОКА
+// ========================================
+
+async function loadLessons(blockId, blockTitle) {
+
+  const app = document.getElementById("app");
+
+  app.innerHTML = `
+    <button
+      class="button back-button"
+      onclick="loadCourse()"
+    >
+      ← Назад к курсу
+    </button>
+
+    <div class="card">
+
+      <div class="label">
+        БЛОК
+      </div>
+
+      <div class="lesson-title">
+        ${escapeHtml(blockTitle)}
+      </div>
+
+    </div>
+
+    <div class="status">
+      Загружаем уроки...
+    </div>
+  `;
+
+  try {
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/lessons" +
+      "?select=id,title,sort_order,is_published" +
+      "&block_id=eq." +
+      encodeURIComponent(blockId) +
+      "&is_published=eq.true" +
+      "&order=sort_order.asc",
+      {
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization":
+            "Bearer " + SUPABASE_PUBLISHABLE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Ошибка загрузки уроков: " +
+        response.status
+      );
+
+    }
+
+    const lessons = await response.json();
+
+    let html = `
+      <button
+        class="button back-button"
+        onclick="loadCourse()"
+      >
+        ← Назад к курсу
+      </button>
+
+      <div class="card">
+
+        <div class="label">
+          БЛОК
+        </div>
+
+        <div class="lesson-title">
+          ${escapeHtml(blockTitle)}
+        </div>
+
+      </div>
+    `;
+
+    if (!lessons.length) {
+
+      html += `
+        <div class="card">
+
+          <div class="status">
+            Уроки пока не опубликованы.
+          </div>
+
+        </div>
+      `;
+
+      app.innerHTML = html;
+
+      return;
+    }
+
+    lessons.forEach((lesson, index) => {
+
+      html += `
+        <div
+          class="card lesson-card"
+          onclick="loadLesson('${lesson.id}', '${escapeHtml(blockTitle)}')"
+        >
+
+          <div class="lesson-number">
+            УРОК ${index + 1}
+          </div>
+
+          <div class="lesson-name">
             ${escapeHtml(lesson.title)}
           </div>
 
-          <div class="description">
-            ${escapeHtml(
-              lesson.description || ""
-            )}
-          </div>
-
         </div>
-
-
-        <div class="card">
-
-          <div class="label">
-            📝 ДОМАШНЕЕ ЗАДАНИЕ
-          </div>
-
-          <div class="homework">
-            ${escapeHtml(
-              lesson.homework || ""
-            )}
-          </div>
-
-          <button
-            class="button"
-            onclick="alert('Здесь позже появится отправка выполнения кинологу')"
-          >
-            📤 Отправить выполнение
-          </button>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="label">
-            💎 НАГРАДА
-          </div>
-
-          <div style="
-            font-size:22px;
-            font-weight:700;
-          ">
-            +${lesson.crystal_reward} кристаллов
-          </div>
-
-        </div>
-
       `;
 
+    });
 
-    } catch (error) {
+    app.innerHTML = html;
 
-      console.error(error);
+  } catch (error) {
 
-      app.innerHTML = `
+    console.error(error);
+
+    app.innerHTML = `
+      <div class="card">
+
+        <div class="error">
+          Не удалось загрузить уроки.
+          <br><br>
+          ${escapeHtml(error.message)}
+        </div>
+
+      </div>
+    `;
+
+  }
+}
+
+
+// ========================================
+// ОТКРЫТИЕ УРОКА
+// ========================================
+
+async function loadLesson(lessonId, blockTitle) {
+
+  const app = document.getElementById("app");
+
+  app.innerHTML = `
+    <div class="status">
+      Загружаем урок...
+    </div>
+  `;
+
+  try {
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/lessons" +
+      "?select=id,title,description,homework,crystal_reward,is_published,video_url" +
+      "&id=eq." +
+      encodeURIComponent(lessonId) +
+      "&is_published=eq.true" +
+      "&limit=1",
+      {
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization":
+            "Bearer " + SUPABASE_PUBLISHABLE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Ошибка Supabase: " +
+        response.status
+      );
+
+    }
+
+    const lessons = await response.json();
+
+    if (!lessons.length) {
+
+      throw new Error(
+        "Урок не найден."
+      );
+
+    }
+
+    const lesson = lessons[0];
+
+    let videoHtml = "";
+
+    if (lesson.video_url) {
+
+      const tokenResponse = await fetch(
+        "/api/stream-token?videoId=" +
+        encodeURIComponent(lesson.video_url)
+      );
+
+      if (!tokenResponse.ok) {
+
+        throw new Error(
+          "Не удалось получить доступ к видео: " +
+          tokenResponse.status
+        );
+
+      }
+
+      const tokenData =
+        await tokenResponse.json();
+
+      if (!tokenData.token) {
+
+        throw new Error(
+          "Cloudflare не вернул токен видео."
+        );
+
+      }
+
+      videoHtml = `
         <div class="card">
 
-          <div class="error">
-            Не удалось загрузить урок.
-            <br><br>
-            ${escapeHtml(error.message)}
+          <div class="label">
+            🎬 ВИДЕО УРОКА
+          </div>
+
+          <div class="video-wrapper">
+
+            <iframe
+              src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allowfullscreen>
+            </iframe>
+
           </div>
 
         </div>
       `;
 
     }
+
+    app.innerHTML = `
+
+      <button
+        class="button back-button"
+        onclick="loadCourse()"
+      >
+        ← К курсу
+      </button>
+
+      <div class="card">
+
+        <div class="label">
+          ${escapeHtml(blockTitle)}
+        </div>
+
+        <div class="lesson-title">
+          ${escapeHtml(lesson.title)}
+        </div>
+
+        <div class="description">
+          ${escapeHtml(
+            lesson.description || ""
+          )}
+        </div>
+
+      </div>
+
+      ${videoHtml}
+
+      <div class="card">
+
+        <div class="label">
+          📝 ДОМАШНЕЕ ЗАДАНИЕ
+        </div>
+
+        <div class="homework">
+          ${escapeHtml(
+            lesson.homework || ""
+          )}
+        </div>
+
+        <button
+          class="button"
+          onclick="alert('Здесь позже появится отправка выполнения кинологу')"
+        >
+          📤 Отправить выполнение
+        </button>
+
+      </div>
+
+      <div class="card">
+
+        <div class="label">
+          💎 НАГРАДА
+        </div>
+
+        <div style="
+          font-size:22px;
+          font-weight:700;
+        ">
+          +${lesson.crystal_reward || 0} кристаллов
+        </div>
+
+      </div>
+
+    `;
+
+  } catch (error) {
+
+    console.error(error);
+
+    app.innerHTML = `
+      <div class="card">
+
+        <div class="error">
+
+          Не удалось загрузить урок.
+
+          <br><br>
+
+          ${escapeHtml(error.message)}
+
+        </div>
+
+      </div>
+    `;
+
   }
+}
 
 
+// ========================================
+// ЭКРАН ПРИ ЗАПУСКЕ
+// ========================================
 
-  function escapeHtml(value) {
+async function startApp() {
 
-    return String(value)
-
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-
-  }
-
-
-
- async function startApp() {
-
-  const authResult = await authenticateTelegram();
+  const authResult =
+    await authenticateTelegram();
 
   if (!authResult) {
     return;
@@ -468,13 +750,13 @@
     authResult.access
   );
 
-
   if (
     !authResult.access ||
     !authResult.access.hasAccess
   ) {
 
-    const app = document.getElementById("app");
+    const app =
+      document.getElementById("app");
 
     app.innerHTML = `
       <div class="card">
@@ -484,8 +766,8 @@
         </div>
 
         <div class="description">
-          У вас пока нет активного доступа к курсу
-          «УПРАВЛЕНИЕ ВНИМАНИЕМ».
+          У вас пока нет активного доступа
+          к курсу «УПРАВЛЕНИЕ ВНИМАНИЕМ».
         </div>
 
       </div>
@@ -494,14 +776,33 @@
     return;
   }
 
-
-  await loadLesson(authResult.user);
+  await loadCourse();
 
 }
 
 
+// ========================================
+// ЭКРАНИРОВАНИЕ HTML
+// ========================================
 
-  startApp();
+function escapeHtml(value) {
+
+  return String(value)
+
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+// ========================================
+// ЗАПУСК
+// ========================================
+
+startApp();
 
 </script>
 
