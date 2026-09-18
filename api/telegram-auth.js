@@ -10,6 +10,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // ==================================================
+    // ПРОВЕРКА TELEGRAM
+    // ==================================================
+
     const params = new URLSearchParams(initData);
     const hash = params.get("hash");
 
@@ -42,6 +46,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // ==================================================
+    // ПОЛЬЗОВАТЕЛЬ TELEGRAM
+    // ==================================================
+
     const user = JSON.parse(
       params.get("user") || "{}"
     );
@@ -52,35 +60,55 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Создаём или обновляем студента в Supabase
+    // ==================================================
+    // СОХРАНЯЕМ / ОБНОВЛЯЕМ STUDENT
+    // ==================================================
+
     const supabaseResponse = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/students?on_conflict=telegram_id`,
       {
         method: "POST",
+
         headers: {
-          "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY,
+          "apikey":
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+
           "Authorization":
             `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          "Content-Type": "application/json",
+
+          "Content-Type":
+            "application/json",
+
           "Prefer":
             "resolution=merge-duplicates,return=representation"
         },
+
         body: JSON.stringify({
           telegram_id: user.id,
-          first_name: user.first_name || null,
-          last_name: user.last_name || null,
-          username: user.username || null
+
+          first_name:
+            user.first_name || null,
+
+          last_name:
+            user.last_name || null,
+
+          username:
+            user.username || null
         })
       }
     );
 
-    const supabaseData = await supabaseResponse.json();
+    const supabaseData =
+      await supabaseResponse.json();
 
-    console.log("SUPABASE STUDENT RESPONSE:", {
-      status: supabaseResponse.status,
-      ok: supabaseResponse.ok,
-      data: supabaseData
-    });
+    console.log(
+      "SUPABASE STUDENT RESPONSE:",
+      {
+        status: supabaseResponse.status,
+        ok: supabaseResponse.ok,
+        data: supabaseData
+      }
+    );
 
     if (!supabaseResponse.ok) {
       console.error(
@@ -94,9 +122,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const student = Array.isArray(supabaseData)
-      ? supabaseData[0]
-      : supabaseData;
+    const student =
+      Array.isArray(supabaseData)
+        ? supabaseData[0]
+        : supabaseData;
 
     if (!student || !student.id) {
       return res.status(500).json({
@@ -104,7 +133,49 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Проверяем активное обучение
+    // ==================================================
+    // ПРОВЕРЯЕМ АДМИНИСТРАТОРА
+    // ==================================================
+
+    const adminResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/admins` +
+      `?select=id,telegram_id` +
+      `&telegram_id=eq.${encodeURIComponent(user.id)}` +
+      `&limit=1`,
+      {
+        headers: {
+          "apikey":
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+
+          "Authorization":
+            `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+        }
+      }
+    );
+
+    const adminData =
+      await adminResponse.json();
+
+    if (!adminResponse.ok) {
+      console.error(
+        "Supabase admin error:",
+        adminData
+      );
+
+      return res.status(500).json({
+        error: "Failed to check admin",
+        details: adminData
+      });
+    }
+
+    const isAdmin =
+      Array.isArray(adminData) &&
+      adminData.length > 0;
+
+    // ==================================================
+    // ПРОВЕРЯЕМ ДОСТУП К КУРСУ
+    // ==================================================
+
     const enrollmentResponse = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/enrollments` +
       `?select=id,status,course_id,cohort_id,access_start_date,access_end_date` +
@@ -113,14 +184,17 @@ module.exports = async function handler(req, res) {
       `&limit=10`,
       {
         headers: {
-          "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY,
+          "apikey":
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+
           "Authorization":
             `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
         }
       }
     );
 
-    const enrollmentData = await enrollmentResponse.json();
+    const enrollmentData =
+      await enrollmentResponse.json();
 
     if (!enrollmentResponse.ok) {
       console.error(
@@ -135,52 +209,83 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Проверяем даты доступа
     const now = new Date();
 
-    const activeEnrollment = enrollmentData.find(
-      (enrollment) => {
-        const start = enrollment.access_start_date
-          ? new Date(enrollment.access_start_date)
-          : null;
+    const activeEnrollment =
+      enrollmentData.find(
+        (enrollment) => {
 
-        const end = enrollment.access_end_date
-          ? new Date(enrollment.access_end_date)
-          : null;
+          const start =
+            enrollment.access_start_date
+              ? new Date(
+                  enrollment.access_start_date
+                )
+              : null;
 
-        const startOk = !start || start <= now;
-        const endOk = !end || end >= now;
+          const end =
+            enrollment.access_end_date
+              ? new Date(
+                  enrollment.access_end_date
+                )
+              : null;
 
-        return startOk && endOk;
-      }
-    );
+          const startOk =
+            !start || start <= now;
+
+          const endOk =
+            !end || end >= now;
+
+          return startOk && endOk;
+        }
+      );
+
+    // ==================================================
+    // ОТВЕТ
+    // ==================================================
 
     return res.status(200).json({
+
       ok: true,
 
       user: {
         id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        username: user.username
+
+        first_name:
+          user.first_name,
+
+        last_name:
+          user.last_name,
+
+        username:
+          user.username
       },
 
       student: {
         id: student.id
       },
 
+      admin: {
+        isAdmin: isAdmin
+      },
+
       access: {
-        hasAccess: Boolean(activeEnrollment),
-        enrollment: activeEnrollment || null
+        hasAccess:
+          Boolean(activeEnrollment),
+
+        enrollment:
+          activeEnrollment || null
       }
+
     });
 
   } catch (error) {
+
     console.error(error);
 
     return res.status(500).json({
       error: "Server error",
       details: error.message
     });
+
   }
 };
