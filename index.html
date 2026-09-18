@@ -1142,7 +1142,297 @@ async function loadAdmin() {
 // ==================================================
 // УЧЕНИКИ
 // ==================================================
+// ==================================================
+// СОЗДАНИЕ ПОТОКА
+// ==================================================
 
+async function loadCohortCreate() {
+
+  if (!window.isAdmin) {
+    alert("Доступ запрещён.");
+    return;
+  }
+
+  const app = document.getElementById("app");
+
+  app.innerHTML = `
+
+    <button
+      class="button back-button"
+      onclick="loadAdmin()"
+    >
+      ← Админка
+    </button>
+
+    <div class="card">
+
+      <div class="label">
+        📚 ПОТОК
+      </div>
+
+      <div class="lesson-title">
+        Создать новый поток
+      </div>
+
+      <div style="margin-top:16px;">
+
+        <div class="label">
+          Название потока
+        </div>
+
+        <input
+          id="cohort-name"
+          type="text"
+          placeholder="Например: Поток 12.10.2026"
+          maxlength="100"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            outline:none;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <div class="label">
+          Дата начала
+        </div>
+
+        <input
+          id="cohort-start-date"
+          type="date"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            outline:none;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <div class="label">
+          Дата окончания
+        </div>
+
+        <input
+          id="cohort-end-date"
+          type="date"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            outline:none;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <div class="label">
+          Доступ до
+        </div>
+
+        <input
+          id="cohort-access-end-date"
+          type="date"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            outline:none;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <button
+          class="button"
+          onclick="createCohort()"
+        >
+          💾 Создать поток
+        </button>
+
+        <div
+          id="cohort-create-status"
+          style="
+            margin-top:12px;
+            font-size:14px;
+            color:#777;
+          "
+        ></div>
+
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+// ==================================================
+// СОХРАНЕНИЕ ПОТОКА
+// ==================================================
+
+async function createCohort() {
+
+  const nameInput =
+    document.getElementById("cohort-name");
+
+  const startInput =
+    document.getElementById("cohort-start-date");
+
+  const endInput =
+    document.getElementById("cohort-end-date");
+
+  const accessEndInput =
+    document.getElementById("cohort-access-end-date");
+
+  const status =
+    document.getElementById("cohort-create-status");
+
+
+  const name =
+    nameInput.value.trim();
+
+  const startDate =
+    startInput.value;
+
+  const endDate =
+    endInput.value;
+
+  const accessEndDate =
+    accessEndInput.value;
+
+
+  if (!name) {
+    status.textContent =
+      "❌ Укажите название потока";
+    status.style.color =
+      "#b00020";
+    return;
+  }
+
+
+  if (!startDate) {
+    status.textContent =
+      "❌ Укажите дату начала";
+    status.style.color =
+      "#b00020";
+    return;
+  }
+
+
+  if (!endDate) {
+    status.textContent =
+      "❌ Укажите дату окончания";
+    status.style.color =
+      "#b00020";
+    return;
+  }
+
+
+  if (!accessEndDate) {
+    status.textContent =
+      "❌ Укажите дату окончания доступа";
+    status.style.color =
+      "#b00020";
+    return;
+  }
+
+
+  status.textContent =
+    "Создаём поток...";
+
+  status.style.color =
+    "#777";
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin-cohort-create",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            initData:
+              Telegram.WebApp.initData,
+
+            name:
+              name,
+
+            startDate:
+              startDate,
+
+            endDate:
+              endDate,
+
+            accessEndDate:
+              accessEndDate
+
+          })
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Не удалось создать поток"
+      );
+
+    }
+
+
+    status.textContent =
+      "✅ Поток успешно создан";
+
+    status.style.color =
+      "#16803c";
+
+
+    nameInput.value = "";
+    startInput.value = "";
+    endInput.value = "";
+    accessEndInput.value = "";
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    status.textContent =
+      "❌ " + error.message;
+
+    status.style.color =
+      "#b00020";
+
+  }
+
+}
 async function loadStudents() {
 
   if (!window.isAdmin) {
