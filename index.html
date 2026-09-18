@@ -831,30 +831,20 @@ async function loadLessons(
 
   try {
 
-    const response =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/lessons" +
-        "?select=id,title,day_number,is_published" +
-        "&block_id=eq." +
-        encodeURIComponent(
-          blockId
-        ) +
-        "&is_published=eq.true" +
-        "&order=day_number.asc",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
-        }
-      );
+   const response =
+  await fetch(
+    "/api/admin-students",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        initData:
+          Telegram.WebApp.initData
+      })
+    }
+  );
 
 
     if (!response.ok) {
