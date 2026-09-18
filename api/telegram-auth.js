@@ -137,6 +137,12 @@ if (!enrollmentResponse.ok) {
   });
 }
 
+  return res.status(500).json({
+    error: "Failed to check enrollment",
+    details: enrollmentData
+  });
+}
+
 
 // Проверяем даты доступа
 
