@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -191,6 +194,7 @@
     }
 
   </style>
+
 </head>
 
 <body>
@@ -222,17 +226,22 @@
 
 <script>
 
+
 const SUPABASE_URL =
   "https://imvtdholjeclyznonpdc.supabase.co";
 
+
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_djtqwY6GvzRXJUd4auCi_Q_fqSsLxET";
+
 
 const CLOUDFLARE_CUSTOMER =
   "customer-9y0wom20nneqpu4g.cloudflarestream.com";
 
 
 let currentUser = null;
+
+window.isAdmin = false;
 
 
 // ==================================================
@@ -257,14 +266,18 @@ async function authenticateTelegram() {
 
     }
 
+
     const tg =
       window.Telegram.WebApp;
+
 
     tg.ready();
     tg.expand();
 
+
     const initData =
       tg.initData;
+
 
     if (!initData) {
 
@@ -273,6 +286,7 @@ async function authenticateTelegram() {
       );
 
     }
+
 
     const response =
       await fetch(
@@ -299,10 +313,12 @@ async function authenticateTelegram() {
           .json()
           .catch(() => ({}));
 
+
       console.error(
         "AUTH ERROR:",
         errorData
       );
+
 
       throw new Error(
         errorData.details
@@ -334,12 +350,15 @@ async function authenticateTelegram() {
     }
 
 
-   currentUser =
-  data.user;
+    currentUser =
+      data.user;
 
-window.isAdmin = Boolean(
-  data.admin && data.admin.isAdmin
-);
+
+    window.isAdmin =
+      Boolean(
+        data.admin &&
+        data.admin.isAdmin
+      );
 
 
     return data;
@@ -355,9 +374,11 @@ window.isAdmin = Boolean(
       <div class="card">
 
         <div class="error">
+
           ${escapeHtml(
             error.message
           )}
+
         </div>
 
       </div>
@@ -392,6 +413,7 @@ async function loadCourse() {
 
 
   try {
+
 
     // ----------------------------------------------
     // БЛОКИ
@@ -473,19 +495,28 @@ async function loadCourse() {
       await newsResponse.json();
 
 
-   let html = "";
+    let html = "";
 
-if (window.isAdmin) {
-  html += `
-    <button
-      class="button"
-      onclick="loadAdmin()"
-      style="margin-bottom:16px;"
-    >
-      👨‍💼 Админка
-    </button>
-  `;
-}
+
+    // ----------------------------------------------
+    // АДМИНКА
+    // ----------------------------------------------
+
+    if (window.isAdmin) {
+
+      html += `
+
+        <button
+          class="button"
+          onclick="loadAdmin()"
+          style="margin-bottom:16px;"
+        >
+          👨‍💼 Админка
+        </button>
+
+      `;
+
+    }
 
 
     // ----------------------------------------------
@@ -508,11 +539,13 @@ if (window.isAdmin) {
         </div>
 
         <div class="news-preview">
+
           ${
             news.length
               ? "Есть новые сообщения →"
               : "Пока новостей нет →"
           }
+
         </div>
 
       </div>
@@ -635,19 +668,26 @@ async function loadNews() {
   try {
 
     const response =
-  await fetch(
-    "/api/admin-students",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        initData:
-          Telegram.WebApp.initData
-      })
-    }
-  );
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/news" +
+        "?select=id,title,content,image_url,created_at" +
+        "&is_published=eq.true" +
+        "&order=created_at.desc" +
+        "&limit=20",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
+        }
+      );
 
 
     if (!response.ok) {
@@ -717,14 +757,17 @@ async function loadNews() {
               </div>
 
               <div class="lesson-title">
+
                 ${escapeHtml(
                   item.title
                 )}
+
               </div>
 
               ${
                 item.image_url
                   ? `
+
                     <img
                       class="news-image"
                       src="${escapeHtml(
@@ -732,14 +775,17 @@ async function loadNews() {
                       )}"
                       alt=""
                     >
+
                   `
                   : ""
               }
 
               <div class="description">
+
                 ${escapeHtml(
                   item.content
                 )}
+
               </div>
 
             </div>
@@ -790,39 +836,10 @@ async function loadNews() {
 // УРОКИ БЛОКА
 // ==================================================
 
-async function loadLessons(blockId) {
-  try {
-    const response =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/lessons" +
-        "?select=id,title,day_number,is_published" +
-        "&block_id=eq." +
-        encodeURIComponent(blockId) +
-        "&is_published=eq.true" +
-        "&order=day_number.asc",
-        {
-          headers: {
-            "apikey": SUPABASE_PUBLISHABLE_KEY,
-            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
-          }
-        }
-      );
-
-    if (!response.ok) {
-      throw new Error("Ошибка загрузки уроков: " + response.status);
-    }
-
-    const lessons = await response.json();
-
-    return lessons;
-
-  } catch (error) {
-    console.error("Ошибка loadLessons:", error);
-    alert("Не удалось загрузить уроки");
-    return [];
-  }
-}
+async function loadLessons(
+  blockId,
+  blockTitle
+) {
 
   const app =
     document.getElementById("app");
@@ -837,6 +854,7 @@ async function loadLessons(blockId) {
       ← Назад к курсу
     </button>
 
+
     <div class="card">
 
       <div class="label">
@@ -844,12 +862,11 @@ async function loadLessons(blockId) {
       </div>
 
       <div class="lesson-title">
-        ${escapeHtml(
-          blockTitle
-        )}
+        ${escapeHtml(blockTitle)}
       </div>
 
     </div>
+
 
     <div class="status">
       Загружаем уроки...
@@ -860,20 +877,28 @@ async function loadLessons(blockId) {
 
   try {
 
-   const response =
-  await fetch(
-    "/api/admin-students",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        initData:
-          Telegram.WebApp.initData
-      })
-    }
-  );
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/lessons" +
+        "?select=id,title,day_number,is_published" +
+        "&block_id=eq." +
+        encodeURIComponent(blockId) +
+        "&is_published=eq.true" +
+        "&order=day_number.asc",
+        {
+          headers: {
+
+            "apikey":
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_PUBLISHABLE_KEY
+
+          }
+        }
+      );
 
 
     if (!response.ok) {
@@ -899,6 +924,7 @@ async function loadLessons(blockId) {
         ← Назад к курсу
       </button>
 
+
       <div class="card">
 
         <div class="label">
@@ -906,9 +932,7 @@ async function loadLessons(blockId) {
         </div>
 
         <div class="lesson-title">
-          ${escapeHtml(
-            blockTitle
-          )}
+          ${escapeHtml(blockTitle)}
         </div>
 
       </div>
@@ -930,8 +954,10 @@ async function loadLessons(blockId) {
 
       `;
 
+
       app.innerHTML =
         html;
+
 
       return;
 
@@ -947,9 +973,7 @@ async function loadLessons(blockId) {
             class="card lesson-card"
             onclick="loadLesson(
               '${lesson.id}',
-              '${escapeHtml(
-                blockTitle
-              )}'
+              '${escapeHtml(blockTitle)}'
             )"
           >
 
@@ -1163,17 +1187,19 @@ async function loadLesson(
 
       <button
         class="button back-button"
-        onclick="loadCourse()"
+        onclick="loadLessons(
+          '${lesson.block_id || ""}',
+          '${escapeHtml(blockTitle)}'
+        )"
       >
-        ← К курсу
+        ← К урокам
       </button>
+
 
       <div class="card">
 
         <div class="label">
-          ${escapeHtml(
-            blockTitle
-          )}
+          ${escapeHtml(blockTitle)}
         </div>
 
         <div class="lesson-title">
@@ -1184,8 +1210,7 @@ async function loadLesson(
 
         <div class="description">
           ${escapeHtml(
-            lesson.description ||
-            ""
+            lesson.description || ""
           )}
         </div>
 
@@ -1203,8 +1228,7 @@ async function loadLesson(
 
         <div class="homework">
           ${escapeHtml(
-            lesson.homework ||
-            ""
+            lesson.homework || ""
           )}
         </div>
 
@@ -1226,12 +1250,16 @@ async function loadLesson(
           💎 НАГРАДА
         </div>
 
-        <div style="
-          font-size:22px;
-          font-weight:700;
-        ">
+        <div
+          style="
+            font-size:22px;
+            font-weight:700;
+          "
+        >
+
           +${lesson.crystal_reward || 0}
           кристаллов
+
         </div>
 
       </div>
@@ -1270,97 +1298,295 @@ async function loadLesson(
 
 
 // ==================================================
-// ЗАПУСК
+// АДМИНКА
 // ==================================================
 
-async function startApp() {
+async function loadAdmin() {
 
-  const authResult =
-    await authenticateTelegram();
+  if (!window.isAdmin) {
 
-
-  if (!authResult) {
-    return;
-  }
-
-
-  console.log(
-    "Telegram user:",
-    authResult.user
-  );
-
-
-  console.log(
-    "Course access:",
-    authResult.access
-  );
-
-
-  // ==================================================
-  // АДМИНКА
-  // ==================================================
-
-  if (
-    authResult.admin &&
-    authResult.admin.isAdmin
-  ) {
-
-    const app =
-      document.getElementById("app");
-
-    app.insertAdjacentHTML(
-      "afterbegin",
-      `
-        <button
-          class="button"
-          onclick="alert('АДМИНКА')"
-          style="margin-bottom:16px;"
-        >
-          👨‍💼 Админка
-        </button>
-      `
+    alert(
+      "Доступ запрещён."
     );
 
+    return;
+
   }
 
 
-  // ==================================================
-  // ПРОВЕРКА ДОСТУПА К КУРСУ
-  // ==================================================
+  const app =
+    document.getElementById("app");
 
-  if (
-    !authResult.access ||
-    !authResult.access.hasAccess
-  ) {
 
-    const app =
-      document.getElementById("app");
+  app.innerHTML = `
+
+    <button
+      class="button back-button"
+      onclick="loadCourse()"
+    >
+      ← Назад
+    </button>
+
+
+    <div class="card">
+
+      <div class="label">
+        👨‍💼 АДМИНКА
+      </div>
+
+      <div class="lesson-title">
+        Панель администратора
+      </div>
+
+
+      <button
+        class="button"
+        onclick="loadStudents()"
+      >
+        👥 Ученики
+      </button>
+
+    </div>
+
+  `;
+
+}
+
+
+// ==================================================
+// УЧЕНИКИ
+// ==================================================
+
+async function loadStudents() {
+
+  if (!window.isAdmin) {
+
+    alert(
+      "Доступ запрещён."
+    );
+
+    return;
+
+  }
+
+
+  const app =
+    document.getElementById("app");
+
+
+  app.innerHTML = `
+
+    <button
+      class="button back-button"
+      onclick="loadAdmin()"
+    >
+      ← Админка
+    </button>
+
+
+    <div class="card">
+
+      <div class="label">
+        👥 УЧЕНИКИ
+      </div>
+
+      <div class="lesson-title">
+        Загрузка...
+      </div>
+
+    </div>
+
+  `;
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin-students",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            initData:
+              Telegram.WebApp.initData
+          })
+
+        }
+      );
+
+
+    if (!response.ok) {
+
+      const errorData =
+        await response
+          .json()
+          .catch(() => ({}));
+
+
+      throw new Error(
+        (
+          errorData.error ||
+          "Ошибка загрузки учеников"
+        ) +
+        ": " +
+        response.status
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    const students =
+      data.students || [];
+
+
+    let html = `
+
+      <button
+        class="button back-button"
+        onclick="loadAdmin()"
+      >
+        ← Админка
+      </button>
+
+    `;
+
+
+    if (!students.length) {
+
+      html += `
+
+        <div class="card">
+
+          <div class="status">
+            Учеников пока нет.
+          </div>
+
+        </div>
+
+      `;
+
+    } else {
+
+      students.forEach(
+        (student, index) => {
+
+          const name =
+            [
+              student.first_name,
+              student.last_name
+            ]
+              .filter(Boolean)
+              .join(" ") ||
+            "Без имени";
+
+
+          html += `
+
+            <div class="card">
+
+              <div class="label">
+                УЧЕНИК ${index + 1}
+              </div>
+
+              <div class="lesson-title">
+                ${escapeHtml(name)}
+              </div>
+
+              <div class="description">
+
+                Telegram ID:
+                ${escapeHtml(
+                  student.telegram_id
+                )}
+
+                ${
+                  student.username
+                    ? `<br>Username: @${escapeHtml(
+                        student.username
+                      )}`
+                    : ""
+                }
+
+                ${
+                  student.certificate_name
+                    ? `<br>Сертификат: ${escapeHtml(
+                        student.certificate_name
+                      )}`
+                    : ""
+                }
+
+              </div>
+
+
+              <button
+                class="button"
+                onclick="
+                  alert(
+                    'Управление доступом добавим следующим шагом'
+                  )
+                "
+              >
+                🚫 Управление доступом
+              </button>
+
+            </div>
+
+          `;
+
+        }
+      );
+
+    }
+
+
+    app.innerHTML =
+      html;
+
+
+  } catch (error) {
+
+    console.error(error);
 
 
     app.innerHTML = `
 
+      <button
+        class="button back-button"
+        onclick="loadAdmin()"
+      >
+        ← Админка
+      </button>
+
+
       <div class="card">
 
-        <div class="lesson-title">
-          Доступ к обучению не найден
-        </div>
+        <div class="error">
 
-        <div class="description">
-          У вас пока нет активного доступа
-          к курсу «УПРАВЛЕНИЕ ВНИМАНИЕМ».
+          Не удалось загрузить учеников.
+
+          <br><br>
+
+          ${escapeHtml(
+            error.message
+          )}
+
         </div>
 
       </div>
 
     `;
 
-
-    return;
-
   }
-
-
-  await loadCourse();
 
 }
 
@@ -1402,187 +1628,86 @@ function escapeHtml(value) {
 
 
 // ==================================================
-// START
+// ЗАПУСК
 // ==================================================
-  async function loadStudents() {
-  const app = document.getElementById("app");
 
-  app.innerHTML = `
-    <button
-      class="button back-button"
-      onclick="loadAdmin()"
-    >
-      ← Админка
-    </button>
+async function startApp() {
 
-    <div class="card">
-      <div class="label">
-        👥 УЧЕНИКИ
-      </div>
+  const authResult =
+    await authenticateTelegram();
 
-      <div class="lesson-title">
-        Загрузка...
-      </div>
-    </div>
-  `;
 
-  try {
-    const response = await fetch(
-      "/api/admin-students",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          initData: Telegram.WebApp.initData
-        })
-      }
-    );
+  if (!authResult) {
 
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({}));
+    return;
 
-      throw new Error(
-        (errorData.error || "Ошибка загрузки учеников") +
-        ": " +
-        response.status
-      );
-    }
+  }
 
-    const data = await response.json();
-    const students = data.students || [];
 
-    let html = `
-      <button
-        class="button back-button"
-        onclick="loadAdmin()"
-      >
-        ← Админка
-      </button>
-    `;
+  console.log(
+    "Telegram user:",
+    authResult.user
+  );
 
-    if (!students.length) {
-      html += `
-        <div class="card">
-          <div class="status">
-            Учеников пока нет.
-          </div>
-        </div>
-      `;
-    } else {
-      students.forEach((student, index) => {
-        const name =
-          [
-            student.first_name,
-            student.last_name
-          ]
-            .filter(Boolean)
-            .join(" ") ||
-          "Без имени";
 
-        html += `
-          <div class="card">
+  console.log(
+    "Course access:",
+    authResult.access
+  );
 
-            <div class="label">
-              УЧЕНИК ${index + 1}
-            </div>
 
-            <div class="lesson-title">
-              ${escapeHtml(name)}
-            </div>
+  // ----------------------------------------------
+  // ПРОВЕРКА ДОСТУПА К КУРСУ
+  // ----------------------------------------------
 
-            <div class="description">
-              Telegram ID:
-              ${escapeHtml(student.telegram_id)}
+  if (
+    !authResult.access ||
+    !authResult.access.hasAccess
+  ) {
 
-              ${
-                student.username
-                  ? `<br>Username: @${escapeHtml(student.username)}`
-                  : ""
-              }
+    const app =
+      document.getElementById("app");
 
-              ${
-                student.certificate_name
-                  ? `<br>Сертификат: ${escapeHtml(student.certificate_name)}`
-                  : ""
-              }
-            </div>
-
-            <button
-              class="button"
-              onclick="alert('Управление доступом добавим следующим шагом')"
-            >
-              🚫 Управление доступом
-            </button>
-
-          </div>
-        `;
-      });
-    }
-
-    app.innerHTML = html;
-
-  } catch (error) {
-    console.error(error);
 
     app.innerHTML = `
-      <button
-        class="button back-button"
-        onclick="loadAdmin()"
-      >
-        ← Админка
-      </button>
 
       <div class="card">
-        <div class="error">
-          Не удалось загрузить учеников.
-          <br><br>
-          ${escapeHtml(error.message)}
+
+        <div class="lesson-title">
+          Доступ к обучению не найден
         </div>
+
+        <div class="description">
+
+          У вас пока нет активного доступа
+          к курсу «УПРАВЛЕНИЕ ВНИМАНИЕМ».
+
+        </div>
+
       </div>
+
     `;
+
+
+    return;
+
   }
+
+
+  await loadCourse();
+
 }
-async function loadAdmin() {
 
-  const app =
-    document.getElementById("app");
 
-  app.innerHTML = `
-    <button
-      class="button back-button"
-      onclick="loadCourse()"
-    >
-      ← Назад
-    </button>
+// ==================================================
+// START
+// ==================================================
 
-    <div class="card">
-
-      <div class="label">
-        👨‍💼 АДМИНКА
-      </div>
-
-      <div class="lesson-title">
-        Панель администратора
-      </div>
-
-      <button
-        class="button"
-        onclick="loadStudents()"
-      >
-        👥 Ученики
-      </button>
-
-    </div>
-  `;
-}
-  
 startApp();
+
 
 </script>
 
 </body>
+
 </html>
