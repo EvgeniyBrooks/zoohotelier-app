@@ -1271,6 +1271,38 @@ async function startApp() {
   );
 
 
+  // ==================================================
+  // АДМИНКА
+  // ==================================================
+
+  if (
+    authResult.admin &&
+    authResult.admin.isAdmin
+  ) {
+
+    const app =
+      document.getElementById("app");
+
+    app.insertAdjacentHTML(
+      "afterbegin",
+      `
+        <button
+          class="button"
+          onclick="alert('АДМИНКА')"
+          style="margin-bottom:16px;"
+        >
+          👨‍💼 Админка
+        </button>
+      `
+    );
+
+  }
+
+
+  // ==================================================
+  // ПРОВЕРКА ДОСТУПА К КУРСУ
+  // ==================================================
+
   if (
     !authResult.access ||
     !authResult.access.hasAccess
@@ -1302,22 +1334,7 @@ async function startApp() {
 
   }
 
-if (authResult.admin && authResult.admin.isAdmin) {
-  const app = document.getElementById("app");
 
-  app.insertAdjacentHTML(
-    "afterbegin",
-    `
-      <button
-        class="button"
-        onclick="alert('АДМИНКА')"
-        style="margin-bottom:16px;"
-      >
-        👨‍💼 Админка
-      </button>
-    `
-  );
-}
   await loadCourse();
 
 }
