@@ -439,17 +439,10 @@ module.exports = async (
       );
 
 
-      return res.status(500).json({
-
-        ok: false,
-
-        error:
-          "Не удалось создать поток",
-
-        details:
-          errorText
-
-      });
+     return res.status(500).json({
+  error: error.message || "Не удалось создать поток",
+  details: error
+});
 
     }
 
