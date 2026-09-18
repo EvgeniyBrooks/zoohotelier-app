@@ -1399,10 +1399,11 @@ async function createCohort() {
 
     if (!response.ok) {
 
-      throw new Error(
-        data.error ||
-        "Не удалось создать поток"
-      );
+     throw new Error(
+  data.details
+    ? data.error + ": " + data.details
+    : data.error || "Не удалось создать поток"
+);
 
     }
 
