@@ -450,22 +450,54 @@
 
 
 
-  async function startApp() {
+ async function startApp() {
 
-    const user = await authenticateTelegram();
+  const authResult = await authenticateTelegram();
 
-    if (!user) {
-      return;
-    }
-
-    console.log(
-      "Telegram user:",
-      user
-    );
-
-    await loadLesson(user);
-
+  if (!authResult) {
+    return;
   }
+
+  console.log(
+    "Telegram user:",
+    authResult.user
+  );
+
+  console.log(
+    "Course access:",
+    authResult.access
+  );
+
+
+  if (
+    !authResult.access ||
+    !authResult.access.hasAccess
+  ) {
+
+    const app = document.getElementById("app");
+
+    app.innerHTML = `
+      <div class="card">
+
+        <div class="lesson-title">
+          Доступ к обучению не найден
+        </div>
+
+        <div class="description">
+          У вас пока нет активного доступа к курсу
+          «УПРАВЛЕНИЕ ВНИМАНИЕМ».
+        </div>
+
+      </div>
+    `;
+
+    return;
+  }
+
+
+  await loadLesson(authResult.user);
+
+}
 
 
 
