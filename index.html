@@ -1720,7 +1720,7 @@ async function loadCohort(cohortId) {
 // РЕДАКТИРОВАНИЕ ПОТОКА
 // ==================================================
 
-async function editCohort(cohortId) {
+window.editCohort = async function editCohort(cohortId) {
 
   if (!window.isAdmin) {
     alert("Доступ запрещён.");
