@@ -1726,7 +1726,77 @@ window.editCohort = async function editCohort(cohortId) {
     alert("Доступ запрещён.");
     return;
   }
+window.deleteCohort = async function deleteCohort(cohortId) {
 
+  if (!window.isAdmin) {
+    alert("Доступ запрещён.");
+    return;
+  }
+
+  const confirmed = confirm(
+    "⚠️ Вы точно хотите удалить этот поток?\n\n" +
+    "Удалить поток можно только если в нём нет учеников."
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      "/api/admin-cohort-delete",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+
+          initData:
+            Telegram.WebApp.initData,
+
+          cohortId:
+            cohortId
+
+        })
+      }
+    );
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Не удалось удалить поток"
+      );
+
+    }
+
+    alert("✅ Поток удалён.");
+
+    await loadCohorts();
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "❌ " +
+      (error.message ||
+       "Ошибка удаления потока")
+    );
+
+  }
+
+};
   const app =
     document.getElementById("app");
 
