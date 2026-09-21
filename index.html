@@ -1726,8 +1726,7 @@ window.editCohort = async function editCohort(cohortId) {
     alert("Доступ запрещён.");
     return;
   }
-window.deleteCohort = async function deleteCohort(cohortId) {
-
+window.deleteCohort = async function (cohortId) {
   if (!window.isAdmin) {
     alert("Доступ запрещён.");
     return;
