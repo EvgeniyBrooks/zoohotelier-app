@@ -1716,7 +1716,409 @@ async function loadCohort(cohortId) {
     alert("Доступ запрещён.");
     return;
   }
+// ==================================================
+// РЕДАКТИРОВАНИЕ ПОТОКА
+// ==================================================
 
+async function editCohort(cohortId) {
+
+  if (!window.isAdmin) {
+    alert("Доступ запрещён.");
+    return;
+  }
+
+  const app =
+    document.getElementById("app");
+
+  app.innerHTML = `
+    <button
+      class="button back-button"
+      onclick="loadCohort('${cohortId}')"
+    >
+      ← Назад к потоку
+    </button>
+
+    <div class="card">
+      <div class="label">✏️ РЕДАКТИРОВАНИЕ ПОТОКА</div>
+
+      <div style="margin-top:16px;">
+
+        <div class="label">
+          Название потока
+        </div>
+
+        <input
+          id="edit-cohort-name"
+          type="text"
+          maxlength="100"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <div class="label">
+          Дата начала
+        </div>
+
+        <input
+          id="edit-cohort-start"
+          type="date"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <div class="label">
+          Дата окончания
+        </div>
+
+        <input
+          id="edit-cohort-end"
+          type="date"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <div class="label">
+          Доступ до
+        </div>
+
+        <input
+          id="edit-cohort-access-end"
+          type="date"
+          style="
+            width:100%;
+            padding:14px;
+            border:1px solid #ddd;
+            border-radius:12px;
+            font-size:16px;
+            box-sizing:border-box;
+            margin-bottom:14px;
+          "
+        >
+
+        <button
+          class="button"
+          onclick="saveCohort('${cohortId}')"
+        >
+          💾 Сохранить изменения
+        </button>
+
+        <div
+          id="edit-cohort-status"
+          style="
+            margin-top:12px;
+            font-size:14px;
+            color:#777;
+          "
+        ></div>
+
+      </div>
+    </div>
+  `;
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin-cohort",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            initData:
+              Telegram.WebApp.initData,
+
+            cohortId:
+              cohortId,
+
+            action:
+              "view"
+
+          })
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.details
+          ? data.error +
+            ": " +
+            data.details
+          : data.error ||
+            "Не удалось загрузить поток"
+      );
+
+    }
+
+
+    const cohort =
+      data.cohort;
+
+
+    if (!cohort) {
+      throw new Error(
+        "Поток не найден"
+      );
+    }
+
+
+    document
+      .getElementById(
+        "edit-cohort-name"
+      )
+      .value =
+        cohort.name || "";
+
+
+    document
+      .getElementById(
+        "edit-cohort-start"
+      )
+      .value =
+        cohort.start_date || "";
+
+
+    document
+      .getElementById(
+        "edit-cohort-end"
+      )
+      .value =
+        cohort.end_date || "";
+
+
+    document
+      .getElementById(
+        "edit-cohort-access-end"
+      )
+      .value =
+        cohort.access_end_date || "";
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    document
+      .getElementById(
+        "edit-cohort-status"
+      )
+      .textContent =
+        "❌ " + error.message;
+
+  }
+
+}
+
+
+// ==================================================
+// СОХРАНЕНИЕ ПОТОКА
+// ==================================================
+
+async function saveCohort(cohortId) {
+
+  const name =
+    document
+      .getElementById(
+        "edit-cohort-name"
+      )
+      .value
+      .trim();
+
+
+  const startDate =
+    document
+      .getElementById(
+        "edit-cohort-start"
+      )
+      .value;
+
+
+  const endDate =
+    document
+      .getElementById(
+        "edit-cohort-end"
+      )
+      .value;
+
+
+  const accessEndDate =
+    document
+      .getElementById(
+        "edit-cohort-access-end"
+      )
+      .value;
+
+
+  const status =
+    document
+      .getElementById(
+        "edit-cohort-status"
+      );
+
+
+  if (!name) {
+
+    status.textContent =
+      "❌ Укажите название потока";
+
+    status.style.color =
+      "#b00020";
+
+    return;
+
+  }
+
+
+  if (
+    !startDate ||
+    !endDate ||
+    !accessEndDate
+  ) {
+
+    status.textContent =
+      "❌ Заполните все даты";
+
+    status.style.color =
+      "#b00020";
+
+    return;
+
+  }
+
+
+  status.textContent =
+    "Сохраняем...";
+
+
+  status.style.color =
+    "#777";
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin-cohort",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            initData:
+              Telegram.WebApp.initData,
+
+            cohortId:
+              cohortId,
+
+            action:
+              "update",
+
+            name:
+              name,
+
+            startDate:
+              startDate,
+
+            endDate:
+              endDate,
+
+            accessEndDate:
+              accessEndDate
+
+          })
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.details
+          ? data.error +
+            ": " +
+            data.details
+          : data.error ||
+            "Не удалось сохранить поток"
+      );
+
+    }
+
+
+    status.textContent =
+      "✅ Изменения сохранены";
+
+
+    status.style.color =
+      "#16803c";
+
+
+    setTimeout(
+      () => {
+        loadCohort(cohortId);
+      },
+      700
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    status.textContent =
+      "❌ " + error.message;
+
+    status.style.color =
+      "#b00020";
+
+  }
+
+}
   const app =
     document.getElementById("app");
 
