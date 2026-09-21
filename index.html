@@ -2293,7 +2293,16 @@ window.saveCohort = async function saveCohort(cohortId) {
           ⚙️ УПРАВЛЕНИЕ
         </div>
 
-       <button
+      <button
+  class="button"
+  onclick="editCohort(
+    '${cohort.id}'
+  )"
+>
+  ✏️ Редактировать поток
+</button>
+
+<button
   class="button"
   style="
     margin-top:10px;
