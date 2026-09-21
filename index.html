@@ -1706,11 +1706,237 @@ function formatDate(value) {
 // ОТКРЫТИЕ ПОТОКА
 // ==================================================
 
+// ==================================================
+// ОТКРЫТИЕ ПОТОКА
+// ==================================================
+
 async function loadCohort(cohortId) {
 
-  alert(
-    "Поток выбран. Управление потоком добавим следующим шагом."
-  );
+  if (!window.isAdmin) {
+    alert("Доступ запрещён.");
+    return;
+  }
+
+  const app =
+    document.getElementById("app");
+
+  app.innerHTML = `
+
+    <button
+      class="button back-button"
+      onclick="loadCohorts()"
+    >
+      ← К потокам
+    </button>
+
+    <div class="card">
+
+      <div class="label">
+        📚 ПОТОК
+      </div>
+
+      <div class="lesson-title">
+        Загрузка...
+      </div>
+
+    </div>
+
+  `;
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin-cohort",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            initData:
+              Telegram.WebApp.initData,
+
+            cohortId:
+              cohortId,
+
+            action:
+              "view"
+
+          })
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.details
+          ? data.error +
+            ": " +
+            data.details
+          : data.error ||
+            "Не удалось загрузить поток"
+      );
+
+    }
+
+
+    const cohort =
+      data.cohort;
+
+
+    if (!cohort) {
+      throw new Error(
+        "Поток не найден"
+      );
+    }
+
+
+    const startDate =
+      formatDate(
+        cohort.start_date
+      );
+
+    const endDate =
+      formatDate(
+        cohort.end_date
+      );
+
+    const accessEndDate =
+      formatDate(
+        cohort.access_end_date
+      );
+
+
+    app.innerHTML = `
+
+      <button
+        class="button back-button"
+        onclick="loadCohorts()"
+      >
+        ← К потокам
+      </button>
+
+
+      <div class="card">
+
+        <div class="label">
+          📚 ПОТОК
+        </div>
+
+        <div class="lesson-title">
+          ${escapeHtml(
+            cohort.name
+          )}
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="label">
+          📅 ДАТЫ ОБУЧЕНИЯ
+        </div>
+
+        <div
+          style="
+            font-size:18px;
+            font-weight:600;
+            margin-top:8px;
+          "
+        >
+          ${startDate}
+          —
+          ${endDate}
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="label">
+          🔐 ДОСТУП К КУРСУ
+        </div>
+
+        <div
+          style="
+            font-size:18px;
+            font-weight:600;
+            margin-top:8px;
+          "
+        >
+          До ${accessEndDate}
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="label">
+          ⚙️ УПРАВЛЕНИЕ
+        </div>
+
+        <button
+          class="button"
+          onclick="editCohort(
+            '${cohort.id}'
+          )"
+        >
+          ✏️ Редактировать поток
+        </button>
+
+      </div>
+
+    `;
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    app.innerHTML = `
+
+      <button
+        class="button back-button"
+        onclick="loadCohorts()"
+      >
+        ← К потокам
+      </button>
+
+      <div class="card">
+
+        <div class="error">
+
+          Не удалось загрузить поток.
+
+          <br><br>
+
+          ${escapeHtml(
+            error.message
+          )}
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
 
 }
 async function loadStudents() {
