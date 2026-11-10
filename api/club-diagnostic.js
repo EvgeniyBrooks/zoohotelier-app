@@ -20,7 +20,12 @@ function verify(initData){
 async function db(path,options={}){
   const response=await fetch(URL_BASE+"/rest/v1/"+path,{...options,headers:{...headers(),...(options.headers||{})}});
   const data=await response.json().catch(()=>null);
-  if(!response.ok)throw Object.assign(new Error("Database operation failed"),{status:502});
+  if(!response.ok){
+    const table=String(path).split("?")[0];
+    const safeCode=typeof data?.code==="string"?data.code.slice(0,32):"unknown";
+    console.error("Club DB request failed",JSON.stringify({table,httpStatus:response.status,code:safeCode}));
+    throw Object.assign(new Error("Database operation failed"),{status:502});
+  }
   return data;
 }
 function recommend(a){
