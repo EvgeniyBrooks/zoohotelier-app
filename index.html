@@ -290,6 +290,16 @@
 #app .block-card .week-open span{font-size:26px!important}
 @media(max-width:400px){.week-thumb{width:80px;min-width:80px}.course-hero{min-height:230px!important}#app .block-card{gap:9px}#app .block-card .week-open{width:35px;min-width:35px}#app .block-card .block-title{font-size:19px!important}}
 
+
+/* Readable lesson titles and photographic thumbnails */
+#app .block-card .block-title{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;text-transform:none!important;font-size:clamp(16px,4.4vw,21px)!important;font-weight:800!important;line-height:1.23!important;letter-spacing:-.35px!important;color:#f6f6f6!important;overflow-wrap:anywhere}
+#app .block-card .label{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;font-size:11px!important;letter-spacing:.5px!important}
+.week-thumb{padding:0!important;overflow:hidden!important;position:relative;background:#292929!important}
+.week-thumb img{width:100%;height:100%;min-height:100%;object-fit:cover;display:block}
+#app .block-card .block-info{color:#c8c8c8!important;font-weight:600!important}
+#app .block-card{gap:12px!important}
+@media(max-width:400px){#app .block-card .block-title{font-size:16px!important}.week-thumb{width:90px!important;min-width:90px!important}}
+
   </style>
 
 </head>
@@ -719,7 +729,13 @@ async function loadCourse() {
               )"
             >
 
-              <div class="week-thumb week-thumb-${block.block_number}" aria-hidden="true"><span>${block.block_number===0?'00':String(block.block_number).padStart(2,'0')}</span></div>
+              <div class="week-thumb week-thumb-${block.block_number}" aria-hidden="true"><img src="${[
+'https://images.unsplash.com/photo-1552053831-71594a27632d?w=360&q=75',
+'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=360&q=75',
+'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=360&q=75',
+'https://images.unsplash.com/photo-1558788353-f76d92427f16?w=360&q=75',
+'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=360&q=75'
+][block.block_number]||'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=360&q=75'}" alt="" loading="lazy" onerror="this.style.display='none'"></div>
               <div class="week-main"><div class="label">
                 ${block.block_number===0?"ПРЕДОБУЧЕНИЕ":"НЕДЕЛЯ "+block.block_number}
               </div>
