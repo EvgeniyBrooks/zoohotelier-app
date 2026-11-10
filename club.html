@@ -46,6 +46,7 @@ async function loadClubProfile(){
   const aiSelect=document.getElementById('ai-dog');aiSelect.replaceChildren();
   for(const dog of clubDogs){const option=document.createElement('option');option.value=dog.id;option.textContent=dog.name;aiSelect.append(option)}
   aiSelect.value=clubDiagnostics[0]?.dog_id||clubDogs[0].id;
+  showAiNextStep();
   const routeSelect=document.getElementById('route-dog');routeSelect.replaceChildren();
   for(const d of clubDogs){const opt=document.createElement('option');opt.value=d.id;opt.textContent=d.name;routeSelect.append(opt)}
   routeSelect.value=clubDiagnostics[0]?.dog_id||clubDogs[0].id;
@@ -76,6 +77,7 @@ async function loadClubLessons(){
   const data=await r.json();
   clubLessonCache=data.lessons||[];
   renderRoute();
+  showAiNextStep();
   el.replaceChildren();
   if(!data.lessons?.length){el.textContent='Первые уроки клуба скоро появятся.';return}
   el.className='';
@@ -147,8 +149,9 @@ function renderRoute(){
   const block=document.createElement('div');block.className='route-topic';
   const rank=document.createElement('div');rank.className='route-count';rank.textContent='НАПРАВЛЕНИЕ '+(i+1);
   const h=document.createElement('h3');h.textContent=routeTopicLabels[key];block.append(rank,h);
-  const matches=clubLessonCache.filter(l=>l.topic===key);
+  const matches=clubLessonCache.filter(l=>l.topic===key).sort((a,b)=>a.sort_order-b.sort_order);
   if(!matches.length){const p=document.createElement('p');p.textContent='Видеоуроки этого направления скоро появятся.';block.append(p)}
+  else {const pending=matches.find(l=>!routeProgress.has(l.id));const tip=document.createElement('p');tip.style.color='#F5FA45';tip.textContent=pending?'Следующий шаг: '+pending.title:'Все доступные уроки отмечены. Проверь, получается ли навык в реальной ситуации.';block.append(tip)}
   for(const lesson of matches){
    const line=document.createElement('div');line.className='route-lesson';
    const info=document.createElement('div');const name=document.createElement('strong');name.textContent=lesson.title;
@@ -176,6 +179,21 @@ async function openClubLesson(id,title){
   modal.addEventListener('close',()=>modal.remove());document.body.append(modal);modal.showModal();
  }catch(e){alert(e.message)}
 }
+function showAiNextStep(){
+ const el=document.getElementById('ai-recommendations');
+ if(!el)return;
+ const dogId=document.getElementById('ai-dog').value;
+ const diagnostic=clubDiagnostics.find(d=>d.dog_id===dogId);
+ if(!diagnostic){el.textContent='Пройди диагностику выбранной собаки, чтобы НОЯ подобрала программу.';return}
+ const keys=Array.isArray(diagnostic.recommended_topics)?diagnostic.recommended_topics:[];
+ const ranked=clubLessonCache.filter(l=>keys.includes(l.topic)).sort((a,b)=>(keys.indexOf(a.topic)-keys.indexOf(b.topic))||(a.sort_order-b.sort_order));
+ const next=ranked.find(l=>!routeProgress.has(l.id));
+ el.replaceChildren();
+ const title=document.createElement('strong');title.textContent='Следующий шаг по диагностике';el.append(title);
+ const p=document.createElement('p');p.textContent=next?'Рекомендуем начать с урока: '+next.title:'Подходящие опубликованные уроки пока не найдены. Спроси НОЮ, как безопасно начать работу по диагностике.';el.append(p);
+ if(next){const b=document.createElement('button');b.className='button secondary';b.textContent='Смотреть урок';b.onclick=()=>openClubLesson(next.id,next.title);el.append(b)}
+}
+document.getElementById('ai-dog').addEventListener('change',showAiNextStep);
 const aiHistory=[];
 document.querySelectorAll('[data-ai-suggestion]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('ai-input').value=b.dataset.aiSuggestion;document.getElementById('ai-input').focus()}));
 document.getElementById('ai-form').addEventListener('submit',async e=>{
