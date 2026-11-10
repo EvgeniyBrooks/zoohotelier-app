@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Клуб · Диагностика (прототип)</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#f5f5f5;background:#111}*{box-sizing:border-box}body{margin:0}main{max-width:520px;margin:auto;padding:24px 18px 80px}.eyebrow{color:#ff983c;font-size:12px;font-weight:800;letter-spacing:2px}h1{font-size:29px;line-height:1.15;margin:12px 0}p{color:#bcbcbc;line-height:1.5}.panel{background:#1d1d1d;border:1px solid #353535;border-radius:18px;padding:22px;margin:22px 0}.progress{height:6px;border-radius:5px;background:#383838;overflow:hidden}.progress div{height:100%;background:#ff842b;transition:width .2s}button{font:inherit;cursor:pointer}.choice{display:block;width:100%;background:#292929;border:1px solid #484848;color:white;padding:15px;text-align:left;border-radius:12px;margin:10px 0;line-height:1.4}.choice:hover,.choice:focus{border-color:#ff842b}.primary{background:#ff842b;color:#111;font-weight:800;border:0;padding:14px 18px;border-radius:12px;width:100%;margin-top:14px}.secondary{background:none;color:#aaa;border:0;padding:12px}.step{color:#ff983c;font-weight:700;font-size:14px}.topic{background:#292929;border-radius:12px;padding:15px;margin:10px 0}.topic strong{display:block;margin-bottom:6px}.topic small{color:#bbb}.notice{border-left:3px solid #ff983c;padding-left:12px;color:#ddd}.muted{font-size:12px;color:#999}#back{display:none}
+</style></head><body><main>
+<div class="eyebrow">ЗООХОТЕЛЬЕР · КЛУБ</div><h1 id="heading">Твоя персональная дорожная карта</h1>
+<p id="intro">Ответь на 10 коротких вопросов. Мы подберём направления обучения для тебя и твоей собаки.</p>
+<div class="progress"><div id="bar" style="width:0%"></div></div>
+<section class="panel" id="panel"><button class="primary" id="start">Начать диагностику</button></section>
+<button class="secondary" id="back">← Назад</button>
+<p class="muted">Демонстрационная версия. Ответы не отправляются на сервер и не сохраняются. Это не ветеринарная или поведенческая диагностика.</p>
+</main><script>
+const questions=[
+["Что сейчас больше всего беспокоит тебя в поведении собаки?",["Не слушается и плохо управляется","Боится или тревожится","Плохо взаимодействует с другими собаками","В целом всё хорошо, хочу развиваться"]],
+["Как собака ведёт себя дома?",["Много требует внимания, мешает отдыхать","Бывает беспокойной или разрушает вещи","В основном спокойная, но есть сложности","Спокойно живёт по домашним правилам"]],
+["Как проходят ваши прогулки?",["Постоянно тянет поводок","Реагирует на собак, людей или раздражители","Гуляет нормально, но внимание нестабильное","Гуляем спокойно и комфортно"]],
+["Как собака реагирует на незнакомых собак?",["Боится или старается избегать","Лает, тянет или бурно реагирует","Интересуется, но может контролировать себя","Спокойно проходит или знакомится"]],
+["Как собака реагирует на незнакомых людей?",["Боится или избегает контакта","Прыгает, лает или чрезмерно возбуждается","Сначала настораживается, потом привыкает","Ведёт себя спокойно"]],
+["Насколько хорошо собака переключает внимание на тебя?",["Почти не обращает внимания","Дома слушает, на улице сложно","В знакомых местах получается хорошо","Умеет переключаться даже при отвлечениях"]],
+["Как собака переносит одиночество?",["Сильно тревожится, скулит или разрушает вещи","Беспокоится, но постепенно успокаивается","Обычно остаётся спокойно","Не сталкивались с такой проблемой"]],
+["Насколько хорошо ты понимаешь поведение своей собаки?",["Часто не понимаю, почему она так делает","Иногда понимаю, но не всегда","В большинстве ситуаций понимаю","Хорошо читаю её сигналы и понимаю причины поведения"]],
+["Чего тебе больше всего хочется достичь?",["Послушания и управляемости","Спокойствия и уверенности собаки","Доверия, контакта и взаимопонимания","Комфортной совместной жизни во всех ситуациях"]],
+["Как бы ты оценил ваши отношения сейчас?",["Есть сложности, часто не понимаем друг друга","Есть контакт, но много нерешённых вопросов","Хорошие отношения, хочу улучшить взаимодействие","Мы отлично понимаем друг друга, хочу поддерживать результат"]]
+];
+const topics={
+understanding:["Понимание поведения","Как распознавать сигналы собаки и причины реакций"],
+attention:["Контакт и внимание","Переключение внимания в разных условиях"],
+social:["Социализация","Взаимодействие с собаками и людьми без принуждения"],
+walks:["Прогулки","Поводок, дистанция и управление возбуждением"],
+home:["Быт и правила","Спокойствие дома и понятные правила"],
+emotions:["Эмоциональная устойчивость","Работа с тревогой и трудностями одиночества"],
+advanced:["Совместная жизнь","Новые навыки и поддержание результата"]
+};
+let answers=[],index=0;
+const panel=document.getElementById("panel"),heading=document.getElementById("heading"),intro=document.getElementById("intro"),back=document.getElementById("back"),bar=document.getElementById("bar");
+document.getElementById("start").onclick=()=>renderQuestion();
+back.onclick=()=>{if(index>0){index--;renderQuestion()}else{index=0;answers=[];location.reload()}};
+function renderQuestion(){
+heading.textContent="Знакомство с твоей собакой";intro.textContent="Выбери один ответ, который лучше всего описывает вашу ситуацию.";
+back.style.display="inline-block";bar.style.width=(index/questions.length*100)+"%";
+const q=questions[index];panel.replaceChildren();
+const step=document.createElement("div");step.className="step";step.textContent="Вопрос "+(index+1)+" из "+questions.length;panel.append(step);
+const title=document.createElement("h2");title.textContent=q[0];panel.append(title);
+q[1].forEach((option,i)=>{const btn=document.createElement("button");btn.className="choice";btn.textContent=option;btn.onclick=()=>{answers[index]=i;index++;if(index<questions.length)renderQuestion();else renderResults()};panel.append(btn)});
+}
+function rank(){
+const s={understanding:0,attention:0,social:0,walks:0,home:0,emotions:0,advanced:0};
+const add=(key,n)=>s[key]+=n;
+if(answers[0]===0){add("attention",3);add("home",1)}if(answers[0]===1)add("emotions",3);if(answers[0]===2)add("social",4);if(answers[0]===3)add("advanced",3);
+if(answers[1]===0||answers[1]===1)add("home",3);if(answers[1]===2)add("home",1);
+if(answers[2]===0)add("walks",4);if(answers[2]===1){add("walks",3);add("social",2)}if(answers[2]===2)add("attention",2);
+if(answers[3]===0||answers[3]===1)add("social",4);if(answers[3]===2)add("social",1);
+if(answers[4]===0||answers[4]===1)add("social",3);if(answers[4]===2)add("social",1);
+if(answers[5]===0)add("attention",5);if(answers[5]===1)add("attention",4);if(answers[5]===2)add("attention",2);
+if(answers[6]===0)add("emotions",8);if(answers[6]===1)add("emotions",4);
+if(answers[7]===0)add("understanding",5);if(answers[7]===1)add("understanding",3);if(answers[7]===2)add("understanding",1);
+if(answers[8]===0)add("attention",2);if(answers[8]===1)add("emotions",2);if(answers[8]===2){add("understanding",2);add("attention",1)}if(answers[8]===3)add("advanced",1);
+if(answers[9]===0){add("understanding",2);add("attention",1)}if(answers[9]===1)add("understanding",1);if(answers[9]===3)add("advanced",2);
+return Object.entries(s).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0).map(x=>x[0]);
+}
+function renderResults(){
+heading.textContent="Твоя дорожная карта";intro.textContent="Начни с нескольких направлений. Остальные материалы будут доступны в библиотеке клуба.";bar.style.width="100%";back.style.display="none";panel.replaceChildren();
+const goal=document.createElement("p");goal.innerHTML="<strong>Твоя цель:</strong> ";goal.append(document.createTextNode(questions[8][1][answers[8]]));panel.append(goal);
+const h=document.createElement("h2");h.textContent="С чего начать";panel.append(h);
+rank().slice(0,3).forEach((key,i)=>{const el=document.createElement("div");el.className="topic";const strong=document.createElement("strong");strong.textContent=(i+1)+". "+topics[key][0];const small=document.createElement("small");small.textContent=topics[key][1];el.append(strong,small);panel.append(el)});
+if(answers[6]===0){const p=document.createElement("p");p.className="notice";p.textContent="Ты отметил сильное беспокойство при одиночестве. Это отдельная важная тема: рекомендуем индивидуальную оценку специалиста, работающего с поведением собак, и исключение медицинских причин.";panel.append(p)}
+const note=document.createElement("p");note.className="muted";note.textContent="Рекомендации основаны на ответах владельца, а не на оценке собаки специалистом. Названия материалов пока примерные.";panel.append(note);
+const restart=document.createElement("button");restart.className="primary";restart.textContent="Пройти заново";restart.onclick=()=>{answers=[];index=0;renderQuestion()};panel.append(restart);
+}
+</script></body></html>
