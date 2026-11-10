@@ -6,7 +6,7 @@
 </style></head><body><main>
 <header class="top"><div><div class="logo">NOYA CLUB</div><div class="by">by Brooks</div></div><div class="profile" aria-label="NOYA">N</div></header>
 <section id="home" class="screen" aria-labelledby="home-title"><div class="eyebrow">Клуб собачников</div><h1 id="home-title">НАЧНИ С КОНТАКТА</h1><p>Твоя собака, твои цели и свой маршрут обучения.</p>
-<div class="trajectory"><div class="eyebrow">Твоя траектория</div><h2>СОБАКА-КОМПАНЬОН</h2><p>Ответь на 10 вопросов, чтобы определить направления работы с собакой.</p><a class="cta" href="./club-demo.html"><span>Начать диагностику</span><span class="arrow">→</span></a></div>
+<div class="trajectory"><div class="eyebrow">Твоя траектория</div><h2 id="trajectory-title">СОБАКА-КОМПАНЬОН</h2><p id="trajectory-text">Ответь на 10 вопросов, чтобы определить направления работы с собакой.</p><a class="cta" href="./club-demo.html"><span id="trajectory-action">Начать диагностику</span><span class="arrow">→</span></a></div>
 <div class="section"><div class="eyebrow">Твоё пространство</div><h2>НАЧНИ ЗДЕСЬ</h2><div class="tiles">
 <a class="tile" href="./club-demo.html"><span class="glyph">◇</span><strong>МОЯ СОБАКА</strong><small>Профиль и диагностика</small></a>
 <div class="tile inactive"><span class="glyph">↗</span><strong>МОЙ МАРШРУТ</strong><small>Персональный план — скоро</small></div>
@@ -29,4 +29,22 @@ nav.forEach(n=>n.addEventListener('click',()=>showScreen(n.dataset.screen)));
 const empty={history:['ИСТОРИЯ ПОКА ПУСТА','Здесь появятся просмотренные уроки, когда мы подключим библиотеку клуба.'],favorites:['НЕТ ИЗБРАННЫХ УРОКОВ','Когда появятся уроки, ты сможешь сохранять понравившиеся.'],completed:['ПОКА НЕТ ПРОЙДЕННЫХ УРОКОВ','После подключения уроков здесь будет история завершённых занятий.']};
 document.querySelectorAll('[data-library]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-library]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));const v=empty[b.dataset.library];const el=document.getElementById('library-content');el.replaceChildren();const h=document.createElement('h3');h.textContent=v[0];el.append(h,document.createTextNode(v[1]));}));
 showScreen(location.hash.slice(1)||'home');
+
+async function loadClubProfile(){
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)return;
+ try{
+  const response=await fetch("/api/club-diagnostic",{headers:{"x-telegram-init-data":initData}});
+  if(!response.ok)return;
+  const data=await response.json();
+  if(!data.dogs?.length)return;
+  const latest=data.diagnostics?.[0];
+  const dog=latest?data.dogs.find(d=>d.id===latest.dog_id):data.dogs[0];
+  if(!dog)return;
+  document.getElementById("trajectory-title").textContent=dog.name.toUpperCase();
+  document.getElementById("trajectory-text").textContent=latest?"Маршрут уже сохранён. Открой его или пройди диагностику повторно.":"Профиль создан. Пройди диагностику, чтобы получить маршрут.";
+  document.getElementById("trajectory-action").textContent=latest?"Открыть мой маршрут":"Пройти диагностику";
+ }catch(e){console.warn("Club profile unavailable")}
+}
+loadClubProfile();
 </script></body></html>
