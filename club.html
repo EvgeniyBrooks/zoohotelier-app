@@ -272,4 +272,27 @@ async function checkNoyaTelegram(){
   el.textContent='Авторизация не подтверждена ('+r.status+'). Проверь запуск через @NoyaClubBrooksBot.';
  }catch(e){el.textContent='Не удалось проверить авторизацию. Попробуй ещё раз.'}
 }
+async function loadClubAdmin(){
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)return;
+ const state=document.getElementById('admin-state');
+ try{
+  const r=await fetch('/api/club-lessons?admin=overview',{headers:{'x-telegram-init-data':initData}});
+  if(r.status===403)return;
+  const data=await r.json();
+  if(!r.ok)throw Error('Не удалось загрузить аналитику (HTTP '+r.status+')');
+  document.getElementById('admin-nav').style.display='flex';
+  const summary=document.getElementById('admin-summary');summary.replaceChildren();
+  for(const [name,key] of [['Активные подписчики','activeMembers'],['Собаки','dogs'],['Диагностики','diagnosedDogs'],['Пройденные уроки','completedLessons'],['Результаты практики','practiceReports'],['Диалоги за 24 часа','aiChatsLast24h'],['Опубликованные уроки','publishedLessons']]){
+   const p=document.createElement('p');p.textContent=name+': '+data.summary[key];summary.append(p);
+  }
+  const topics=document.getElementById('admin-topics');topics.replaceChildren();
+  for(const item of data.topics){const p=document.createElement('p');p.textContent=item.topic+': '+item.count;topics.append(p)}
+  if(!data.topics.length)topics.textContent='Пока нет диагностик';
+  const o=data.outcomes;document.getElementById('admin-outcomes').textContent='Получилось: '+o.success+' · Частично: '+o.partial+' · Не получилось: '+o.difficulty;
+  state.textContent='Статистика обновлена';
+ }catch(e){state.textContent=e.message;console.warn('NOYA admin overview unavailable',e.message)}
+}
+document.getElementById('admin-refresh').addEventListener('click',loadClubAdmin);
+loadClubAdmin();
 </script></body></html>
