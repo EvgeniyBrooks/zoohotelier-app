@@ -42,8 +42,10 @@ module.exports=async function handler(req,res){
   res.setHeader("Cache-Control","no-store");
   if(!["GET","POST"].includes(req.method)){res.setHeader("Allow","GET, POST");return res.status(405).json({error:"Method not allowed"})}
   try{
-    if(!URL_BASE||!KEY||!process.env.NOYA_TELEGRAM_BOT_TOKEN)throw new Error("Missing server configuration");
+    if(!process.env.NOYA_TELEGRAM_BOT_TOKEN)throw new Error("Missing NOYA bot configuration");
     const telegramId=verify(req.method==="POST"?req.body?.initData:req.headers["x-telegram-init-data"]);
+    if(req.method==="GET"&&req.query?.authOnly==="1")return res.status(200).json({ok:true,authenticated:true});
+    if(!URL_BASE||!KEY)throw new Error("Missing database configuration");
     const students=await db("students?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1");
     if(!students?.length)return res.status(403).json({error:"Student profile not found"});
     const studentId=students[0].id;
