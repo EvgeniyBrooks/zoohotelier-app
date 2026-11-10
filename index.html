@@ -937,7 +937,7 @@ async function loadLessons(
           <div class="status">Уроки пока не опубликованы.</div>
         </div>
       `;
-      app.innerHTML = html + completeHtml;
+      app.innerHTML = html;
       return;
     }
 
@@ -1096,6 +1096,7 @@ async function loadLesson(
           +${lesson.crystal_reward || 0} кристаллов
         </div>
       </div>
+      ${completeHtml}
     `;
 
   } catch (error) {
