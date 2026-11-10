@@ -14,6 +14,7 @@
 
   <!-- Telegram Mini App -->
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+  <script src="https://embed.cloudflarestream.com/embed/sdk.latest.js" defer></script>
 
   <style>
 
@@ -239,6 +240,48 @@ const CLOUDFLARE_CUSTOMER =
   "customer-9y0wom20nneqpu4g.cloudflarestream.com";
 
 
+let activeCourseWatch=null;
+function setupAutomaticLessonCompletion(lessonId,alreadyDone){
+ if(activeCourseWatch){activeCourseWatch.cancelled=true;activeCourseWatch=null}
+ const iframe=document.getElementById('course-video-player');
+ const status=document.getElementById('course-watch-status');
+ if(!iframe||alreadyDone){if(status&&alreadyDone)status.textContent='✓ Урок уже пройден';return}
+ if(typeof window.Stream!=='function'){if(status)status.textContent='Автоматическое отслеживание недоступно. Можно отметить урок вручную.';return}
+ const watch={cancelled:false,lastTime:null,watched:0,saving:false,completed:false};
+ activeCourseWatch=watch;
+ try{
+  const player=window.Stream(iframe);
+  const update=async()=>{
+   if(watch.cancelled||watch.saving||watch.completed)return;
+   const duration=Number(player.duration),current=Number(player.currentTime);
+   if(!Number.isFinite(duration)||duration<=0||!Number.isFinite(current))return;
+   if(watch.lastTime!==null){
+    const delta=current-watch.lastTime;
+    if(delta>0&&delta<=2.5)watch.watched+=delta;
+   }
+   watch.lastTime=current;
+   const percent=Math.min(100,Math.floor(100*watch.watched/duration));
+   if(status)status.textContent='Просмотрено: '+percent+'% из 90% для завершения урока';
+   if(watch.watched<duration*.9)return;
+   watch.saving=true;
+   if(status)status.textContent='Сохраняем прохождение урока…';
+   try{
+    await courseProgressRequest('course_complete',{lessonId,completed:true});
+    if(watch.cancelled)return;
+    watch.completed=true;
+    if(!courseProgress.completed.includes(lessonId))courseProgress.completed.push(lessonId);
+    if(status)status.textContent='✓ Урок просмотрен и отмечен пройденным';
+    const button=document.getElementById('course-manual-complete');
+    if(button)button.textContent='Урок завершён ✓';
+   }catch(e){watch.saving=false;if(status)status.textContent='Не удалось сохранить просмотр: '+e.message}
+  };
+  player.addEventListener('timeupdate',update);
+  player.addEventListener('seeking',()=>{watch.lastTime=null});
+  player.addEventListener('pause',()=>{watch.lastTime=null});
+  player.addEventListener('ended',update);
+  if(status)status.textContent='Просмотри 90% видео — урок завершится автоматически';
+ }catch(e){if(status)status.textContent='Автоматическое отслеживание недоступно. Можно отметить урок вручную.'}
+}
 let courseProgress={blocks:[],lessons:[],completed:[]};
 async function courseProgressRequest(action,extra={}){
  const initData=window.Telegram?.WebApp?.initData;
@@ -982,7 +1025,7 @@ async function loadLesson(
     let videoHtml = "";
     const completeHtml=`<div class="card" style="border:1px solid #ddd">
       <div style="font-weight:700;margin-bottom:10px">Прогресс урока: ${alreadyDone?'✓ Завершён':'Ещё не завершён'}</div>
-      <button class="button" onclick="markCourseLesson('${lesson.id}',${!alreadyDone},'${currentBlockId}','${escapeHtml(blockTitle)}')">${alreadyDone?'Отменить отметку':'Отметить урок пройденным'}</button>
+      <button id="course-manual-complete" class="button" onclick="markCourseLesson('${lesson.id}',${!alreadyDone},'${currentBlockId}','${escapeHtml(blockTitle)}')">${alreadyDone?'Отменить отметку':'Отметить урок пройденным'}</button>
       <p style="margin-top:10px;font-size:12px;color:#777">Просмотр урока и выполнение упражнения — разные результаты.</p>
     </div>`;
 
@@ -1012,12 +1055,13 @@ async function loadLesson(
         <div class="card">
           <div class="label">🎬 ВИДЕО УРОКА</div>
           <div class="video-wrapper">
-            <iframe
+            <iframe id="course-video-player"
               src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
               allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
               allowfullscreen>
             </iframe>
           </div>
+          <p id="course-watch-status" style="font-size:13px;color:#777;margin-top:12px">Просмотри 90% видео — урок завершится автоматически</p>
         </div>
       `;
     }
@@ -1062,6 +1106,7 @@ async function loadLesson(
       </div>
       ${completeHtml}
     `;
+    if(lesson.video_url)setupAutomaticLessonCompletion(lesson.id,alreadyDone);
 
   } catch (error) {
     console.error(error);
