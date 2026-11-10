@@ -262,6 +262,34 @@
 #app .lesson-card .lesson-number{color:#555!important}
 #app .week-open{min-height:49px!important;font-size:15px!important}
 
+
+/* Reference-inspired course home */
+.course-profile{display:flex;align-items:center;gap:13px;background:#171717;border:1px solid #363636;border-radius:20px;padding:13px 15px;margin:0 0 17px;min-height:77px}
+.course-avatar{width:51px;height:51px;border-radius:50%;display:grid;place-items:center;background:#2e2e2e;font-size:24px;overflow:hidden;flex-shrink:0}
+.course-avatar img{width:100%;height:100%;object-fit:cover}
+.course-profile-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.course-profile-copy strong{font-size:16px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.course-profile-copy span{font-size:11px;font-weight:800;color:#f5fa45;letter-spacing:.5px}
+.course-profile-arrow{font-size:30px;color:#f5fa45}
+.course-hero{min-height:255px!important;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.course-hero:after{content:'';position:absolute;right:-42px;top:-65px;width:200px;height:240px;transform:rotate(-25deg);background:repeating-linear-gradient(90deg,transparent 0 16px,#171717 17px 22px,transparent 23px 31px);opacity:.12;pointer-events:none}
+.course-hero-title{font-style:italic;font-weight:900!important;font-size:clamp(38px,9.8vw,59px)!important}
+.course-hero-actions{position:relative;z-index:1}
+.course-section-head{font-size:28px!important;letter-spacing:.1px}
+#app .block-card{display:flex!important;align-items:center;gap:14px;min-height:122px!important;padding:13px!important;box-shadow:none!important;border-radius:19px!important}
+.week-thumb{width:108px;min-width:108px;align-self:stretch;min-height:99px;border-radius:13px;background:linear-gradient(145deg,#4c4d24,#181818 72%);display:flex;align-items:flex-end;padding:10px;color:#f5fa45;font:800 34px Oswald,Impact,sans-serif}
+.week-thumb-1{background:linear-gradient(135deg,#524a25,#202c21 55%,#101010)}
+.week-thumb-2{background:linear-gradient(135deg,#384b2c,#171717 65%)}
+.week-thumb-3{background:linear-gradient(135deg,#383548,#171717 65%)}
+.week-thumb-4{background:linear-gradient(135deg,#5c3c21,#171717 65%)}
+.week-main{flex:1;min-width:0}
+#app .block-card .block-title{font-size:clamp(19px,4.8vw,25px)!important;margin:4px 0 9px!important}
+#app .block-card .block-info{font-size:12px!important}
+#app .block-card [role=progressbar]{margin:8px 0 0!important;height:6px!important}
+#app .block-card .week-open{margin:0!important;padding:0!important;width:40px;min-width:40px;height:43px;display:grid;place-items:center;border-radius:12px!important}
+#app .block-card .week-open span{font-size:26px!important}
+@media(max-width:400px){.week-thumb{width:80px;min-width:80px}.course-hero{min-height:230px!important}#app .block-card{gap:9px}#app .block-card .week-open{width:35px;min-width:35px}#app .block-card .block-title{font-size:19px!important}}
+
   </style>
 
 </head>
@@ -609,9 +637,16 @@ async function loadCourse() {
 
     const done=new Set(courseProgress.completed);
     const total=courseProgress.lessons.length||26;
+    const profileName=[currentUser?.first_name,currentUser?.last_name].filter(Boolean).join(' ')||currentUser?.username||'Участник курса';
+    const profilePhoto=currentUser?.photo_url&&/^https:\/\//.test(currentUser.photo_url)?currentUser.photo_url:'';
     html += `
+      <div class="course-profile">
+        <div class="course-avatar">${profilePhoto?'<img src="'+escapeHtml(profilePhoto)+'" alt="">':'🐕'}</div>
+        <div class="course-profile-copy"><strong>${escapeHtml(profileName)}</strong><span>УЧАСТНИК КУРСА</span></div>
+        <span class="course-profile-arrow">›</span>
+      </div>
       <section class="course-hero">
-        <div class="course-hero-kicker">ТВОЯ ТРАЕКТОРИЯ</div>
+        <div class="course-hero-kicker">МОЙ КУРС</div>
         <div class="course-hero-title">УПРАВЛЕНИЕ<br>ВНИМАНИЕМ</div>
         <div class="course-hero-subtitle">26 уроков · 4 недели + предобучение</div>
         <div class="course-hero-actions">
@@ -619,7 +654,7 @@ async function loadCourse() {
           <button class="course-hero-continue" onclick="continueCourse()">${done.size?'Продолжить':'Начать обучение'} <span>→</span></button>
         </div>
       </section>
-      <div class="course-section-head"><span>МОИ УРОКИ</span><small>26 УРОКОВ · 5 ЭТАПОВ</small></div>`;
+      <div class="course-section-head"><span>▷ МОИ УРОКИ</span><small>26 УРОКОВ · 5 ЭТАПОВ</small></div>`;
     // ----------------------------------------------
     // АДМИНКА
     // ----------------------------------------------
@@ -684,7 +719,8 @@ async function loadCourse() {
               )"
             >
 
-              <div class="label">
+              <div class="week-thumb week-thumb-${block.block_number}" aria-hidden="true"><span>${block.block_number===0?'00':String(block.block_number).padStart(2,'0')}</span></div>
+              <div class="week-main"><div class="label">
                 ${block.block_number===0?"ПРЕДОБУЧЕНИЕ":"НЕДЕЛЯ "+block.block_number}
               </div>
 
@@ -700,7 +736,7 @@ async function loadCourse() {
               <div role="progressbar" aria-label="Прогресс блока" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${weekPct}" style="height:9px;border-radius:20px;background:#dedede;overflow:hidden;margin:13px 0 8px">
                 <div style="height:100%;width:${weekPct}%;background:#e3db25;border-radius:20px;transition:width .25s"></div>
               </div>
-              <div class="week-open">Открыть уроки <span>→</span></div>
+              </div><div class="week-open" aria-label="Открыть уроки"><span>→</span></div>
 
             </div>
 
