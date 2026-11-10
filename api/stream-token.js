@@ -19,7 +19,7 @@ async function live(req,res){
   if(!key||!base)throw fail(503,'Course database unavailable');
   async function db(path,method='GET',body){
    const response=await fetch(base+'/rest/v1/'+path,{method,headers:{apikey:key,Authorization:'Bearer '+key,...(body?{'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});
-   if(!response.ok)throw fail(502,'Database request failed');
+   if(!response.ok){const detail=await response.json().catch(()=>({}));console.error('Course database failure',{resource:path.split('?')[0],status:response.status,code:detail.code,message:detail.message});throw fail(502,'Database '+path.split('?')[0]+' HTTP '+response.status+' code '+String(detail.code||'unknown'));}
    return response.status===204?[]:response.json();
   }
   const students=await db('students?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1');
