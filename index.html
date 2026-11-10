@@ -561,6 +561,10 @@ async function loadCourse() {
 
       blocks.forEach(
         (block, index) => {
+          const weekLessons=courseProgress.lessons.filter(l=>l.block_id===block.id);
+          const weekDone=weekLessons.filter(l=>done.has(l.id)).length;
+          const weekTotal=weekLessons.length||(block.block_number===0?2:6);
+          const weekPct=Math.round(100*weekDone/weekTotal);
 
           html += `
 
@@ -585,8 +589,12 @@ async function loadCourse() {
               </div>
 
               <div class="block-info">
-                ${courseProgress.lessons.filter(l=>l.block_id===block.id&&done.has(l.id)).length} из ${courseProgress.lessons.filter(l=>l.block_id===block.id).length||(block.block_number===0?2:6)} уроков · Открыть →
+                ${weekDone} из ${weekTotal} уроков · ${weekPct}% пройдено
               </div>
+              <div role="progressbar" aria-label="Прогресс блока" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${weekPct}" style="height:9px;border-radius:20px;background:#dedede;overflow:hidden;margin:13px 0 8px">
+                <div style="height:100%;width:${weekPct}%;background:#e3db25;border-radius:20px;transition:width .25s"></div>
+              </div>
+              <div style="font-size:13px;font-weight:700">Открыть уроки →</div>
 
             </div>
 
@@ -863,6 +871,12 @@ async function loadLessons(
     }
 
     const lessons = await response.json();
+    const doneIds=new Set(courseProgress.completed);
+    const finished=lessons.filter(l=>doneIds.has(l.id)).length;
+    const blockMeta=courseProgress.blocks.find(b=>b.id===blockId);
+    const blockTotal=blockMeta?.block_number===0?2:6;
+    const percent=Math.round(100*finished/blockTotal);
+
 
     let html = `
       <button class="button back-button" onclick="loadCourse()">
@@ -872,6 +886,8 @@ async function loadLessons(
       <div class="card">
         <div class="label">БЛОК</div>
         <div class="lesson-title">${escapeHtml(blockTitle)}</div>
+        <div style="margin-top:12px;font-weight:700">${finished} из ${blockTotal} уроков · ${percent}% пройдено</div>
+        <div role="progressbar" aria-label="Прогресс недели" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}" style="height:10px;border-radius:20px;background:#dedede;overflow:hidden;margin-top:9px"><div style="height:100%;width:${percent}%;background:#e3db25;border-radius:20px"></div></div>
       </div>
     `;
 
