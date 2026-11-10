@@ -37,3 +37,5 @@
 - Dedicated bot: @NoyaClubBrooksBot. Telegram initData signature check confirmed in Mini App.
 - Branch Preview environment has NOYA_TELEGRAM_BOT_TOKEN, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (verified names/targets; values not inspected).
 - Redeploy after environment changes; verify actual dog save and GET. Do not infer database success from a successful Telegram-only auth check.
+
+- 10.11.2026: Preview Supabase URL corrected to verified `https://imvtdholjeclyznonpdc.supabase.co` after investigating Vercel runtime database errors. Redeploy required. The `SUPABASE_SERVICE_ROLE_KEY` secret is configured but its value is not inspectable; do not log it.
