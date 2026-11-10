@@ -42,12 +42,21 @@ module.exports=async function handler(req,res){
   if(!dogs.length)throw fail(404,'Dog not found');
   if(req.method==='GET'){
    const rows=await db('club_lesson_progress?select=lesson_id,completed_at,updated_at&dog_id=eq.'+dogId+'&student_id=eq.'+studentId+'&limit=500');
-   return res.status(200).json({ok:true,progress:rows});
+   const feedback=await db('noya_practice_feedback?select=lesson_id,outcome,note,created_at&dog_id=eq.'+dogId+'&student_id=eq.'+studentId+'&order=created_at.desc&limit=100');
+   return res.status(200).json({ok:true,progress:rows,feedback});
   }
   const lessonId=req.body?.lessonId,completed=req.body?.completed;
-  if(typeof lessonId!=='string'||!uuid.test(lessonId)||typeof completed!=='boolean')throw fail(400,'Invalid progress update');
+  if(typeof lessonId!=='string'||!uuid.test(lessonId))throw fail(400,'Invalid lesson ID');
+  const isFeedback=req.body?.action==='practice_feedback';
+  if(!isFeedback&&typeof completed!=='boolean')throw fail(400,'Invalid progress update');
   const lessons=await db('club_lessons?select=id&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
   if(!lessons.length)throw fail(404,'Published lesson not found');
+  if(isFeedback){
+   const outcome=req.body?.outcome,note=req.body?.note||'';
+   if(!['success','partial','difficulty'].includes(outcome)||typeof note!=='string'||note.length>500)throw fail(400,'Invalid feedback');
+   const rows=await db('noya_practice_feedback?select=id,lesson_id,outcome,created_at',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({student_id:studentId,dog_id:dogId,lesson_id:lessonId,outcome,note})});
+   return res.status(200).json({ok:true,feedback:rows[0]});
+  }
   const rows=await db('club_lesson_progress?on_conflict=dog_id,lesson_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({student_id:studentId,dog_id:dogId,lesson_id:lessonId,completed_at:completed?new Date().toISOString():null,updated_at:new Date().toISOString()})});
   return res.status(200).json({ok:true,progress:rows[0]});
  }catch(e){if(!e.status)console.error('Club progress error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
