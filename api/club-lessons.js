@@ -7,7 +7,7 @@ function telegramId(raw){
  if(!hash||!/^[a-f0-9]{64}$/i.test(hash)||!Number.isFinite(date)||Math.abs(Date.now()/1000-date)>86400)throw fail(401,'Telegram authorization expired');
  p.delete('hash');
  const check=[...p.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
- const secret=crypto.createHmac('sha256','WebAppData').update(process.env.TELEGRAM_BOT_TOKEN).digest();
+ const secret=crypto.createHmac('sha256','WebAppData').update(process.env.NOYA_TELEGRAM_BOT_TOKEN).digest();
  const actual=crypto.createHmac('sha256',secret).update(check).digest();
  if(!crypto.timingSafeEqual(actual,Buffer.from(hash,'hex')))throw fail(401,'Invalid Telegram signature');
  let u;try{u=JSON.parse(p.get('user')||'{}')}catch{throw fail(401,'Invalid user')}
@@ -24,7 +24,7 @@ module.exports=async function handler(req,res){
  res.setHeader('Cache-Control','private, no-store');
  if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({error:'Method not allowed'})}
  try{
-  if(!process.env.TELEGRAM_BOT_TOKEN||!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)throw fail(503,'Club service unavailable');
+  if(!process.env.NOYA_TELEGRAM_BOT_TOKEN||!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)throw fail(503,'Club service unavailable');
   const id=telegramId(req.headers['x-telegram-init-data']);
   const students=await db('students?select=id&telegram_id=eq.'+encodeURIComponent(id)+'&limit=1');
   if(!students.length)throw fail(403,'Club access required');
