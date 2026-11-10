@@ -239,6 +239,27 @@ const CLOUDFLARE_CUSTOMER =
   "customer-9y0wom20nneqpu4g.cloudflarestream.com";
 
 
+let courseProgress={blocks:[],lessons:[],completed:[]};
+async function courseProgressRequest(action,extra={}){
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)throw Error('Открой курс через Telegram');
+ const r=await fetch('/api/stream-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,initData,...extra})});
+ const data=await r.json();if(!r.ok)throw Error(data.error||'Ошибка прогресса');return data;
+}
+async function markCourseLesson(id,completed,blockId,title){
+ try{await courseProgressRequest('course_complete',{lessonId:id,completed});await loadLesson(id,blockId,title)}
+ catch(e){alert(e.message)}
+}
+async function continueCourse(){
+ const ordered=[...courseProgress.lessons].sort((a,b)=>{
+  const blocks=new Map(courseProgress.blocks.map(x=>[x.id,x.block_number]));
+  return (blocks.get(a.block_id)-blocks.get(b.block_id))||(a.day_number-b.day_number)
+ });
+ const done=new Set(courseProgress.completed),next=ordered.find(x=>x.is_published&&!done.has(x.id));
+ if(!next){alert('Все доступные уроки завершены или ещё не опубликованы');return}
+ const block=courseProgress.blocks.find(x=>x.id===next.block_id);
+ await loadLesson(next.id,next.block_id,block?.title||'Урок');
+}
 let currentUser = null;
 
 window.isAdmin = false;
@@ -452,6 +473,9 @@ async function loadCourse() {
 
     const blocks =
       await blocksResponse.json();
+    try{courseProgress=await courseProgressRequest('course_progress')}
+    catch(e){console.warn('Course progress not available:',e.message);courseProgress={blocks:[],lessons:[],completed:[]}}
+
 
 
     // ----------------------------------------------
@@ -505,6 +529,17 @@ async function loadCourse() {
         <div style="color:#aaa">Отдельная библиотека записей · скоро</div>
         <div style="color:#f5fa45;margin-top:12px">Открыть раздел →</div>
       </a>`;
+    const done=new Set(courseProgress.completed);
+    const total=courseProgress.lessons.length||26;
+    html += `
+      <div style="background:#f5fa45;color:#111;border-radius:22px;padding:22px;margin-bottom:18px">
+        <div style="font-size:12px;font-weight:800;letter-spacing:1px">ТВОЯ ТРАЕКТОРИЯ</div>
+        <div style="font-size:29px;font-weight:900;line-height:1.1;margin:9px 0">УПРАВЛЕНИЕ ВНИМАНИЕМ</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:18px">
+          <span style="border:2px solid #111;border-radius:30px;padding:13px;font-weight:800;white-space:nowrap">${done.size} из ${total}</span>
+          <button onclick="continueCourse()" style="background:#111;color:#f5fa45;border:0;border-radius:14px;padding:16px;flex:1;font-weight:800">Продолжить →</button>
+        </div>
+      </div>`;
     // ----------------------------------------------
     // АДМИНКА
     // ----------------------------------------------
@@ -606,7 +641,7 @@ async function loadCourse() {
               </div>
 
               <div class="block-info">
-                Открыть уроки →
+                ${courseProgress.lessons.filter(l=>l.block_id===block.id&&done.has(l.id)).length} из ${courseProgress.lessons.filter(l=>l.block_id===block.id).length||(block.block_number===0?2:6)} уроков · Открыть →
               </div>
 
             </div>
@@ -902,7 +937,7 @@ async function loadLessons(
           <div class="status">Уроки пока не опубликованы.</div>
         </div>
       `;
-      app.innerHTML = html;
+      app.innerHTML = html + completeHtml;
       return;
     }
 
@@ -982,8 +1017,15 @@ async function loadLesson(
     }
 
     const lesson = lessons[0];
+    const alreadyDone=courseProgress.completed.includes(lesson.id);
     const currentBlockId = blockId || lesson.block_id;
     let videoHtml = "";
+    const completeHtml=`<div class="card" style="border:1px solid #ddd">
+      <div style="font-weight:700;margin-bottom:10px">Прогресс урока: ${alreadyDone?'✓ Завершён':'Ещё не завершён'}</div>
+      <button class="button" onclick="markCourseLesson('${lesson.id}',${!alreadyDone},'${currentBlockId}','${escapeHtml(blockTitle)}')">${alreadyDone?'Отменить отметку':'Отметить урок пройденным'}</button>
+      <p style="margin-top:10px;font-size:12px;color:#777">Просмотр урока и выполнение упражнения — разные результаты.</p>
+    </div>`;
+
 
     if (lesson.video_url) {
       const tokenResponse = await fetch(
