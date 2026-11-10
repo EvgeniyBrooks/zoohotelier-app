@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),crypto=require('node:crypto');
-Object.assign(process.env,{NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'mock-key',TELEGRAM_BOT_TOKEN:'mock-bot',CLOUDFLARE_ACCOUNT_ID:'mock-account',CLOUDFLARE_API_TOKEN:'mock-cloudflare'});
+Object.assign(process.env,{NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'mock-key',NOYA_TELEGRAM_BOT_TOKEN:'mock-bot',CLOUDFLARE_ACCOUNT_ID:'mock-account',CLOUDFLARE_API_TOKEN:'mock-cloudflare'});
 const handler=require('../api/club-video-token.js');
 const lessonId='11111111-1111-4111-8111-111111111111';
 function initData(){const p=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id:12345})});const check=[...p.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');const key=crypto.createHmac('sha256','WebAppData').update('mock-bot').digest();p.set('hash',crypto.createHmac('sha256',key).update(check).digest('hex'));return p.toString()}
