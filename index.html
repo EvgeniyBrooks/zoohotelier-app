@@ -961,9 +961,11 @@ async function loadLesson(
 
 
     if (lesson.video_url) {
-      const tokenResponse = await fetch(
-        "/api/stream-token?videoId=" + encodeURIComponent(lesson.video_url)
-      );
+      const tokenResponse = await fetch('/api/stream-token',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'course_watch',initData:window.Telegram?.WebApp?.initData,lessonId:lesson.id})
+      });
 
       if (!tokenResponse.ok) {
         throw new Error(
