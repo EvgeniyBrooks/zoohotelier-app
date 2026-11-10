@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 process.env.NEXT_PUBLIC_SUPABASE_URL='https://example.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY='mock-key';
-process.env.TELEGRAM_BOT_TOKEN='mock-bot-token';
+process.env.NOYA_TELEGRAM_BOT_TOKEN='mock-bot-token';
 const handler = require('../api/club-diagnostic.js');
 const OLD_ENV = {...process.env};
 const studentId = '11111111-1111-4111-8111-111111111111';
@@ -12,7 +12,7 @@ const dogId = '22222222-2222-4222-8222-222222222222';
 function signedData(id=123456789){
  const fields = new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id,first_name:'Test'})});
  const check=[...fields.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
- const secret=crypto.createHmac('sha256','WebAppData').update(process.env.TELEGRAM_BOT_TOKEN).digest();
+ const secret=crypto.createHmac('sha256','WebAppData').update(process.env.NOYA_TELEGRAM_BOT_TOKEN).digest();
  fields.set('hash',crypto.createHmac('sha256',secret).update(check).digest('hex'));
  return fields.toString();
 }
@@ -40,7 +40,7 @@ function dbFixture({active=true,own=true}={}){
  }
 }
 
-test.after(()=>{for(const k of ['NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','TELEGRAM_BOT_TOKEN']){if(OLD_ENV[k]===undefined)delete process.env[k];else process.env[k]=OLD_ENV[k]}});
+test.after(()=>{for(const k of ['NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','NOYA_TELEGRAM_BOT_TOKEN']){if(OLD_ENV[k]===undefined)delete process.env[k];else process.env[k]=OLD_ENV[k]}});
 test('invalid Telegram signature denied',async()=>{const data=signedData().replace(/hash=[^&]+/,'hash='+'a'.repeat(64));const r=await run('GET',data,{},()=>{throw Error('Should not access DB')});assert.equal(r.statusCode,401)});
 test('no subscription denied',async()=>{const r=await run('GET',signedData(),{},dbFixture({active:false}));assert.equal(r.statusCode,403)});
 test('GET lists owned dog profiles',async()=>{const r=await run('GET',signedData(),{},dbFixture());assert.equal(r.statusCode,200);assert.equal(r.body.dogs[0].name,'Ноя')});
