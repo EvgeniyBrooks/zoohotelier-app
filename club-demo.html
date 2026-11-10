@@ -6,7 +6,7 @@
 </style></head><body><main>
 <div class="eyebrow">ЗООХОТЕЛЬЕР · КЛУБ</div><h1 id="heading">Твоя персональная дорожная карта</h1>
 <p id="intro">Ответь на 10 коротких вопросов. Мы подберём направления обучения для тебя и твоей собаки.</p>
-<div class="progress"><div id="bar" style="width:0%"></div></div>
+<label for="dog-name" style="display:block;margin:14px 0 6px">Кличка собаки</label><input id="dog-name" maxlength="80" placeholder="Например, Ноя" style="width:100%;padding:14px;border-radius:10px;background:#292929;color:#fff;border:1px solid #555"><p id="save-status" class="muted" aria-live="polite"></p><div class="progress"><div id="bar" style="width:0%"></div></div>
 <section class="panel" id="panel"><button class="primary" id="start">Начать диагностику</button></section>
 <button class="secondary" id="back">← Назад</button>
 <p class="muted">Демонстрационная версия. Ответы не отправляются на сервер и не сохраняются. Это не ветеринарная или поведенческая диагностика.</p>
@@ -34,7 +34,7 @@ advanced:["Совместная жизнь","Новые навыки и подд
 };
 let answers=[],index=0;
 const panel=document.getElementById("panel"),heading=document.getElementById("heading"),intro=document.getElementById("intro"),back=document.getElementById("back"),bar=document.getElementById("bar");
-document.getElementById("start").onclick=()=>renderQuestion();
+document.getElementById("start").onclick=()=>{if(!document.getElementById("dog-name").value.trim()){document.getElementById("save-status").textContent="Сначала укажи кличку собаки";return}renderQuestion()};
 back.onclick=()=>{if(index>0){index--;renderQuestion()}else{index=0;answers=[];location.reload()}};
 function renderQuestion(){
 heading.textContent="Знакомство с твоей собакой";intro.textContent="Выбери один ответ, который лучше всего описывает вашу ситуацию.";
@@ -59,13 +59,25 @@ if(answers[8]===0)add("attention",2);if(answers[8]===1)add("emotions",2);if(answ
 if(answers[9]===0){add("understanding",2);add("attention",1)}if(answers[9]===1)add("understanding",1);if(answers[9]===3)add("advanced",2);
 return Object.entries(s).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0).map(x=>x[0]);
 }
-function renderResults(){
+async function renderResults(){
 heading.textContent="Твоя дорожная карта";intro.textContent="Начни с нескольких направлений. Остальные материалы будут доступны в библиотеке клуба.";bar.style.width="100%";back.style.display="none";panel.replaceChildren();
 const goal=document.createElement("p");goal.innerHTML="<strong>Твоя цель:</strong> ";goal.append(document.createTextNode(questions[8][1][answers[8]]));panel.append(goal);
 const h=document.createElement("h2");h.textContent="С чего начать";panel.append(h);
 rank().slice(0,3).forEach((key,i)=>{const el=document.createElement("div");el.className="topic";const strong=document.createElement("strong");strong.textContent=(i+1)+". "+topics[key][0];const small=document.createElement("small");small.textContent=topics[key][1];el.append(strong,small);panel.append(el)});
 if(answers[6]===0){const p=document.createElement("p");p.className="notice";p.textContent="Ты отметил сильное беспокойство при одиночестве. Это отдельная важная тема: рекомендуем индивидуальную оценку специалиста, работающего с поведением собак, и исключение медицинских причин.";panel.append(p)}
 const note=document.createElement("p");note.className="muted";note.textContent="Рекомендации основаны на ответах владельца, а не на оценке собаки специалистом. Названия материалов пока примерные.";panel.append(note);
+// Save only after the user has finished the questionnaire.
+const status=document.getElementById("save-status");
+const initData=window.Telegram?.WebApp?.initData;
+if(initData){
+  status.textContent="Сохраняем твою дорожную карту...";
+  try{
+    const response=await fetch("/api/club-diagnostic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({initData,dogName:document.getElementById("dog-name").value.trim(),answers})});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||"Не удалось сохранить");
+    status.textContent="✓ Дорожная карта сохранена в твоём профиле";
+  }catch(e){status.textContent="Маршрут показан, но пока не сохранён: "+e.message}
+}else{status.textContent="Демо-режим: открой приложение через Telegram, чтобы сохранить результат."}
 const restart=document.createElement("button");restart.className="primary";restart.textContent="Пройти заново";restart.onclick=()=>{answers=[];index=0;renderQuestion()};panel.append(restart);
 }
 </script></body></html>
