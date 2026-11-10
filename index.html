@@ -482,43 +482,6 @@ async function loadCourse() {
     // НОВОСТИ
     // ----------------------------------------------
 
-    const newsResponse =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/news" +
-        "?select=id,title,content,image_url,created_at" +
-        "&is_published=eq.true" +
-        "&order=created_at.desc" +
-        "&limit=5",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
-        }
-      );
-
-
-    if (!newsResponse.ok) {
-
-      throw new Error(
-        "Ошибка загрузки новостей: " +
-        newsResponse.status
-      );
-
-    }
-
-
-    const news =
-      await newsResponse.json();
-
-
     let html = "";
 
 
@@ -564,36 +527,6 @@ async function loadCourse() {
     // ----------------------------------------------
     // НОВОСТИ
     // ----------------------------------------------
-
-    html += `
-
-      <div
-        class="card news-card"
-        onclick="loadNews()"
-      >
-
-        <div class="label">
-          📰 НОВОСТИ
-        </div>
-
-        <div class="news-title">
-          Новости и объявления
-        </div>
-
-        <div class="news-preview">
-
-          ${
-            news.length
-              ? "Есть новые сообщения →"
-              : "Пока новостей нет →"
-          }
-
-        </div>
-
-      </div>
-
-    `;
-
 
     // ----------------------------------------------
     // БЛОКИ
