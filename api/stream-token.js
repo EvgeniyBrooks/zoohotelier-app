@@ -18,7 +18,7 @@ async function live(req,res){
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY,base=process.env.NEXT_PUBLIC_SUPABASE_URL;
   if(!key||!base)throw fail(503,'Course database unavailable');
   async function db(path,method='GET',body){
-   const response=await fetch(base+'/rest/v1/'+path,{method,headers:{apikey:key,Authorization:'Bearer '+key,...(body?{'Content-Type':'application/json',Prefer:'return=representation'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});
+   const response=await fetch(base+'/rest/v1/'+path,{method,headers:{apikey:key,Authorization:'Bearer '+key,...(body?{'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});
    if(!response.ok)throw fail(502,'Database request failed');
    return response.status===204?[]:response.json();
   }
