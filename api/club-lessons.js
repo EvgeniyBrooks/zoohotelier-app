@@ -33,6 +33,37 @@ module.exports=async function handler(req,res){
    db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+encodeURIComponent(student)+'&status=eq.active&limit=20'),
    db('admins?select=id&telegram_id=eq.'+encodeURIComponent(id)+'&limit=1')
   ]);
+  if(req.method==='GET'&&req.query?.admin==='lessons'){
+   if(!admins.length)throw fail(403,'Administrator access required');
+   const lessons=await db('club_lessons?select=id,slug,title,description,topic,sort_order,duration_seconds,cloudflare_video_id,is_published,created_at&order=sort_order.asc&limit=500');
+   return res.status(200).json({ok:true,lessons});
+  }
+  if(req.method==='POST'&&req.body?.action==='admin_save_lesson'){
+   if(!admins.length)throw fail(403,'Administrator access required');
+   const v=req.body.lesson;
+   if(!v||typeof v!=='object'||Array.isArray(v))throw fail(400,'Invalid lesson');
+   const title=typeof v.title==='string'?v.title.trim():'';
+   const description=typeof v.description==='string'?v.description.trim():'';
+   const slug=typeof v.slug==='string'?v.slug.trim():'';
+   const topic=v.topic;
+   const videoId=typeof v.cloudflare_video_id==='string'?v.cloudflare_video_id.trim():'';
+   const sortOrder=Number(v.sort_order);
+   const duration=v.duration_seconds==null||v.duration_seconds===''?null:Number(v.duration_seconds);
+   const published=v.is_published===true;
+   const lessonId=v.id;
+   if(title.length<3||title.length>160||description.length>3000||!/^[a-z0-9-]{3,100}$/.test(slug)||!['understanding','attention','social','walks','home','emotions','advanced'].includes(topic)||!Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000||duration!==null&&(!Number.isSafeInteger(duration)||duration<1||duration>86400)||videoId&&!/^[a-f0-9]{32}$/i.test(videoId))throw fail(400,'Проверь название, slug, тему и параметры видео');
+   if(published&&!videoId)throw fail(400,'Для публикации нужен Cloudflare Stream video ID');
+   if(published&&process.env.NOYA_CLUB_ALLOW_PUBLISH!=='true')throw fail(403,'Публикация временно закрыта до проверки видео и оплаты');
+   const record={slug,title,description,topic,sort_order:sortOrder,duration_seconds:duration,cloudflare_video_id:videoId||null,is_published:published};
+   const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+   const updating=typeof lessonId==='string'&&/^[a-f0-9-]{36}$/i.test(lessonId);
+   if(lessonId&&!updating)throw fail(400,'Invalid lesson ID');
+   const path='club_lessons'+(updating?'?id=eq.'+encodeURIComponent(lessonId):'');
+   const response=await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL+'/rest/v1/'+path,{method:updating?'PATCH':'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(record),signal:AbortSignal.timeout(10000)});
+   if(!response.ok){const problem=await response.json().catch(()=>null);if(problem?.code==='23505')throw fail(409,'Такой slug уже существует');throw fail(502,'Не удалось сохранить урок в базе')}
+   const rows=await response.json();if(!rows.length)throw fail(404,'Урок не найден');
+   return res.status(200).json({ok:true,lesson:rows[0]});
+  }
   if(req.method==='GET'&&req.query?.admin==='overview'){
    if(!admins.length)throw fail(403,'Administrator access required');
    const [members,subscriptionsAll,dogs,diagnostics,progress,feedback,lessons,chats]=await Promise.all([
