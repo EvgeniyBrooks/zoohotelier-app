@@ -979,8 +979,10 @@ async function loadLesson(
       });
 
       if (!tokenResponse.ok) {
+        const errorData=await tokenResponse.json().catch(()=>({}));
         throw new Error(
-          "Не удалось получить доступ к видео: " + tokenResponse.status
+          "Не удалось получить доступ к видео: " + tokenResponse.status +
+          (errorData.error ? " — " + String(errorData.error).slice(0,180) : "")
         );
       }
 
