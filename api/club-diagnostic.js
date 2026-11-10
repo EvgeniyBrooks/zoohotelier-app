@@ -10,7 +10,7 @@ function verify(initData){
   if(!hash||!/^[a-f0-9]{64}$/i.test(hash)||!Number.isFinite(stamp)||Math.abs(Date.now()/1000-stamp)>86400)throw Object.assign(new Error("Telegram authorization expired"),{status:401});
   p.delete("hash");
   const check=[...p.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+"="+v).join("\n");
-  const secret=crypto.createHmac("sha256","WebAppData").update(process.env.TELEGRAM_BOT_TOKEN).digest();
+  const secret=crypto.createHmac("sha256","WebAppData").update(process.env.NOYA_TELEGRAM_BOT_TOKEN).digest();
   const digest=crypto.createHmac("sha256",secret).update(check).digest();
   if(!crypto.timingSafeEqual(digest,Buffer.from(hash,"hex")))throw Object.assign(new Error("Telegram verification failed"),{status:401});
   const user=JSON.parse(p.get("user")||"{}");
@@ -42,7 +42,7 @@ module.exports=async function handler(req,res){
   res.setHeader("Cache-Control","no-store");
   if(!["GET","POST"].includes(req.method)){res.setHeader("Allow","GET, POST");return res.status(405).json({error:"Method not allowed"})}
   try{
-    if(!URL_BASE||!KEY||!process.env.TELEGRAM_BOT_TOKEN)throw new Error("Missing server configuration");
+    if(!URL_BASE||!KEY||!process.env.NOYA_TELEGRAM_BOT_TOKEN)throw new Error("Missing server configuration");
     const telegramId=verify(req.method==="POST"?req.body?.initData:req.headers["x-telegram-init-data"]);
     const students=await db("students?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1");
     if(!students?.length)return res.status(403).json({error:"Student profile not found"});
