@@ -222,6 +222,26 @@
     input, textarea, select { max-width:100%; }
     @media (max-width:420px) { .app{padding:20px 14px 70px} .card{padding:17px} h1{font-size:29px} }
 
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap');
+.course-hero{background:#f5fa45;color:#090909;border-radius:23px;padding:24px 20px 20px;margin:0 0 24px}
+.course-hero-kicker{font-size:12px;letter-spacing:1.3px;font-weight:900}
+.course-hero-title{font-family:Oswald,Impact,'Arial Narrow',sans-serif;font-size:clamp(38px,10vw,61px);line-height:1.01;font-weight:700;margin:10px 0 13px;letter-spacing:-.6px}
+.course-hero-subtitle{font-size:13px;font-weight:650;opacity:.75}
+.course-hero-actions{display:flex;gap:10px;margin-top:22px;align-items:stretch}
+.course-hero-count{display:grid;place-items:center;border:3px solid #c8cb36;border-radius:30px;padding:12px 17px;white-space:nowrap;font-family:Oswald,sans-serif;font-size:21px;font-weight:700}
+.course-hero-continue{flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;border-radius:16px;padding:13px 17px;background:#0b0b0b;color:#f5fa45;font-size:15px;font-weight:850;text-align:left;cursor:pointer}
+.course-hero-continue span{font-size:24px;font-weight:400}
+.course-section-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 15px;font-family:Oswald,sans-serif;font-weight:700;font-size:25px}
+.course-section-head small{font:800 11px system-ui,sans-serif;color:#f5fa45;letter-spacing:1px}
+#app .block-card{background:#151515;color:#fff;border:1px solid #353535;position:relative;overflow:hidden;padding:22px 20px 18px;margin-bottom:13px}
+#app .block-card .label{color:#f5fa45}
+#app .block-card .block-title{font-family:Oswald,Impact,'Arial Narrow',sans-serif;text-transform:uppercase;font-size:29px;line-height:1.15;margin:12px 0 15px;color:#fff}
+#app .block-card .block-info{color:#ccc;font-size:13px}
+#app .block-card [role=progressbar]{background:#343434!important;height:8px!important}
+#app .block-card [role=progressbar]>div{background:#f5fa45!important}
+.week-open{display:flex;justify-content:space-between;align-items:center;background:#f5fa45;color:#111;padding:12px 16px;border-radius:14px;font-weight:850;margin-top:13px}
+.week-open span{font-size:22px;font-weight:400}
+@media(max-width:390px){.course-hero{padding:20px 16px}.course-hero-title{font-size:40px}.course-hero-count{padding:10px 12px}.course-hero-continue{padding:10px 13px}}
   </style>
 
 </head>
@@ -567,24 +587,19 @@ async function loadCourse() {
     let html = "";
 
 
-    html += `
-      <a href="./course-live.html" style="display:block;background:#101010;color:#fff;padding:20px;border-radius:18px;margin:16px 0;text-decoration:none;border:1px solid #444">
-        <div style="color:#f5fa45;font-weight:800;font-size:12px;letter-spacing:1.4px">ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ</div>
-        <div style="font-size:24px;font-weight:900;margin:8px 0">ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ</div>
-        <div style="color:#aaa">Отдельная библиотека записей · скоро</div>
-        <div style="color:#f5fa45;margin-top:12px">Открыть раздел →</div>
-      </a>`;
     const done=new Set(courseProgress.completed);
     const total=courseProgress.lessons.length||26;
     html += `
-      <div style="background:#f5fa45;color:#111;border-radius:22px;padding:22px;margin-bottom:18px">
-        <div style="font-size:12px;font-weight:800;letter-spacing:1px">ТВОЯ ТРАЕКТОРИЯ</div>
-        <div style="font-size:29px;font-weight:900;line-height:1.1;margin:9px 0">УПРАВЛЕНИЕ ВНИМАНИЕМ</div>
-        <div style="display:flex;gap:12px;align-items:center;margin-top:18px">
-          <span style="border:2px solid #111;border-radius:30px;padding:13px;font-weight:800;white-space:nowrap">${done.size} из ${total}</span>
-          <button onclick="continueCourse()" style="background:#111;color:#f5fa45;border:0;border-radius:14px;padding:16px;flex:1;font-weight:800">Продолжить →</button>
+      <section class="course-hero">
+        <div class="course-hero-kicker">ТВОЯ ТРАЕКТОРИЯ · КУРС</div>
+        <div class="course-hero-title">УПРАВЛЕНИЕ<br>ВНИМАНИЕМ</div>
+        <div class="course-hero-subtitle">26 уроков · 4 недели + предобучение</div>
+        <div class="course-hero-actions">
+          <span class="course-hero-count">${done.size} ИЗ ${total}</span>
+          <button class="course-hero-continue" onclick="continueCourse()">${done.size?'Продолжить':'Начать обучение'} <span>→</span></button>
         </div>
-      </div>`;
+      </section>
+      <div class="course-section-head"><span>ПРОГРАММА ОБУЧЕНИЯ</span><small>МОИ УРОКИ</small></div>`;
     // ----------------------------------------------
     // АДМИНКА
     // ----------------------------------------------
@@ -650,7 +665,7 @@ async function loadCourse() {
             >
 
               <div class="label">
-                ${index + 1} БЛОК
+                ${block.block_number===0?"ПРЕДОБУЧЕНИЕ":"НЕДЕЛЯ "+block.block_number}
               </div>
 
               <div class="block-title">
@@ -665,7 +680,7 @@ async function loadCourse() {
               <div role="progressbar" aria-label="Прогресс блока" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${weekPct}" style="height:9px;border-radius:20px;background:#dedede;overflow:hidden;margin:13px 0 8px">
                 <div style="height:100%;width:${weekPct}%;background:#e3db25;border-radius:20px;transition:width .25s"></div>
               </div>
-              <div style="font-size:13px;font-weight:700">Открыть уроки →</div>
+              <div class="week-open">Открыть уроки <span>→</span></div>
 
             </div>
 
@@ -676,6 +691,14 @@ async function loadCourse() {
 
     }
 
+
+    html += `
+      <a href="./course-live.html" style="display:block;background:#181818;color:#fff;padding:20px;border-radius:18px;margin:24px 0;text-decoration:none;border:1px solid #444">
+        <div style="color:#f5fa45;font-weight:800;font-size:12px;letter-spacing:1.4px">ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ</div>
+        <div style="font-size:24px;font-weight:900;margin:8px 0">ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ</div>
+        <div style="color:#aaa">Отдельная библиотека записей · 3 записи</div>
+        <div style="color:#f5fa45;margin-top:12px">Открыть раздел →</div>
+      </a>`;
 
     app.innerHTML =
       html;
