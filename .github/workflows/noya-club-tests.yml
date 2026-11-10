@@ -22,6 +22,7 @@ jobs:
       - name: Check API syntax
         run: node --check api/club-diagnostic.js
           node --check api/club-video-token.js
+          node --check api/club-lessons.js
       - name: Run API tests
         run: node --test tests/club-diagnostic.test.js tests/club-video-token.test.js
       - name: Check embedded page scripts
