@@ -8,7 +8,7 @@ function verifyTelegram(initData){
  if(!hash||!/^[a-f0-9]{64}$/i.test(hash)||!Number.isFinite(date)||Math.abs(Date.now()/1000-date)>86400)throw fail(401,'Telegram authorization expired');
  p.delete('hash');
  const check=[...p.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
- const secret=crypto.createHmac('sha256','WebAppData').update(process.env.TELEGRAM_BOT_TOKEN).digest();
+ const secret=crypto.createHmac('sha256','WebAppData').update(process.env.NOYA_TELEGRAM_BOT_TOKEN).digest();
  const expected=crypto.createHmac('sha256',secret).update(check).digest();
  if(!crypto.timingSafeEqual(expected,Buffer.from(hash,'hex')))throw fail(401,'Invalid Telegram signature');
  let user;try{user=JSON.parse(p.get('user')||'{}')}catch{throw fail(401,'Invalid Telegram user')}
@@ -26,7 +26,7 @@ module.exports=async function handler(req,res){
  res.setHeader('Vary','Authorization');
  if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Method not allowed'})}
  try{
-  if(!process.env.TELEGRAM_BOT_TOKEN||!process.env.SUPABASE_SERVICE_ROLE_KEY||!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Video service unavailable');
+  if(!process.env.NOYA_TELEGRAM_BOT_TOKEN||!process.env.SUPABASE_SERVICE_ROLE_KEY||!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Video service unavailable');
   const telegramId=verifyTelegram(req.body?.initData);
   const lessonId=req.body?.lessonId;
   if(typeof lessonId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(lessonId))throw fail(400,'Invalid lesson ID');
