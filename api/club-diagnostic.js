@@ -47,9 +47,18 @@ module.exports=async function handler(req,res){
     const students=await db("students?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1");
     if(!students?.length)return res.status(403).json({error:"Student profile not found"});
     const studentId=students[0].id;
+    // Club and course have separate access rules.
+    const [subscriptions,admins]=await Promise.all([
+      db("club_subscriptions?select=id,status,start_date,end_date&student_id=eq."+studentId+"&status=eq.active&limit=20"),
+      db("admins?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1")
+    ]);
+    const now=Date.now();
+    const activeClub=subscriptions.some(s=>(!s.start_date||Date.parse(s.start_date)<=now)&&(!s.end_date||Date.parse(s.end_date)>now));
+    if(!activeClub&&!admins.length)return res.status(403).json({error:"Active club subscription required"});
     if(req.method==="GET"){
       const dogs=await db("club_dogs?select=id,name,created_at&student_id=eq."+studentId+"&order=created_at.desc");
-      return res.status(200).json({ok:true,dogs});
+      const diagnostics=await db("club_diagnostics?select=id,dog_id,answers,recommended_topics,created_at&student_id=eq."+studentId+"&order=created_at.desc&limit=100");
+      return res.status(200).json({ok:true,dogs,diagnostics});
     }
     const name=req.body?.dogName,answers=req.body?.answers;
     if(typeof name!=="string"||name.trim().length<1||name.trim().length>80||!Array.isArray(answers)||answers.length!==10||!answers.every(n=>Number.isInteger(n)&&n>=0&&n<=3))return res.status(400).json({error:"Invalid dog name or answers"});
