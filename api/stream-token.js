@@ -5,12 +5,12 @@ async function live(req,res){
  const fail=(s,m)=>Object.assign(new Error(m),{status:s});
  try{
   const raw=req.body?.initData;
-  if(typeof raw!=='string'||!process.env.TELEGRAM_BOT_TOKEN)throw fail(401,'Telegram login required');
+  if(typeof raw!=='string'||!(process.env.NOYA_TELEGRAM_BOT_TOKEN||process.env.TELEGRAM_BOT_TOKEN))throw fail(401,'Telegram login required');
   const p=new URLSearchParams(raw),hash=p.get('hash'),ts=Number(p.get('auth_date'));
   if(!hash||!/^[a-f0-9]{64}$/i.test(hash)||Math.abs(Date.now()/1000-ts)>86400)throw fail(401,'Invalid Telegram login');
   p.delete('hash');
   const data=[...p.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
-  const secret=crypto.createHmac('sha256','WebAppData').update(process.env.TELEGRAM_BOT_TOKEN).digest();
+  const secret=crypto.createHmac('sha256','WebAppData').update(process.env.NOYA_TELEGRAM_BOT_TOKEN||process.env.TELEGRAM_BOT_TOKEN).digest();
   const actual=crypto.createHmac('sha256',secret).update(data).digest();
   if(!crypto.timingSafeEqual(actual,Buffer.from(hash,'hex')))throw fail(401,'Invalid Telegram signature');
   const user=JSON.parse(p.get('user')||'{}');
