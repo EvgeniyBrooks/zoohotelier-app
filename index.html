@@ -242,6 +242,26 @@
 .week-open{display:flex;justify-content:space-between;align-items:center;background:#f5fa45;color:#111;padding:12px 16px;border-radius:14px;font-weight:850;margin-top:13px}
 .week-open span{font-size:22px;font-weight:400}
 @media(max-width:390px){.course-hero{padding:20px 16px}.course-hero-title{font-size:40px}.course-hero-count{padding:10px 12px}.course-hero-continue{padding:10px 13px}}
+
+/* Course-first layout: bright trajectory and prominent lesson cards */
+.header h1{display:none}
+.header{margin-bottom:13px}
+.course-hero{background:#f5fa45!important;border-radius:24px!important;padding:25px 21px 22px!important;margin-bottom:21px!important;box-shadow:0 7px 0 rgba(245,250,69,.07)}
+.course-hero-kicker{font-size:13px!important;color:#161616}
+.course-hero-title{font-size:clamp(37px,9.4vw,59px)!important;line-height:1.04!important;letter-spacing:-.9px!important;color:#080808}
+.course-hero-subtitle{font-size:14px!important;opacity:1!important;font-weight:750!important}
+.course-hero-continue{min-height:55px!important;border-radius:16px!important;font-size:16px!important}
+.course-section-head{margin-top:7px!important;margin-bottom:14px!important}
+#app .block-card{background:#171717!important;border:1px solid #424242!important;border-radius:21px!important;box-shadow:inset 4px 0 0 #f5fa45!important}
+#app .block-card .block-title{font-size:clamp(25px,6vw,32px)!important}
+#app .block-card .label{font-weight:900!important;letter-spacing:1px!important}
+#app .block-card .block-info{font-size:14px!important}
+#app .block-card:hover{border-color:#f5fa45!important}
+#app .lesson-card{border:2px solid #f5fa45!important;background:#f0f0f0!important;box-shadow:0 4px 0 rgba(245,250,69,.22)!important}
+#app .lesson-card .lesson-name{font-weight:850!important;font-size:19px!important}
+#app .lesson-card .lesson-number{color:#555!important}
+#app .week-open{min-height:49px!important;font-size:15px!important}
+
   </style>
 
 </head>
@@ -591,7 +611,7 @@ async function loadCourse() {
     const total=courseProgress.lessons.length||26;
     html += `
       <section class="course-hero">
-        <div class="course-hero-kicker">ТВОЯ ТРАЕКТОРИЯ · КУРС</div>
+        <div class="course-hero-kicker">ТВОЯ ТРАЕКТОРИЯ</div>
         <div class="course-hero-title">УПРАВЛЕНИЕ<br>ВНИМАНИЕМ</div>
         <div class="course-hero-subtitle">26 уроков · 4 недели + предобучение</div>
         <div class="course-hero-actions">
@@ -599,7 +619,7 @@ async function loadCourse() {
           <button class="course-hero-continue" onclick="continueCourse()">${done.size?'Продолжить':'Начать обучение'} <span>→</span></button>
         </div>
       </section>
-      <div class="course-section-head"><span>ПРОГРАММА ОБУЧЕНИЯ</span><small>МОИ УРОКИ</small></div>`;
+      <div class="course-section-head"><span>МОИ УРОКИ</span><small>26 УРОКОВ · 5 ЭТАПОВ</small></div>`;
     // ----------------------------------------------
     // АДМИНКА
     // ----------------------------------------------
