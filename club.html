@@ -126,9 +126,9 @@ async function checkNoyaTelegram(){
  const initData=window.Telegram?.WebApp?.initData;
  if(!initData){el.textContent='Тест авторизации: открой приложение кнопкой в @NoyaClubBrooksBot.';return}
  try{
-  const r=await fetch('/api/noya-auth-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData})});
+  const r=await fetch('/api/club-diagnostic?authOnly=1',{headers:{'x-telegram-init-data':initData}});
   const data=await r.json();
-  if(r.ok&&data.authenticated){el.textContent='✓ Telegram авторизация NOYA CLUB подтверждена'+(data.firstName?', '+data.firstName:'')+'.';return}
+  if(r.ok&&data.authenticated){el.textContent='✓ Telegram авторизация NOYA CLUB подтверждена.';return}
   el.textContent='Авторизация не подтверждена ('+r.status+'). Проверь запуск через @NoyaClubBrooksBot.';
  }catch(e){el.textContent='Не удалось проверить авторизацию. Попробуй ещё раз.'}
 }
