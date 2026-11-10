@@ -33,6 +33,26 @@ module.exports=async function handler(req,res){
    db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+encodeURIComponent(student)+'&status=eq.active&limit=20'),
    db('admins?select=id&telegram_id=eq.'+encodeURIComponent(id)+'&limit=1')
   ]);
+  if(req.method==='GET'&&req.query?.admin==='overview'){
+   if(!admins.length)throw fail(403,'Administrator access required');
+   const [members,subscriptionsAll,dogs,diagnostics,progress,feedback,lessons,chats]=await Promise.all([
+    db('club_subscriptions?select=student_id,status,start_date,end_date&limit=2000'),
+    db('club_subscriptions?select=id,status,start_date,end_date&limit=2000'),
+    db('club_dogs?select=id&limit=2000'),
+    db('club_diagnostics?select=dog_id,recommended_topics,created_at&order=created_at.desc&limit=2000'),
+    db('club_lesson_progress?select=student_id,completed_at&limit=2000'),
+    db('noya_practice_feedback?select=outcome,created_at&order=created_at.desc&limit=2000'),
+    db('club_lessons?select=id,title,topic,is_published&limit=500'),
+    db('noya_chat_history?select=created_at&order=created_at.desc&limit=2000')
+   ]);
+   const time=Date.now();
+   const activeMembers=new Set(members.filter(s=>s.status==='active'&&(!s.start_date||Date.parse(s.start_date)<=time)&&(!s.end_date||Date.parse(s.end_date)>time)).map(s=>s.student_id));
+   const topics={};const latest=new Set();
+   for(const d of diagnostics){if(latest.has(d.dog_id))continue;latest.add(d.dog_id);for(const t of Array.isArray(d.recommended_topics)?d.recommended_topics.slice(0,3):[]){if(typeof t==='string'&&t.length<70)topics[t]=(topics[t]||0)+1}}
+   const outcomes={success:0,partial:0,difficulty:0};for(const f of feedback)if(Object.hasOwn(outcomes,f.outcome))outcomes[f.outcome]++;
+   const dayStart=Date.now()-86400000;
+   return res.status(200).json({ok:true,summary:{activeMembers:activeMembers.size,subscriptionRecords:subscriptionsAll.length,dogs:dogs.length,diagnosedDogs:latest.size,completedLessons:progress.filter(p=>p.completed_at).length,practiceReports:feedback.length,aiChatsLast24h:chats.filter(x=>Date.parse(x.created_at)>=dayStart).length,publishedLessons:lessons.filter(l=>l.is_published).length,totalLessons:lessons.length},topics:Object.entries(topics).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([topic,count])=>({topic,count})),outcomes,lessons:lessons.map(l=>({title:l.title,topic:l.topic,published:l.is_published})),note:'Данные ограничены 2000 последними строками на категорию; личные переписки не раскрываются.'});
+  }
   const now=Date.now();
   const active=subscriptions.some(s=>(!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&(!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
   if(!active&&!admins.length)throw fail(403,'Active club subscription required');
