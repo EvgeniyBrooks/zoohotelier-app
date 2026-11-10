@@ -54,6 +54,21 @@ async function live(req,res){
    else await db('course_lesson_completions?student_id=eq.'+student+'&lesson_id=eq.'+lessonId,'DELETE');
    return res.status(200).json({ok:true,completed});
   }
+  if(action==='course_watch'){
+   const lessonId=req.body.lessonId;
+   if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId))throw fail(400,'Invalid lesson');
+   const lessons=await db('lessons?select=id,block_id,video_url,is_published&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
+   if(!lessons.length||!lessons[0].video_url)throw fail(404,'Lesson video unavailable');
+   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
+   if(!blocks.length)throw fail(404,'Lesson unavailable');
+   const videoId=lessons[0].video_url;
+   if(!/^[a-f0-9]{32}$/i.test(videoId))throw fail(503,'Invalid video ID');
+   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Cloudflare preview is not configured');
+   const cf=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+videoId+'/token',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),signal:AbortSignal.timeout(10000)});
+   const data=await cf.json().catch(()=>null);
+   if(!cf.ok||!data?.success||!data.result?.token)throw fail(502,'Video service unavailable');
+   return res.status(200).json({ok:true,token:data.result.token});
+  }
   if(action==='live_list'){
    const [streams,favorites]=await Promise.all([
     db('course_live_streams?select=id,title,description,cover_url,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=200'),
@@ -83,40 +98,7 @@ async function live(req,res){
 }
 export default async function handler(req, res) {
   if(req.method==='POST'&&/^(live_|course_)/.test(String(req.body?.action||'')))return live(req,res);
-  try {
-    const videoId = req.query.videoId;
-
-    if (!videoId) {
-      return res.status(400).json({ error: "videoId is required" });
-    }
-
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/stream/${videoId}/token`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      return res.status(500).json({
-        error: "Cloudflare token error",
-        details: data
-      });
-    }
-
-    return res.status(200).json({
-      token: data.result.token
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      error: "Server error"
-    });
-  }
+  res.setHeader('Cache-Control','no-store');
+  res.setHeader('Allow','POST');
+  return res.status(405).json({error:'Use authenticated POST for video playback'});
 }
