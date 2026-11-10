@@ -34,6 +34,26 @@ async function live(req,res){
   const courseId=courses[0].id,now=Date.now();
   if(!admins.length&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   const action=req.body.action;
+  if(action==='course_progress'){
+   const [blocks,lessons,completed]=await Promise.all([
+    db('course_blocks?select=id,block_number,title&course_id=eq.'+courseId+'&order=block_number.asc&limit=20'),
+    db('lessons?select=id,block_id,day_number,title,is_published&order=day_number.asc&limit=300'),
+    db('course_lesson_completions?select=lesson_id&student_id=eq.'+student+'&limit=300')
+   ]);
+   const ids=new Set(blocks.map(b=>b.id));
+   return res.status(200).json({ok:true,blocks,lessons:lessons.filter(l=>ids.has(l.block_id)),completed:completed.map(x=>x.lesson_id)});
+  }
+  if(action==='course_complete'){
+   const lessonId=req.body.lessonId,completed=req.body.completed;
+   if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId)||typeof completed!=='boolean')throw fail(400,'Invalid progress update');
+   const lessons=await db('lessons?select=id,block_id,is_published&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
+   if(!lessons.length)throw fail(404,'Lesson unavailable');
+   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
+   if(!blocks.length)throw fail(404,'Lesson unavailable');
+   if(completed)await db('course_lesson_completions?on_conflict=student_id,lesson_id','POST',{student_id:student,lesson_id:lessonId});
+   else await db('course_lesson_completions?student_id=eq.'+student+'&lesson_id=eq.'+lessonId,'DELETE');
+   return res.status(200).json({ok:true,completed});
+  }
   if(action==='live_list'){
    const [streams,favorites]=await Promise.all([
     db('course_live_streams?select=id,title,description,cover_url,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=200'),
@@ -62,7 +82,7 @@ async function live(req,res){
  }catch(e){if(!e.status)console.error('Course live error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
 }
 export default async function handler(req, res) {
-  if(req.method==='POST'&&String(req.body?.action||'').startsWith('live_'))return live(req,res);
+  if(req.method==='POST'&&/^(live_|course_)/.test(String(req.body?.action||'')))return live(req,res);
   try {
     const videoId = req.query.videoId;
 
