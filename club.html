@@ -159,9 +159,23 @@ function renderRoute(){
    const watch=document.createElement('button');watch.textContent='Смотреть';watch.onclick=()=>openClubLesson(lesson.id,lesson.title);line.append(watch);block.append(line);
    const doneButton=document.createElement('button');doneButton.className='button secondary';doneButton.style.marginTop='6px';doneButton.textContent=routeProgress.has(lesson.id)?'✓ Выполнено · отменить':'Отметить выполненным';
    doneButton.onclick=async()=>{const was=routeProgress.has(lesson.id);await setLessonProgress(lesson.id,!was,dogId);await loadRoute()};block.append(doneButton);
+   const feedback=document.createElement('div');feedback.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:9px';
+   for(const [value,label] of [['success','Получилось'],['partial','Частично'],['difficulty','Не получилось']]){
+    const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='border:1px solid #777;border-radius:10px;background:#252525;color:white;padding:8px;font-size:12px';
+    b.onclick=()=>submitPracticeFeedback(dogId,lesson.id,value);feedback.append(b)
+   }block.append(feedback);
   }
   el.append(block);
  });
+}
+async function submitPracticeFeedback(dogId,lessonId,outcome){
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)return;
+ try{
+  const r=await fetch('/api/club-progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'practice_feedback',initData,dogId,lessonId,outcome})});
+  if(!r.ok)throw Error('Не удалось сохранить результат');
+  document.getElementById('route-status').textContent=outcome==='success'?'НОЯ запомнила: упражнение получилось.':outcome==='partial'?'НОЯ запомнила: получилось частично. Повтори в более лёгких условиях.':'НОЯ запомнила: пока не получилось. Открой чат НОИ и обсуди трудность.';
+ }catch(e){alert(e.message)}
 }
 async function openClubLesson(id,title){
  const initData=window.Telegram?.WebApp?.initData;
