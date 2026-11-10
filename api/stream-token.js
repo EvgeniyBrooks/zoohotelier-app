@@ -71,10 +71,21 @@ async function live(req,res){
   }
   if(action==='live_list'){
    const [streams,favorites]=await Promise.all([
-    db('course_live_streams?select=id,title,description,cover_url,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=200'),
+    db('course_live_streams?select=id,title,description,cover_url,cloudflare_video_id,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=200'),
     db('course_live_favorites?select=stream_id&student_id=eq.'+student+'&limit=500')
    ]);
-   return res.status(200).json({ok:true,streams,favorites:favorites.map(f=>f.stream_id)});
+   const signed=await Promise.all(streams.map(async stream=>{
+    let cover=stream.cover_url;
+    if(!cover&&process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN){
+     try{
+      const cf=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+stream.cloudflare_video_id+'/token',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),signal:AbortSignal.timeout(7000)});
+      const data=await cf.json();
+      if(cf.ok&&data.success&&data.result?.token)cover='https://customer-9y0wom20nneqpu4g.cloudflarestream.com/'+encodeURIComponent(data.result.token)+'/thumbnails/thumbnail.jpg';
+     }catch(e){console.warn('Live thumbnail unavailable',e.message)}
+    }
+    return {id:stream.id,title:stream.title,description:stream.description,cover_url:cover,sort_order:stream.sort_order};
+   }));
+   return res.status(200).json({ok:true,streams:signed,favorites:favorites.map(f=>f.stream_id)});
   }
   const streamId=req.body.streamId;
   if(typeof streamId!=='string'||!/^[a-f0-9-]{36}$/i.test(streamId))throw fail(400,'Invalid stream');
