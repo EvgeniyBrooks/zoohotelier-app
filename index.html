@@ -251,14 +251,25 @@ async function markCourseLesson(id,completed,blockId,title){
  catch(e){alert(e.message)}
 }
 async function continueCourse(){
- const ordered=[...courseProgress.lessons].sort((a,b)=>{
-  const blocks=new Map(courseProgress.blocks.map(x=>[x.id,x.block_number]));
-  return (blocks.get(a.block_id)-blocks.get(b.block_id))||(a.day_number-b.day_number)
- });
- const done=new Set(courseProgress.completed),next=ordered.find(x=>x.is_published&&!done.has(x.id));
- if(!next){alert('Все доступные уроки завершены или ещё не опубликованы');return}
- const block=courseProgress.blocks.find(x=>x.id===next.block_id);
- await loadLesson(next.id,next.block_id,block?.title||'Урок');
+ try{
+  let blocks=courseProgress.blocks,lessons=courseProgress.lessons;
+  if(!lessons.length){
+   const headers={apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY};
+   const r=await fetch(SUPABASE_URL+'/rest/v1/lessons?select=id,block_id,day_number,title,is_published&is_published=eq.true&order=day_number.asc&limit=100',{headers});
+   if(!r.ok)throw Error('Не удалось загрузить уроки: '+r.status);
+   lessons=await r.json();
+   if(!blocks.length){
+    const b=await fetch(SUPABASE_URL+'/rest/v1/course_blocks?select=id,block_number,title&order=block_number.asc',{headers});
+    if(!b.ok)throw Error('Не удалось загрузить блоки: '+b.status);
+    blocks=await b.json();
+   }
+  }
+  const order=new Map(blocks.map(b=>[b.id,b.block_number])),allowed=new Set(blocks.map(b=>b.id)),done=new Set(courseProgress.completed);
+  const next=[...lessons].filter(l=>l.is_published&&allowed.has(l.block_id)&&!done.has(l.id)).sort((a,b)=>(order.get(a.block_id)-order.get(b.block_id))||(a.day_number-b.day_number))[0];
+  if(!next){alert('Нет доступных незавершённых уроков. Проверь раздел «Предобучение».');return}
+  const block=blocks.find(b=>b.id===next.block_id);
+  await loadLesson(next.id,next.block_id,block?.title||'Урок');
+ }catch(e){alert('Ошибка открытия урока: '+e.message)}
 }
 let currentUser = null;
 
@@ -474,7 +485,7 @@ async function loadCourse() {
     const blocks =
       await blocksResponse.json();
     try{courseProgress=await courseProgressRequest('course_progress')}
-    catch(e){console.warn('Course progress not available:',e.message);courseProgress={blocks:[],lessons:[],completed:[]}}
+    catch(e){console.warn('Course progress not available:',e.message);courseProgress={blocks:[],lessons:[],completed:[],error:e.message}}
 
 
 
