@@ -66,7 +66,7 @@ async function live(req,res){
    if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Cloudflare preview is not configured');
    const cf=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+videoId+'/token',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),signal:AbortSignal.timeout(10000)});
    const data=await cf.json().catch(()=>null);
-   if(!cf.ok||!data?.success||!data.result?.token){console.error('Cloudflare course video token failed',{status:cf.status,errors:(data?.errors||[]).map(e=>({code:e.code,message:e.message})),hasAccountId:!!process.env.CLOUDFLARE_ACCOUNT_ID,hasApiToken:!!process.env.CLOUDFLARE_API_TOKEN});throw fail(502,'Video service unavailable');}
+   if(!cf.ok||!data?.success||!data.result?.token){console.error('Cloudflare course video token failed',{status:cf.status,errors:(data?.errors||[]).map(e=>({code:e.code,message:e.message})),hasAccountId:!!process.env.CLOUDFLARE_ACCOUNT_ID,hasApiToken:!!process.env.CLOUDFLARE_API_TOKEN});throw fail(502,'Cloudflare HTTP '+cf.status+'; code '+String(data?.errors?.[0]?.code??'unknown'));}
    return res.status(200).json({ok:true,token:data.result.token});
   }
   if(action==='live_list'){
