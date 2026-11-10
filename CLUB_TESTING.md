@@ -32,3 +32,8 @@
 - Владелец подтвердил: это видео относится к курсу «Управление вниманием». Не добавлять его в библиотеку NOYA CLUB, не изменять его назначение и доступ.
 - **Критическая задача перед запуском:** существующий `/api/stream-token.js` выдаёт Cloudflare Stream token по произвольному `videoId` без проверки Telegram initData, подписки или прав на видео. Не использовать его для клуба. Разработать отдельный endpoint, который проверяет Telegram HMAC, клубную подписку и принадлежность видео опубликованному клубному уроку, прежде чем выдавать токен. Оценить и отдельно исправить доступ к видео действующего курса, не ломая учеников.
 - Таблицы библиотеки находятся только в черновой миграции `supabase/migrations/club_library_draft.sql` и **не применены** к базе.
+
+## Telegram test, 10 November 2026
+- Dedicated bot: @NoyaClubBrooksBot. Telegram initData signature check confirmed in Mini App.
+- Branch Preview environment has NOYA_TELEGRAM_BOT_TOKEN, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (verified names/targets; values not inspected).
+- Redeploy after environment changes; verify actual dog save and GET. Do not infer database success from a successful Telegram-only auth check.
