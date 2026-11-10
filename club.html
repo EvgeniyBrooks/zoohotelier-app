@@ -24,7 +24,7 @@
 <button class="nav" data-screen="members"><span class="ico">♧</span><span>Участники</span></button>
 <button class="nav" data-screen="library"><span class="ico">▥</span><span>Библиотека</span></button>
 <button class="nav" data-screen="bonuses"><span class="ico">☆</span><span>Бонусы</span></button>
-</nav><script>
+</nav><div id="admin-panel" style="display:none;background:#171717;color:#fff;border:1px solid #555;border-radius:16px;padding:18px;margin:16px 0"><h2 style="color:#f5fa45">NOYA CLUB · АДМИН</h2><button id="admin-refresh" class="button secondary" type="button">Обновить статистику</button><p id="admin-state">Загрузка…</p><div id="admin-summary"></div><h3>Приоритеты диагностик</h3><div id="admin-topics"></div><h3>Результаты упражнений</h3><div id="admin-outcomes"></div></div><script>
 let clubLessonCache=[];let dogProgress=new Map();let clubDogs=[];let clubDiagnostics=[];let routeProgress=new Map();
 const screens=[...document.querySelectorAll('.screen')],nav=[...document.querySelectorAll('.nav')];
 function showScreen(id){if(!screens.some(s=>s.id===id))id='home';screens.forEach(s=>s.hidden=s.id!==id);nav.forEach(n=>{if(n.dataset.screen===id)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current')});history.replaceState(null,'','#'+id);window.scrollTo(0,0)}
@@ -272,4 +272,4 @@ async function checkNoyaTelegram(){
   el.textContent='Авторизация не подтверждена ('+r.status+'). Проверь запуск через @NoyaClubBrooksBot.';
  }catch(e){el.textContent='Не удалось проверить авторизацию. Попробуй ещё раз.'}
 }
-</script><div id="admin-panel" style="display:none;background:#171717;color:#fff;border:1px solid #555;border-radius:16px;padding:18px;margin:16px 0"><h2 style="color:#f5fa45">NOYA CLUB · АДМИН</h2><button id="admin-refresh" class="button secondary" type="button">Обновить статистику</button><p id="admin-state">Загрузка…</p><div id="admin-summary"></div><h3>Приоритеты диагностик</h3><div id="admin-topics"></div><h3>Результаты упражнений</h3><div id="admin-outcomes"></div></div></body></html>
+</script></body></html>
