@@ -25,7 +25,7 @@ jobs:
           node --check api/club-lessons.js
           node --check api/club-progress.js
       - name: Run API tests
-        run: node --test tests/club-diagnostic.test.js tests/club-video-token.test.js
+        run: node --test tests/club-diagnostic.test.js tests/club-video-token.test.js tests/noya-ai.test.js
       - name: Check embedded page scripts
         run: |
           node - <<'NODE'
