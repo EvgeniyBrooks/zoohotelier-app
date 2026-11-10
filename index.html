@@ -14,6 +14,7 @@
 
   <!-- Telegram Mini App -->
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+  <script src="https://embed.cloudflarestream.com/embed/sdk.latest.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -257,6 +258,80 @@ const CLOUDFLARE_CUSTOMER =
   "customer-9y0wom20nneqpu4g.cloudflarestream.com";
 
 
+let activeCourseWatch=null;
+function setupAutomaticLessonCompletion(lessonId,alreadyDone){
+ if(activeCourseWatch){activeCourseWatch.cancelled=true;activeCourseWatch=null}
+ const iframe=document.getElementById('course-video-player');
+ const status=document.getElementById('course-watch-status');
+ if(!iframe||alreadyDone){if(status&&alreadyDone)status.textContent='✓ Урок уже пройден';return}
+ if(typeof window.Stream!=='function'){if(status)status.textContent='Автоматическое отслеживание недоступно. Можно отметить урок вручную.';return}
+ const watch={cancelled:false,lastTime:null,watched:0,saving:false,completed:false};
+ activeCourseWatch=watch;
+ try{
+  const player=window.Stream(iframe);
+  const update=async()=>{
+   if(watch.cancelled||watch.saving||watch.completed)return;
+   const duration=Number(player.duration),current=Number(player.currentTime);
+   if(!Number.isFinite(duration)||duration<=0||!Number.isFinite(current))return;
+   if(watch.lastTime!==null){
+    const delta=current-watch.lastTime;
+    if(delta>0&&delta<=2.5)watch.watched+=delta;
+   }
+   watch.lastTime=current;
+   const percent=Math.min(100,Math.floor(100*watch.watched/duration));
+   if(status)status.textContent='Просмотрено: '+percent+'% из 90% для завершения урока';
+   if(watch.watched<duration*.9)return;
+   watch.saving=true;
+   if(status)status.textContent='Сохраняем прохождение урока…';
+   try{
+    await courseProgressRequest('course_complete',{lessonId,completed:true});
+    if(watch.cancelled)return;
+    watch.completed=true;
+    if(!courseProgress.completed.includes(lessonId))courseProgress.completed.push(lessonId);
+    if(status)status.textContent='✓ Урок просмотрен и отмечен пройденным';
+    const button=document.getElementById('course-manual-complete');
+    if(button)button.textContent='Урок завершён ✓';
+   }catch(e){watch.saving=false;if(status)status.textContent='Не удалось сохранить просмотр: '+e.message}
+  };
+  player.addEventListener('timeupdate',update);
+  player.addEventListener('seeking',()=>{watch.lastTime=null});
+  player.addEventListener('pause',()=>{watch.lastTime=null});
+  player.addEventListener('ended',update);
+  if(status)status.textContent='Просмотри 90% видео — урок завершится автоматически';
+ }catch(e){if(status)status.textContent='Автоматическое отслеживание недоступно. Можно отметить урок вручную.'}
+}
+let courseProgress={blocks:[],lessons:[],completed:[]};
+async function courseProgressRequest(action,extra={}){
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)throw Error('Открой курс через Telegram');
+ const r=await fetch('/api/stream-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,initData,...extra})});
+ const data=await r.json();if(!r.ok)throw Error(data.error||'Ошибка прогресса');return data;
+}
+async function markCourseLesson(id,completed,blockId,title){
+ try{await courseProgressRequest('course_complete',{lessonId:id,completed});await loadLesson(id,blockId,title)}
+ catch(e){alert(e.message)}
+}
+async function continueCourse(){
+ try{
+  let blocks=courseProgress.blocks,lessons=courseProgress.lessons;
+  if(!lessons.length){
+   const headers={apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY};
+   const r=await fetch(SUPABASE_URL+'/rest/v1/lessons?select=id,block_id,day_number,title,is_published&is_published=eq.true&order=day_number.asc&limit=100',{headers});
+   if(!r.ok)throw Error('Не удалось загрузить уроки: '+r.status);
+   lessons=await r.json();
+   if(!blocks.length){
+    const b=await fetch(SUPABASE_URL+'/rest/v1/course_blocks?select=id,block_number,title&order=block_number.asc',{headers});
+    if(!b.ok)throw Error('Не удалось загрузить блоки: '+b.status);
+    blocks=await b.json();
+   }
+  }
+  const order=new Map(blocks.map(b=>[b.id,b.block_number])),allowed=new Set(blocks.map(b=>b.id)),done=new Set(courseProgress.completed);
+  const next=[...lessons].filter(l=>l.is_published&&allowed.has(l.block_id)&&!done.has(l.id)).sort((a,b)=>(order.get(a.block_id)-order.get(b.block_id))||(a.day_number-b.day_number))[0];
+  if(!next){alert('Нет доступных незавершённых уроков. Проверь раздел «Предобучение».');return}
+  const block=blocks.find(b=>b.id===next.block_id);
+  await loadLesson(next.id,next.block_id,block?.title||'Урок');
+ }catch(e){alert('Ошибка открытия урока: '+e.message)}
+}
 let currentUser = null;
 
 window.isAdmin = false;
@@ -470,52 +545,36 @@ async function loadCourse() {
 
     const blocks =
       await blocksResponse.json();
+    try{courseProgress=await courseProgressRequest('course_progress')}
+    catch(e){console.warn('Course progress not available:',e.message);courseProgress={blocks:[],lessons:[],completed:[],error:e.message}}
+
 
 
     // ----------------------------------------------
     // НОВОСТИ
     // ----------------------------------------------
 
-    const newsResponse =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/news" +
-        "?select=id,title,content,image_url,created_at" +
-        "&is_published=eq.true" +
-        "&order=created_at.desc" +
-        "&limit=5",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
-        }
-      );
-
-
-    if (!newsResponse.ok) {
-
-      throw new Error(
-        "Ошибка загрузки новостей: " +
-        newsResponse.status
-      );
-
-    }
-
-
-    const news =
-      await newsResponse.json();
-
-
     let html = "";
 
 
+    html += `
+      <a href="./course-live.html" style="display:block;background:#101010;color:#fff;padding:20px;border-radius:18px;margin:16px 0;text-decoration:none;border:1px solid #444">
+        <div style="color:#f5fa45;font-weight:800;font-size:12px;letter-spacing:1.4px">ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ</div>
+        <div style="font-size:24px;font-weight:900;margin:8px 0">ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ</div>
+        <div style="color:#aaa">Отдельная библиотека записей · скоро</div>
+        <div style="color:#f5fa45;margin-top:12px">Открыть раздел →</div>
+      </a>`;
+    const done=new Set(courseProgress.completed);
+    const total=courseProgress.lessons.length||26;
+    html += `
+      <div style="background:#f5fa45;color:#111;border-radius:22px;padding:22px;margin-bottom:18px">
+        <div style="font-size:12px;font-weight:800;letter-spacing:1px">ТВОЯ ТРАЕКТОРИЯ</div>
+        <div style="font-size:29px;font-weight:900;line-height:1.1;margin:9px 0">УПРАВЛЕНИЕ ВНИМАНИЕМ</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:18px">
+          <span style="border:2px solid #111;border-radius:30px;padding:13px;font-weight:800;white-space:nowrap">${done.size} из ${total}</span>
+          <button onclick="continueCourse()" style="background:#111;color:#f5fa45;border:0;border-radius:14px;padding:16px;flex:1;font-weight:800">Продолжить →</button>
+        </div>
+      </div>`;
     // ----------------------------------------------
     // АДМИНКА
     // ----------------------------------------------
@@ -541,36 +600,6 @@ async function loadCourse() {
     // НОВОСТИ
     // ----------------------------------------------
 
-    html += `
-
-      <div
-        class="card news-card"
-        onclick="loadNews()"
-      >
-
-        <div class="label">
-          📰 НОВОСТИ
-        </div>
-
-        <div class="news-title">
-          Новости и объявления
-        </div>
-
-        <div class="news-preview">
-
-          ${
-            news.length
-              ? "Есть новые сообщения →"
-              : "Пока новостей нет →"
-          }
-
-        </div>
-
-      </div>
-
-    `;
-
-
     // ----------------------------------------------
     // БЛОКИ
     // ----------------------------------------------
@@ -593,6 +622,10 @@ async function loadCourse() {
 
       blocks.forEach(
         (block, index) => {
+          const weekLessons=courseProgress.lessons.filter(l=>l.block_id===block.id);
+          const weekDone=weekLessons.filter(l=>done.has(l.id)).length;
+          const weekTotal=weekLessons.length||(block.block_number===0?2:6);
+          const weekPct=Math.round(100*weekDone/weekTotal);
 
           html += `
 
@@ -617,8 +650,12 @@ async function loadCourse() {
               </div>
 
               <div class="block-info">
-                Открыть уроки →
+                ${weekDone} из ${weekTotal} уроков · ${weekPct}% пройдено
               </div>
+              <div role="progressbar" aria-label="Прогресс блока" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${weekPct}" style="height:9px;border-radius:20px;background:#dedede;overflow:hidden;margin:13px 0 8px">
+                <div style="height:100%;width:${weekPct}%;background:#e3db25;border-radius:20px;transition:width .25s"></div>
+              </div>
+              <div style="font-size:13px;font-weight:700">Открыть уроки →</div>
 
             </div>
 
@@ -895,6 +932,12 @@ async function loadLessons(
     }
 
     const lessons = await response.json();
+    const doneIds=new Set(courseProgress.completed);
+    const finished=lessons.filter(l=>doneIds.has(l.id)).length;
+    const blockMeta=courseProgress.blocks.find(b=>b.id===blockId);
+    const blockTotal=blockMeta?.block_number===0?2:6;
+    const percent=Math.round(100*finished/blockTotal);
+
 
     let html = `
       <button class="button back-button" onclick="loadCourse()">
@@ -904,6 +947,8 @@ async function loadLessons(
       <div class="card">
         <div class="label">БЛОК</div>
         <div class="lesson-title">${escapeHtml(blockTitle)}</div>
+        <div style="margin-top:12px;font-weight:700">${finished} из ${blockTotal} уроков · ${percent}% пройдено</div>
+        <div role="progressbar" aria-label="Прогресс недели" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}" style="height:10px;border-radius:20px;background:#dedede;overflow:hidden;margin-top:9px"><div style="height:100%;width:${percent}%;background:#e3db25;border-radius:20px"></div></div>
       </div>
     `;
 
@@ -993,17 +1038,28 @@ async function loadLesson(
     }
 
     const lesson = lessons[0];
+    const alreadyDone=courseProgress.completed.includes(lesson.id);
     const currentBlockId = blockId || lesson.block_id;
     let videoHtml = "";
+    const completeHtml=`<div class="card" style="border:1px solid #ddd">
+      <div style="font-weight:700;margin-bottom:10px">Прогресс урока: ${alreadyDone?'✓ Завершён':'Ещё не завершён'}</div>
+      <button id="course-manual-complete" class="button" onclick="markCourseLesson('${lesson.id}',${!alreadyDone},'${currentBlockId}','${escapeHtml(blockTitle)}')">${alreadyDone?'Отменить отметку':'Отметить урок пройденным'}</button>
+      <p style="margin-top:10px;font-size:12px;color:#777">Просмотр урока и выполнение упражнения — разные результаты.</p>
+    </div>`;
+
 
     if (lesson.video_url) {
-      const tokenResponse = await fetch(
-        "/api/stream-token?videoId=" + encodeURIComponent(lesson.video_url)
-      );
+      const tokenResponse = await fetch('/api/stream-token',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'course_watch',initData:window.Telegram?.WebApp?.initData,lessonId:lesson.id})
+      });
 
       if (!tokenResponse.ok) {
+        const errorData=await tokenResponse.json().catch(()=>({}));
         throw new Error(
-          "Не удалось получить доступ к видео: " + tokenResponse.status
+          "Не удалось получить доступ к видео: " + tokenResponse.status +
+          (errorData.error ? " — " + String(errorData.error).slice(0,180) : "")
         );
       }
 
@@ -1017,12 +1073,13 @@ async function loadLesson(
         <div class="card">
           <div class="label">🎬 ВИДЕО УРОКА</div>
           <div class="video-wrapper">
-            <iframe
+            <iframe id="course-video-player"
               src="https://${CLOUDFLARE_CUSTOMER}/${tokenData.token}/iframe"
               allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
               allowfullscreen>
             </iframe>
           </div>
+          <p id="course-watch-status" style="font-size:13px;color:#777;margin-top:12px">Просмотри 90% видео — урок завершится автоматически</p>
         </div>
       `;
     }
@@ -1065,7 +1122,9 @@ async function loadLesson(
           +${lesson.crystal_reward || 0} кристаллов
         </div>
       </div>
+      ${completeHtml}
     `;
+    if(lesson.video_url)setupAutomaticLessonCompletion(lesson.id,alreadyDone);
 
   } catch (error) {
     console.error(error);
@@ -1728,725 +1787,12 @@ function formatDate(value) {
 // ОТКРЫТИЕ ПОТОКА
 // ==================================================
 
-async function loadCohort(cohortId) {
-
-  if (!window.isAdmin) {
-    alert("Доступ запрещён.");
-    return;
-  }
-
-  // здесь должен продолжаться код loadCohort()
-  // ...
-
-}   // ← закрывает loadCohort
-
-// ==================================================
-// РЕДАКТИРОВАНИЕ ПОТОКА
-// ==================================================
-
-window.editCohort = async function editCohort(cohortId) {
-
-  if (!window.isAdmin) {
-    alert("Доступ запрещён.");
-    return;
-  }
-window.deleteCohort = async function (cohortId) {
-  if (!window.isAdmin) {
-    alert("Доступ запрещён.");
-    return;
-  }
-
-  const confirmed = confirm(
-    "⚠️ Вы точно хотите удалить этот поток?\n\n" +
-    "Удалить поток можно только если в нём нет учеников."
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-
-    const response = await fetch(
-      "/api/admin-cohort-delete",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-
-          initData:
-            Telegram.WebApp.initData,
-
-          cohortId:
-            cohortId
-
-        })
-      }
-    );
-
-    const data =
-      await response
-        .json()
-        .catch(() => ({}));
-
-    if (!response.ok) {
-
-      throw new Error(
-        data.error ||
-        "Не удалось удалить поток"
-      );
-
-    }
-
-    alert("✅ Поток удалён.");
-
-    await loadCohorts();
-
-  } catch (error) {
-
-    console.error(error);
-
-    alert(
-      "❌ " +
-      (error.message ||
-       "Ошибка удаления потока")
-    );
-
-  }
-
-};
-  const app =
-    document.getElementById("app");
-
-  app.innerHTML = `
-    <button
-      class="button back-button"
-      onclick="loadCohort('${cohortId}')"
-    >
-      ← Назад к потоку
-    </button>
-
-    <div class="card">
-      <div class="label">✏️ РЕДАКТИРОВАНИЕ ПОТОКА</div>
-
-      <div style="margin-top:16px;">
-
-        <div class="label">
-          Название потока
-        </div>
-
-        <input
-          id="edit-cohort-name"
-          type="text"
-          maxlength="100"
-          style="
-            width:100%;
-            padding:14px;
-            border:1px solid #ddd;
-            border-radius:12px;
-            font-size:16px;
-            box-sizing:border-box;
-            margin-bottom:14px;
-          "
-        >
-
-        <div class="label">
-          Дата начала
-        </div>
-
-        <input
-          id="edit-cohort-start"
-          type="date"
-          style="
-            width:100%;
-            padding:14px;
-            border:1px solid #ddd;
-            border-radius:12px;
-            font-size:16px;
-            box-sizing:border-box;
-            margin-bottom:14px;
-          "
-        >
-
-        <div class="label">
-          Дата окончания
-        </div>
-
-        <input
-          id="edit-cohort-end"
-          type="date"
-          style="
-            width:100%;
-            padding:14px;
-            border:1px solid #ddd;
-            border-radius:12px;
-            font-size:16px;
-            box-sizing:border-box;
-            margin-bottom:14px;
-          "
-        >
-
-        <div class="label">
-          Доступ до
-        </div>
-
-        <input
-          id="edit-cohort-access-end"
-          type="date"
-          style="
-            width:100%;
-            padding:14px;
-            border:1px solid #ddd;
-            border-radius:12px;
-            font-size:16px;
-            box-sizing:border-box;
-            margin-bottom:14px;
-          "
-        >
-
-        <button
-          class="button"
-          onclick="saveCohort('${cohortId}')"
-        >
-          💾 Сохранить изменения
-        </button>
-
-        <div
-          id="edit-cohort-status"
-          style="
-            margin-top:12px;
-            font-size:14px;
-            color:#777;
-          "
-        ></div>
-
-      </div>
-    </div>
-  `;
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/admin-cohort",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            initData:
-              Telegram.WebApp.initData,
-
-            cohortId:
-              cohortId,
-
-            action:
-              "view"
-
-          })
-        }
-      );
-
-
-    const data =
-      await response
-        .json()
-        .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        data.details
-          ? data.error +
-            ": " +
-            data.details
-          : data.error ||
-            "Не удалось загрузить поток"
-      );
-
-    }
-
-
-    const cohort =
-      data.cohort;
-
-
-    if (!cohort) {
-      throw new Error(
-        "Поток не найден"
-      );
-    }
-
-
-    document
-      .getElementById(
-        "edit-cohort-name"
-      )
-      .value =
-        cohort.name || "";
-
-
-    document
-      .getElementById(
-        "edit-cohort-start"
-      )
-      .value =
-        cohort.start_date || "";
-
-
-    document
-      .getElementById(
-        "edit-cohort-end"
-      )
-      .value =
-        cohort.end_date || "";
-
-
-    document
-      .getElementById(
-        "edit-cohort-access-end"
-      )
-      .value =
-        cohort.access_end_date || "";
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    document
-      .getElementById(
-        "edit-cohort-status"
-      )
-      .textContent =
-        "❌ " + error.message;
-
-  }
-
-}
-
-
-// ==================================================
-// СОХРАНЕНИЕ ПОТОКА
-// ==================================================
-
-window.saveCohort = async function saveCohort(cohortId) {
-
-  const name =
-    document
-      .getElementById(
-        "edit-cohort-name"
-      )
-      .value
-      .trim();
-
-
-  const startDate =
-    document
-      .getElementById(
-        "edit-cohort-start"
-      )
-      .value;
-
-
-  const endDate =
-    document
-      .getElementById(
-        "edit-cohort-end"
-      )
-      .value;
-
-
-  const accessEndDate =
-    document
-      .getElementById(
-        "edit-cohort-access-end"
-      )
-      .value;
-
-
-  const status =
-    document
-      .getElementById(
-        "edit-cohort-status"
-      );
-
-
-  if (!name) {
-
-    status.textContent =
-      "❌ Укажите название потока";
-
-    status.style.color =
-      "#b00020";
-
-    return;
-
-  }
-
-
-  if (
-    !startDate ||
-    !endDate ||
-    !accessEndDate
-  ) {
-
-    status.textContent =
-      "❌ Заполните все даты";
-
-    status.style.color =
-      "#b00020";
-
-    return;
-
-  }
-
-
-  status.textContent =
-    "Сохраняем...";
-
-
-  status.style.color =
-    "#777";
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/admin-cohort",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            initData:
-              Telegram.WebApp.initData,
-
-            cohortId:
-              cohortId,
-
-            action:
-              "update",
-
-            name:
-              name,
-
-            startDate:
-              startDate,
-
-            endDate:
-              endDate,
-
-            accessEndDate:
-              accessEndDate
-
-          })
-        }
-      );
-
-
-    const data =
-      await response
-        .json()
-        .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        data.details
-          ? data.error +
-            ": " +
-            data.details
-          : data.error ||
-            "Не удалось сохранить поток"
-      );
-
-    }
-
-
-    status.textContent =
-      "✅ Изменения сохранены";
-
-
-    status.style.color =
-      "#16803c";
-
-
-    setTimeout(
-      () => {
-        loadCohort(cohortId);
-      },
-      700
-    );
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    status.textContent =
-      "❌ " + error.message;
-
-    status.style.color =
-      "#b00020";
-
-  }
-
-}
-  const app =
-    document.getElementById("app");
-
-  app.innerHTML = `
-
-    <button
-      class="button back-button"
-      onclick="loadCohorts()"
-    >
-      ← К потокам
-    </button>
-
-    <div class="card">
-
-      <div class="label">
-        📚 ПОТОК
-      </div>
-
-      <div class="lesson-title">
-        Загрузка...
-      </div>
-
-    </div>
-
-  `;
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/admin-cohort",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            initData:
-              Telegram.WebApp.initData,
-
-            cohortId:
-              cohortId,
-
-            action:
-              "view"
-
-          })
-        }
-      );
-
-
-    const data =
-      await response
-        .json()
-        .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        data.details
-          ? data.error +
-            ": " +
-            data.details
-          : data.error ||
-            "Не удалось загрузить поток"
-      );
-
-    }
-
-
-    const cohort =
-      data.cohort;
-
-
-    if (!cohort) {
-      throw new Error(
-        "Поток не найден"
-      );
-    }
-
-
-    const startDate =
-      formatDate(
-        cohort.start_date
-      );
-
-    const endDate =
-      formatDate(
-        cohort.end_date
-      );
-
-    const accessEndDate =
-      formatDate(
-        cohort.access_end_date
-      );
-
-
-    app.innerHTML = `
-
-      <button
-        class="button back-button"
-        onclick="loadCohorts()"
-      >
-        ← К потокам
-      </button>
-
-
-      <div class="card">
-
-        <div class="label">
-          📚 ПОТОК
-        </div>
-
-        <div class="lesson-title">
-          ${escapeHtml(
-            cohort.name
-          )}
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="label">
-          📅 ДАТЫ ОБУЧЕНИЯ
-        </div>
-
-        <div
-          style="
-            font-size:18px;
-            font-weight:600;
-            margin-top:8px;
-          "
-        >
-          ${startDate}
-          —
-          ${endDate}
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="label">
-          🔐 ДОСТУП К КУРСУ
-        </div>
-
-        <div
-          style="
-            font-size:18px;
-            font-weight:600;
-            margin-top:8px;
-          "
-        >
-          До ${accessEndDate}
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="label">
-          ⚙️ УПРАВЛЕНИЕ
-        </div>
-
-      <button
-  class="button"
-  onclick="editCohort(
-    '${cohort.id}'
-  )"
->
-  ✏️ Редактировать поток
-</button>
-
-<button
-  class="button"
-  style="
-    margin-top:10px;
-    background:#dc2626;
-    color:white;
-  "
-  onclick="deleteCohort(
-    '${cohort.id}'
-  )"
->
-  🗑️ Удалить поток
-</button>
-      </div>
-
-    `;
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    app.innerHTML = `
-
-      <button
-        class="button back-button"
-        onclick="loadCohorts()"
-      >
-        ← К потокам
-      </button>
-
-      <div class="card">
-
-        <div class="error">
-
-          Не удалось загрузить поток.
-
-          <br><br>
-
-          ${escapeHtml(
-            error.message
-          )}
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-}
+async function loadCohort(cohortId){alert('Просмотр потока временно недоступен в тестовой версии.')}
+window.editCohort=async function(){alert('Редактирование потоков временно недоступно в тестовой версии.')}
+window.deleteCohort=async function(){alert('Удаление потоков временно недоступно в тестовой версии.')}
+window.saveCohort=async function(){alert('Редактирование потоков временно недоступно в тестовой версии.')}
+
+// СПИСОК УЧЕНИКОВ
 async function loadStudents() {
 
   if (!window.isAdmin) {

@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
 
     const secretKey = crypto
       .createHmac("sha256", "WebAppData")
-      .update(process.env.TELEGRAM_BOT_TOKEN)
+      .update(process.env.NOYA_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN)
       .digest();
 
     const calculatedHash = crypto
@@ -101,14 +101,7 @@ module.exports = async function handler(req, res) {
     const supabaseData =
       await supabaseResponse.json();
 
-    console.log(
-      "SUPABASE STUDENT RESPONSE:",
-      {
-        status: supabaseResponse.status,
-        ok: supabaseResponse.ok,
-        data: supabaseData
-      }
-    );
+
 
     if (!supabaseResponse.ok) {
       console.error(
@@ -270,7 +263,7 @@ module.exports = async function handler(req, res) {
 
       access: {
         hasAccess:
-          Boolean(activeEnrollment),
+          Boolean(activeEnrollment) || isAdmin,
 
         enrollment:
           activeEnrollment || null
