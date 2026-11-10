@@ -14,7 +14,7 @@
 <div class="tile inactive"><span class="glyph">◎</span><strong>ЭФИРЫ</strong><small>Встречи клуба — скоро</small></div></div></div>
 <div class="section"><div class="eyebrow">Отдельный продукт</div><h2>МОЙ КУРС</h2><div class="card"><h3>УПРАВЛЕНИЕ ВНИМАНИЕМ</h3><p>Твой действующий курс доступен отдельно от клуба.</p><a class="button secondary" href="./index.html">Перейти в курс <span>↗</span></a></div></div></section>
 <section id="members" class="screen" hidden><div class="eyebrow">NOYA / сообщество</div><h1>УЧАСТНИКИ</h1><p>Место, где владельцы собак смогут знакомиться, общаться и делиться опытом.</p><div class="empty"><h3>СКОРО ЗДЕСЬ БУДУТ СОБАЧНИКИ</h3>Профили участников появятся после настройки согласия на публикацию и защиты личных данных.</div></section>
-<section id="library" class="screen" hidden><div class="eyebrow">NOYA / обучение</div><h1>МОЯ БИБЛИОТЕКА</h1><div class="tabs" role="tablist" aria-label="Разделы библиотеки"><button class="tab" role="tab" aria-selected="true" data-library="history">История</button><button class="tab" role="tab" aria-selected="false" data-library="favorites">Избранное</button><button class="tab" role="tab" aria-selected="false" data-library="completed">Пройденное</button></div><div id="library-content" class="empty"><h3>ИСТОРИЯ ПОКА ПУСТА</h3>Здесь появятся просмотренные уроки, когда мы подключим библиотеку клуба.</div><div class="section"><h2>КЛУБНЫЕ УРОКИ</h2><div id="club-lessons" class="empty">Загружаем доступные уроки…</div></div><div class="section"><h2>НАПРАВЛЕНИЯ ОБУЧЕНИЯ</h2><div class="card"><div class="label">В разработке</div><h3>КОНТАКТ И ВНИМАНИЕ</h3><p>Уроки, задания и практические упражнения появятся здесь.</p></div><div class="card"><div class="label">В разработке</div><h3>СПОКОЙСТВИЕ И СОЦИАЛИЗАЦИЯ</h3><p>Материалы по поведению собаки дома и на прогулке.</p></div></div></section>
+<section id="library" class="screen" hidden><div class="eyebrow">NOYA / обучение</div><h1>МОЯ БИБЛИОТЕКА</h1><div class="tabs" role="tablist" aria-label="Разделы библиотеки"><button class="tab" role="tab" aria-selected="true" data-library="history">История</button><button class="tab" role="tab" aria-selected="false" data-library="favorites">Избранное</button><button class="tab" role="tab" aria-selected="false" data-library="completed">Пройденное</button></div><div id="library-content" class="empty"><h3>ИСТОРИЯ ПОКА ПУСТА</h3>Здесь появятся просмотренные уроки, когда мы подключим библиотеку клуба.</div><div class="section"><h2>КЛУБНЫЕ УРОКИ</h2><label for="progress-dog">Прогресс собаки</label><select id="progress-dog" style="display:block;width:100%;margin:9px 0 16px;padding:12px;background:#191919;color:white;border:1px solid #555;border-radius:10px"><option value="">Выбери собаку</option></select><p id="progress-summary" aria-live="polite"></p><div id="club-lessons" class="empty">Загружаем доступные уроки…</div></div><div class="section"><h2>НАПРАВЛЕНИЯ ОБУЧЕНИЯ</h2><div class="card"><div class="label">В разработке</div><h3>КОНТАКТ И ВНИМАНИЕ</h3><p>Уроки, задания и практические упражнения появятся здесь.</p></div><div class="card"><div class="label">В разработке</div><h3>СПОКОЙСТВИЕ И СОЦИАЛИЗАЦИЯ</h3><p>Материалы по поведению собаки дома и на прогулке.</p></div></div></section>
 <section id="bonuses" class="screen" hidden><div class="eyebrow">NOYA / программа лояльности</div><h1>БОНУСЫ</h1><div class="notice"><strong>Бонусная программа готовится</strong><p>Баллы, приглашения друзей и награды пока не начисляются. Мы добавим их после запуска основных функций клуба.</p></div><div class="section"><h2>ПРИГЛАСИ ДРУГА</h2><p>Реферальная ссылка и история приглашений появятся после подключения клубной подписки.</p></div></section>
 <div class="foot">NOYA CLUB by Brooks · тестовая версия</div>
 </main><nav class="bottom" aria-label="Основная навигация">
@@ -23,6 +23,7 @@
 <button class="nav" data-screen="library"><span class="ico">▥</span><span>Библиотека</span></button>
 <button class="nav" data-screen="bonuses"><span class="ico">☆</span><span>Бонусы</span></button>
 </nav><script>
+let clubLessonCache=[];let dogProgress=new Map();
 const screens=[...document.querySelectorAll('.screen')],nav=[...document.querySelectorAll('.nav')];
 function showScreen(id){if(!screens.some(s=>s.id===id))id='home';screens.forEach(s=>s.hidden=s.id!==id);nav.forEach(n=>{if(n.dataset.screen===id)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current')});history.replaceState(null,'','#'+id);window.scrollTo(0,0)}
 nav.forEach(n=>n.addEventListener('click',()=>showScreen(n.dataset.screen)));
@@ -38,6 +39,10 @@ async function loadClubProfile(){
   if(!response.ok)return;
   const data=await response.json();
   if(!data.dogs?.length)return;
+  const select=document.getElementById("progress-dog");
+  for(const d of data.dogs){const opt=document.createElement("option");opt.value=d.id;opt.textContent=d.name;select.append(opt)}
+  select.value=data.diagnostics?.[0]?.dog_id||data.dogs[0].id;
+  await loadDogProgress();
   const latest=data.diagnostics?.[0];
   const dog=latest?data.dogs.find(d=>d.id===latest.dog_id):data.dogs[0];
   if(!dog)return;
@@ -56,6 +61,7 @@ async function loadClubLessons(){
   if(r.status===403){el.textContent='Для просмотра уроков нужна активная подписка NOYA CLUB.';return}
   if(!r.ok)throw Error('Не удалось загрузить каталог');
   const data=await r.json();
+  clubLessonCache=data.lessons||[];
   el.replaceChildren();
   if(!data.lessons?.length){el.textContent='Первые уроки клуба скоро появятся.';return}
   el.className='';
@@ -64,9 +70,39 @@ async function loadClubLessons(){
    const h=document.createElement('h3');h.textContent=lesson.title;card.append(h);
    const p=document.createElement('p');p.textContent=lesson.description||'Урок NOYA CLUB';card.append(p);
    const b=document.createElement('button');b.className='button';b.textContent='Открыть урок';b.onclick=()=>openClubLesson(lesson.id,lesson.title);card.append(b);
+   const done=document.createElement('button');done.className='button secondary';done.style.marginTop='8px';done.dataset.completeLesson=lesson.id;done.textContent=dogProgress.has(lesson.id)?'✓ Пройдено':'Отметить пройденным';done.onclick=()=>setLessonProgress(lesson.id,!dogProgress.has(lesson.id));card.append(done);
    el.append(card);
   }
+  updateProgressSummary();
  }catch(e){el.textContent='Каталог временно недоступен. Попробуй позже.'}
+}
+document.getElementById('progress-dog').addEventListener('change',loadDogProgress);
+async function loadDogProgress(){
+ const dogId=document.getElementById('progress-dog').value,initData=window.Telegram?.WebApp?.initData;
+ dogProgress=new Map();
+ if(!dogId||!initData){updateProgressSummary();return}
+ try{
+  const r=await fetch('/api/club-progress?dogId='+encodeURIComponent(dogId),{headers:{'x-telegram-init-data':initData}});
+  if(!r.ok)throw Error('Progress unavailable');
+  const data=await r.json();
+  dogProgress=new Map((data.progress||[]).filter(p=>p.completed_at).map(p=>[p.lesson_id,p.completed_at]));
+ }catch(e){document.getElementById('progress-summary').textContent='Не удалось загрузить прогресс';return}
+ updateProgressSummary();
+ document.querySelectorAll('[data-complete-lesson]').forEach(b=>{b.textContent=dogProgress.has(b.dataset.completeLesson)?'✓ Пройдено':'Отметить пройденным'});
+}
+function updateProgressSummary(){
+ const el=document.getElementById('progress-summary');
+ if(!document.getElementById('progress-dog').value){el.textContent='Добавь собаку через диагностику, чтобы отмечать уроки';return}
+ el.textContent='Пройдено '+clubLessonCache.filter(l=>dogProgress.has(l.id)).length+' из '+clubLessonCache.length+' опубликованных уроков';
+}
+async function setLessonProgress(lessonId,completed){
+ const dogId=document.getElementById('progress-dog').value,initData=window.Telegram?.WebApp?.initData;
+ if(!dogId){alert('Сначала выбери собаку');return}
+ try{
+  const r=await fetch('/api/club-progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData,dogId,lessonId,completed})});
+  if(!r.ok)throw Error('Не удалось сохранить отметку');
+  await loadDogProgress();
+ }catch(e){alert(e.message)}
 }
 async function openClubLesson(id,title){
  const initData=window.Telegram?.WebApp?.initData;
