@@ -26,7 +26,7 @@ function enable(){
  });
 }
 function cleanup(){
- for(const k of ['NOYA_PRODAMUS_ENABLE','NOYA_PRODAMUS_FORM_URL','NOYA_PRODAMUS_SUBSCRIPTION_ID','NOYA_PRODAMUS_SECRET','NOYA_PRODAMUS_SYS','NOYA_PRODAMUS_WEBHOOK_URL','NOYA_CLUB_PRICE_RUB','NOYA_CLUB_TERMS_URL']){
+ for(const k of ['NOYA_PRODAMUS_ENABLE','NOYA_PRODAMUS_FORM_URL','NOYA_PRODAMUS_SUBSCRIPTION_ID','NOYA_PRODAMUS_SECRET','NOYA_PRODAMUS_SYS','NOYA_PRODAMUS_WEBHOOK_URL','NOYA_CLUB_PRICE_RUB','NOYA_CLUB_TERMS_URL','NOYA_PRODAMUS_DEMO_MODE']){
   if(original[k]===undefined)delete process.env[k];else process.env[k]=original[k];
  }
 }
@@ -276,4 +276,37 @@ test('demo callback cannot update club access after test mode is switched off',a
   const r=await callback({...success,order_num:'noya-demo-12341234-1234-4234-8234-123412341234'});
   assert.equal(r.statusCode,200);assert.equal(called,false);
  }finally{global.fetch=originalFetch;cleanup();}
+});
+
+test('admin-only LIVE link omits demo_mode and never exposes checkout to non-admin visitors',async()=>{
+ enable();process.env.NOYA_PRODAMUS_TEST_MODE='1';process.env.NOYA_PRODAMUS_DEMO_MODE='0';
+ const prev=global.fetch;
+ let submitted=false;
+ global.fetch=async(input,init={})=>{
+  const u=new URL(input);
+  if(u.pathname.endsWith('/admins'))return {ok:true,json:async()=>[{id:student}]};
+  if(u.pathname.endsWith('/students')&&!init.method)return {ok:true,json:async()=>[{id:student}]};
+  if(u.pathname.endsWith('/noya_club_checkout_intents')&&init.method==='POST'){
+   const intent=JSON.parse(init.body);
+   assert.equal(intent.is_demo,false);
+   assert.match(intent.order_num,/^noya-[0-9a-f-]{36}$/);
+   return {ok:true,json:async()=>[intent]};
+  }
+  if(u.hostname==='merchant.payform.ru'){
+   submitted=true;
+   const params=Object.fromEntries(new URLSearchParams(init.body));
+   const sign=params.signature;delete params.signature;
+   assert.equal(lib.checkSignature(params,sign,process.env.NOYA_PRODAMUS_SECRET),true);
+   assert.equal(Object.hasOwn(params,'demo_mode'),false);
+   assert.equal(params.subscription,'12345');
+   return {ok:true,status:200,text:async()=> 'https://payform.ru/live-check/',headers:{get:()=> 'text/plain'}};
+  }
+  throw Error('Unexpected '+input);
+ };
+ try{
+  const r=res();await checkout({method:'POST',body:{initData:signedInit()}},r);
+  assert.equal(r.statusCode,200);
+  assert.equal(r.body.checkoutUrl,'https://payform.ru/live-check/');
+  assert.equal(submitted,true);
+ }finally{global.fetch=prev;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
 });
