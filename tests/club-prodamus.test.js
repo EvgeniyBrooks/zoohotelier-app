@@ -72,7 +72,7 @@ test('club checkout uses its own plan ID, pending intent and signed link',async(
   if(u.hostname==='merchant.payform.ru'){
    const data=Object.fromEntries(new URLSearchParams(init.body));const sign=data.signature;delete data.signature;
    assert.equal(lib.checkSignature(data,sign,process.env.NOYA_PRODAMUS_SECRET),true);
-   assert.equal(data.subscription,'12345');assert.equal(data.type,'json');assert.equal(Object.hasOwn(data,'urlNotification'),false);assert.equal(Object.hasOwn(data,'sys'),false);
+   assert.equal(data.subscription,'12345');assert.equal(data.callbackType,'json');assert.equal(Object.hasOwn(data,'type'),false);assert.equal(Object.hasOwn(data,'urlNotification'),false);assert.equal(Object.hasOwn(data,'sys'),false);
    return {ok:true,text:async()=> 'https://payform.ru/abc123/'};
   }
   throw Error('Unexpected '+input);
@@ -185,4 +185,36 @@ test('club entry immediately gates unpaid guests into Prodamus without an extra 
  assert.equal(source.includes('Подписка продлевается автоматически по условиям платёжной формы. Первую методичку'),false);
  assert.equal(source.includes('noya-billing-consent'),false);
  assert.equal(source.includes('noya-billing-start'),false);
+});
+
+test('checkout accepts a Prodamus HTTPS 302 redirect as a valid link',async()=>{
+ enable();
+ const prev=global.fetch;
+ global.fetch=async(input,init={})=>{
+  const u=new URL(input);
+  if(u.pathname.endsWith('/students')&&!init.method)return {ok:true,json:async()=>[{id:student}]};
+  if(u.pathname.endsWith('/noya_club_checkout_intents')&&init.method==='POST')return {ok:true,json:async()=>[JSON.parse(init.body)]};
+  if(u.hostname==='merchant.payform.ru')return {ok:false,status:302,text:async()=>'',headers:{get:(k)=>k==='location'?'https://payform.ru/redirect123/':null}};
+  throw Error('Unexpected '+input);
+ };
+ try{
+  const r=res();await checkout({method:'POST',body:{initData:signedInit()}},r);
+  assert.equal(r.statusCode,200);assert.equal(r.body.checkoutUrl,'https://payform.ru/redirect123/');
+ }finally{global.fetch=prev;cleanup();}
+});
+
+test('checkout accepts JSON-string Prodamus link response',async()=>{
+ enable();
+ const prev=global.fetch;
+ global.fetch=async(input,init={})=>{
+  const u=new URL(input);
+  if(u.pathname.endsWith('/students')&&!init.method)return {ok:true,json:async()=>[{id:student}]};
+  if(u.pathname.endsWith('/noya_club_checkout_intents')&&init.method==='POST')return {ok:true,json:async()=>[JSON.parse(init.body)]};
+  if(u.hostname==='merchant.payform.ru')return {ok:true,status:200,text:async()=>JSON.stringify('https://payform.ru/jsonpath/'),headers:{get:()=> 'application/json'}};
+  throw Error('Unexpected '+input);
+ };
+ try{
+  const r=res();await checkout({method:'POST',body:{initData:signedInit()}},r);
+  assert.equal(r.statusCode,200);assert.equal(r.body.checkoutUrl,'https://payform.ru/jsonpath/');
+ }finally{global.fetch=prev;cleanup();}
 });
