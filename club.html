@@ -65,7 +65,7 @@ async function setupNoyaBilling(){
  const initData=window.Telegram?.WebApp?.initData;
  if(!initData)return;
  try {
-  const configReq=await fetch('/api/club-checkout?status=1',{cache:'no-store'});
+  const configReq=await fetch('/api/club-checkout?status=1',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
   if(!configReq.ok)return;
   const config=await configReq.json();
   if(!config.enabled || !config.termsUrl || !Number.isFinite(config.priceRub))return;
