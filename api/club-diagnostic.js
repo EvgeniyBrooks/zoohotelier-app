@@ -2178,6 +2178,15 @@ module.exports=async function handler(req,res){
       const subscriptions=students.length?await accountSubscriptions(students[0].id):[];
       const account=accountSubscription(subscriptions,Date.now());
       await applyProdamusPaidLoyalty(students[0]?.id,subscriptions,account,Date.now());
+      if(account.subscription.status!=="active"&&students.length){
+        const trials=await db("noya_club_trials?select=starts_at,ends_at&student_id=eq."+students[0].id+"&limit=1");
+        const now=Date.now();
+        const trial=trials.find(t=>Date.parse(t.starts_at)<=now&&Date.parse(t.ends_at)>now);
+        if(trial){
+          account.subscription={status:"trial",startDate:trial.starts_at,endDate:trial.ends_at,nextPaymentDate:null};
+          account.loyalty={unlockedMonths:0,totalMonths:12,nextUnlockAt:null};
+        }
+      }
       if(rewardRequest){
         const month=Number(req.query.reward);
         if(account.subscription.status!=="active"||account.loyalty.unlockedMonths<month)return res.status(403).json({error:"Reward locked",code:"REWARD_LOCKED"});
@@ -2194,9 +2203,11 @@ module.exports=async function handler(req,res){
       db("club_subscriptions?select=id,status,start_date,end_date&student_id=eq."+studentId+"&status=eq.active&limit=20"),
       db("admins?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1")
     ]);
+    const trials=await db("noya_club_trials?select=starts_at,ends_at&student_id=eq."+studentId+"&limit=1");
     const now=Date.now();
     const activeClub=subscriptions.some(s=>(!s.start_date||Date.parse(s.start_date)<=now)&&(!s.end_date||Date.parse(s.end_date)>now));
-    if(!activeClub&&!admins.length)return res.status(403).json({error:"Active club subscription required"});
+    const activeTrial=trials.some(t=>Date.parse(t.starts_at)<=now&&Date.parse(t.ends_at)>now);
+    if(!activeClub&&!activeTrial&&!admins.length)return res.status(403).json({error:"Active club subscription or valid trial required"});
     if(req.method==="DELETE"){
       const dogId=req.body?.dogId;
       if(typeof dogId!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(dogId))return res.status(400).json({error:"Invalid dog ID"});
