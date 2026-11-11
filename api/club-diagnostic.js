@@ -2113,11 +2113,33 @@ function accountSubscription(rows,now){
 async function accountSubscriptions(studentId){
   const records=[],pageSize=1000;
   for(let offset=0;;offset+=pageSize){
-    const page=await db("club_subscriptions?select=id,status,start_date,end_date,next_payment_date,created_at&student_id=eq."+encodeURIComponent(studentId)+"&order=created_at.desc,id.desc&limit="+pageSize+"&offset="+offset);
+    const page=await db("club_subscriptions?select=id,status,start_date,end_date,next_payment_date,created_at,prodamus_subscription_id&student_id=eq."+encodeURIComponent(studentId)+"&order=created_at.desc,id.desc&limit="+pageSize+"&offset="+offset);
     if(!Array.isArray(page))throw Object.assign(new Error("Database operation failed"),{status:502});
     records.push(...page);
     if(page.length<pageSize)return records;
   }
+}
+async function applyProdamusPaidLoyalty(studentId,subscriptions,account,now){
+  if(process.env.NOYA_PRODAMUS_ENABLE!=="1" || !studentId)return;
+  const current=subscriptions.filter(row=>subscriptionPeriod(row,now).status==="active")
+    .sort((a,b)=>(dateValue(b.start_date)??0)-(dateValue(a.start_date)??0))[0];
+  const providerId=current?.prodamus_subscription_id;
+  account.loyalty.unlockedMonths=0;
+  account.loyalty.nextUnlockAt=null;
+  if(!providerId || account.subscription.status!=="active")return;
+  const payments=await db("payments?select=prodamus_payment_id,paid_at,product_id,status"
+    +"&student_id=eq."+encodeURIComponent(studentId)
+    +"&product_type=eq.club&product_id=eq."+encodeURIComponent("noya:"+providerId)
+    +"&status=eq.paid&order=paid_at.asc&limit=1000");
+  if(!Array.isArray(payments)||payments.length>=1000)throw Object.assign(new Error("Payment history unavailable"),{status:502});
+  const first=dateValue(current.start_date);
+  const unique=new Set(payments.filter(row=>typeof row.prodamus_payment_id==="string"
+    && row.prodamus_payment_id.trim()
+    && dateValue(row.paid_at)!==null
+    && (first===null||dateValue(row.paid_at)>=first-72*3600000))
+    .map(row=>row.prodamus_payment_id));
+  // First paid period starts membership; second confirmed payment earns month 1 gift.
+  account.loyalty.unlockedMonths=Math.min(12,Math.max(0,unique.size-1));
 }
 function recommend(a){
   const s={understanding:0,attention:0,social:0,walks:0,home:0,emotions:0,advanced:0};
@@ -2150,6 +2172,7 @@ module.exports=async function handler(req,res){
       if(!Array.isArray(students))throw Object.assign(new Error("Database operation failed"),{status:502});
       const subscriptions=students.length?await accountSubscriptions(students[0].id):[];
       const account=accountSubscription(subscriptions,Date.now());
+      await applyProdamusPaidLoyalty(students[0]?.id,subscriptions,account,Date.now());
       if(rewardRequest){
         const month=Number(req.query.reward);
         if(account.subscription.status!=="active"||account.loyalty.unlockedMonths<month)return res.status(403).json({error:"Reward locked",code:"REWARD_LOCKED"});
