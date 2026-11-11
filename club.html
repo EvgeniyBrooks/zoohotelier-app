@@ -9,6 +9,7 @@
 html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:none!important}
 #noya-payment-redirect{position:fixed;z-index:9999;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:#050505;color:#f5fa45;text-align:center;padding:24px;font-family:system-ui,-apple-system,sans-serif}
 #noya-payment-redirect[hidden]{display:none!important}
+#noya-payment-redirect .noya-waiting[hidden],#noya-payment-redirect button[hidden]{display:none!important}
 #noya-payment-redirect .noya-waiting{display:block;width:29px;height:29px;border:3px solid #454b28;border-top-color:#f5fa45;border-radius:100%;animation:noya-rotate .7s linear infinite}
 #noya-payment-redirect button{border:0;border-radius:12px;padding:13px 20px;background:#f5fa45;color:#111;font-weight:800}
 @keyframes noya-rotate{to{transform:rotate(360deg)}}
