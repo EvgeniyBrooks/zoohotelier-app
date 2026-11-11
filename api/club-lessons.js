@@ -85,8 +85,10 @@ module.exports=async function handler(req,res){
    return res.status(200).json({ok:true,summary:{activeMembers:activeMembers.size,subscriptionRecords:subscriptionsAll.length,dogs:dogs.length,diagnosedDogs:latest.size,completedLessons:progress.filter(p=>p.completed_at).length,practiceReports:feedback.length,aiChatsLast24h:chats.filter(x=>Date.parse(x.created_at)>=dayStart).length,publishedLessons:lessons.filter(l=>l.is_published).length,totalLessons:lessons.length},topics:Object.entries(topics).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([topic,count])=>({topic,count})),outcomes,lessons:lessons.map(l=>({title:l.title,topic:l.topic,published:l.is_published})),note:'Данные ограничены 2000 последними строками на категорию; личные переписки не раскрываются.'});
   }
   const now=Date.now();
+  const trials=await db('noya_club_trials?select=starts_at,ends_at&student_id=eq.'+student+'&limit=1');
+  const trialActive=trials.some(t=>Date.parse(t.starts_at)<=now&&Date.parse(t.ends_at)>now);
   const active=subscriptions.some(s=>(!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&(!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
-  if(!active&&!admins.length)throw fail(403,'Active club subscription required');
+  if(!active&&!trialActive&&!admins.length)throw fail(403,'Active club subscription or valid trial required');
   if(req.method==='GET'&&req.query?.memory==='1'){
    const pref=await db('noya_memory_preferences?select=enabled&student_id=eq.'+student+'&limit=1');
    const enabled=pref[0]?.enabled===true;
