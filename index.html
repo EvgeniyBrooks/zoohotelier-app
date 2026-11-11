@@ -309,6 +309,7 @@
 .week-thumb{isolation:isolate}
 .week-thumb:after{content:'▶';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0009;color:#fff;border:1px solid #fff8;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font-size:15px;pointer-events:none}
 
+.course-back-nav{display:flex;align-items:center;gap:12px;margin:0 0 16px;position:sticky;top:0;z-index:50;background:#090909ee;backdrop-filter:blur(12px);padding:9px 0 12px}.course-back-nav[hidden]{display:none!important}.course-back-nav button{border:1px solid #f5fa45;background:#171717;color:#f5fa45;border-radius:30px;padding:11px 18px;font-size:15px;font-weight:800;cursor:pointer;min-height:44px}.course-back-nav span{font-size:13px;font-weight:700;color:#ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.back-button{display:none!important}
   </style>
 
 </head>
@@ -328,6 +329,8 @@
       </h1>
 
     </div>
+
+    <nav id="course-back-nav" class="course-back-nav" hidden><button id="course-back-button" type="button" onclick="courseGoBack()">← Назад</button><span id="course-nav-title"></span></nav>
 
     <div id="app">
 
@@ -355,6 +358,19 @@ const CLOUDFLARE_CUSTOMER =
   "customer-9y0wom20nneqpu4g.cloudflarestream.com";
 
 
+let courseBackAction=null;
+function setCourseBack(action,title=''){
+ courseBackAction=action;
+ const nav=document.getElementById('course-back-nav');
+ if(!nav)return;
+ nav.hidden=!action;
+ const label=document.getElementById('course-nav-title');
+ if(label)label.textContent=title;
+}
+function courseGoBack(){
+ if(typeof courseBackAction==='function')courseBackAction();
+ else loadCourse();
+}
 let activeCourseWatch=null;
 function setupAutomaticLessonCompletion(lessonId,alreadyDone){
  if(activeCourseWatch){activeCourseWatch.cancelled=true;activeCourseWatch=null}
@@ -588,6 +604,7 @@ async function authenticateTelegram() {
 // ==================================================
 
 async function loadCourse() {
+  setCourseBack(null);
 
   const app =
     document.getElementById("app");
@@ -1285,6 +1302,7 @@ async function loadLesson(
 // ==================================================
 
 async function loadAdmin() {
+  setCourseBack(()=>loadCourse(),'Админка');
 
   if (!window.isAdmin) {
 
@@ -1353,6 +1371,7 @@ async function loadAdmin() {
 // ==================================================
 
 async function loadCohortCreate() {
+  setCourseBack(()=>loadAdmin(),'Новый поток');
 
   if (!window.isAdmin) {
     alert("Доступ запрещён.");
@@ -1645,6 +1664,7 @@ async function createCohort() {
 // ==================================================
 
 async function loadCohorts() {
+  setCourseBack(()=>loadAdmin(),'Потоки');
 
   if (!window.isAdmin) {
     alert("Доступ запрещён.");
@@ -1923,6 +1943,7 @@ window.saveCohort=async function(){alert('Редактирование пото�
 
 // СПИСОК УЧЕНИКОВ
 async function loadStudents() {
+  setCourseBack(()=>loadAdmin(),'Ученики');
 
   if (!window.isAdmin) {
 
