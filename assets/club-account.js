@@ -56,14 +56,18 @@
   const rail = byId('account-reward-rail');
   const cards = REWARDS.map((reward, index) => {
     const month = index + 1;
+    const secret = month >= 7;
     const card = document.createElement('article');
     card.className = 'account-reward-card';
     card.setAttribute('role', 'listitem');
-    card.setAttribute('aria-label', `${month}-й месяц: ${reward.level}. ${reward.title}`);
+    card.setAttribute('aria-label', secret ? `${month}-й месяц: ${reward.level}. Секретный подарок` : `${month}-й месяц: ${reward.level}. ${reward.title}`);
     card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><span class="account-gift-format">Цифровой подарок</span><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
     card.querySelector('h3').textContent = reward.level;
-    card.querySelector('.account-reward-title').textContent = reward.cardLabel || reward.title;
-    card.querySelector('img').src = reward.image;
+    card.querySelector('.account-reward-title').textContent = secret ? 'Пока в секрете' : (reward.cardLabel || reward.title);
+    if (secret) {
+      card.dataset.secret = 'true';
+      card.querySelector('.account-reward-art').innerHTML = `<span class="account-secret-lock" aria-hidden="true">🔒</span>`;
+    } else card.querySelector('img').src = reward.image;
     card.querySelector('.account-reward-state').addEventListener('click', event => reader?.open(month,true,event.currentTarget));
     card.querySelector('.account-reward-preview').addEventListener('click', event => reader?.open(month,false,event.currentTarget));
     rail.append(card);
@@ -183,17 +187,30 @@
     else byId('account-progress').removeAttribute('aria-valuenow');
     cards.forEach((card, index) => {
       const unlocked = ready && index < months;
+      const revealed = unlocked && active;
+      if (index >= 6) {
+        card.dataset.secret = String(!revealed);
+        card.querySelector('.account-reward-title').textContent = revealed ? (REWARDS[index].cardLabel || REWARDS[index].title) : 'Пока в секрете';
+        const art = card.querySelector('.account-reward-art');
+        if (revealed && !art.querySelector('img')) {
+          art.replaceChildren(); const img = document.createElement('img'); img.src = REWARDS[index].image; img.alt = ''; img.width = 300; img.height = 300; img.loading = 'lazy'; art.append(img);
+        } else if (!revealed && !art.querySelector('.account-secret-lock')) {
+          art.replaceChildren(); const symbol = document.createElement('span'); symbol.className = 'account-secret-lock'; symbol.setAttribute('aria-hidden','true'); symbol.textContent = '🔒'; art.append(symbol);
+        }
+        card.setAttribute('aria-label', `${index + 1}-й месяц: ${REWARDS[index].level}. ${revealed ? REWARDS[index].title : 'Секретный подарок'}`);
+      }
       card.dataset.unlocked = String(unlocked);
       const button = card.querySelector('.account-reward-state');
       const stateLabel = ready ? (unlocked && active ? 'Забрать →' : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
       button.querySelector('span').textContent = stateLabel;
       button.querySelector('svg').style.display = ready && !unlocked ? '' : 'none';
       button.disabled = !reader || !unlocked || !active;
-      card.querySelector('.account-reward-preview').disabled = !reader;
+      card.querySelector('.account-reward-preview').disabled = !reader || (index >= 6 && !revealed);
+      card.querySelector('.account-reward-preview').hidden = index >= 6 && !revealed;
       button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок откроется после ${index + 1} ${index === 0 ? 'полного месяца' : 'полных месяцев'} участия`) : stateLabel);
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
-    const nextTitle = REWARDS[months]?.title;
+    const nextTitle = months >= 6 ? 'секретный подарок' : REWARDS[months]?.title;
     byId('account-next-level').textContent = months === 12 ? 'Все 12 подарков открыты. Целый год вместе с NOYA! Продолжай работу по своему маршруту.' : active && next && nextTitle ? `Следующий подарок — «${nextTitle}». Откроется ${next} при действующей подписке.` : active && nextTitle ? `Впереди — «${nextTitle}». Подарок откроется после следующего полного месяца непрерывного участия при активной подписке.` : 'Первый подарок — после полного месяца в клубе. Второй — после двух, и так до двенадцатого.';
     byId('account-route-link').hidden = months !== 12;
     reader?.refresh();
