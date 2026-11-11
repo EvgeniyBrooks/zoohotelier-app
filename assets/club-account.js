@@ -61,7 +61,7 @@
     card.className = 'account-reward-card';
     card.setAttribute('role', 'listitem');
     card.setAttribute('aria-label', secret ? `${month}-й месяц: ${reward.level}. Секретный подарок` : `${month}-й месяц: ${reward.level}. ${reward.title}`);
-    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><span class="account-gift-format">Цифровой подарок</span><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
+    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
     card.querySelector('h3').textContent = reward.level;
     card.querySelector('.account-reward-title').textContent = secret ? 'Пока в секрете' : (reward.cardLabel || reward.title);
     if (secret) {
