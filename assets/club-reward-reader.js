@@ -111,7 +111,7 @@
       if (!selected || selected.month !== 1 || controller) return;
       const currentAccount = getAccount();
       const initData = window.Telegram?.WebApp?.initData;
-      if (!canOpen() || !initData || !/^\\d+$/.test(String(currentAccount?.user?.id||''))) { eligibility(); return; }
+      if (!canOpen() || !initData || !/^\d+$/.test(String(currentAccount?.user?.id||''))) { eligibility(); return; }
       const userId=String(currentAccount.user.id);
       const number=++requestNumber;
       controller=new AbortController();
