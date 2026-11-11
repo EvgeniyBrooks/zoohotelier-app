@@ -74,7 +74,7 @@ test('club checkout uses its own plan ID, pending intent and signed link',async(
   if(u.hostname==='merchant.payform.ru'){
    const data=Object.fromEntries(new URLSearchParams(init.body));const sign=data.signature;delete data.signature;
    assert.equal(lib.checkSignature(data,sign,process.env.NOYA_PRODAMUS_SECRET),true);
-   assert.equal(data.subscription,'12345');assert.equal(data.urlNotification,process.env.NOYA_PRODAMUS_WEBHOOK_URL);
+   assert.equal(data.subscription,'12345');assert.equal(data.type,'json');assert.equal(Object.hasOwn(data,'urlNotification'),false);assert.equal(Object.hasOwn(data,'sys'),false);
    return {ok:true,text:async()=> 'https://payform.ru/abc123/'};
   }
   throw Error('Unexpected '+input);
