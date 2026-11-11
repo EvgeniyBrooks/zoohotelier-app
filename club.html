@@ -5,20 +5,23 @@
 :root{color-scheme:dark;--bg:#050505;--panel:#151515;--line:#353535;--accent:#f5fa45;--text:#f7f7f7;--muted:#a7a7a7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}button,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}main{max-width:590px;margin:0 auto;padding:24px 20px calc(115px + env(safe-area-inset-bottom))}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}.logo{font:700 clamp(36px,10vw,53px)/1 Oswald,Impact,sans-serif;letter-spacing:-.5px;color:var(--accent)}.by{font-size:11px;letter-spacing:2px;margin-top:4px}.profile{width:46px;height:46px;border-radius:50%;border:1px solid #747474;background:#151515;display:grid;place-items:center;font:600 22px Oswald;color:var(--accent)}.eyebrow{font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase;color:var(--accent)}h1,h2,h3{font-family:Oswald,Impact,"Arial Narrow",sans-serif;text-transform:uppercase;line-height:1.1}h1{font-size:clamp(37px,9vw,51px);margin:7px 0 14px}h2{font-size:31px;margin:0 0 14px}h3{font-size:24px;margin:0 0 8px}p{color:var(--muted);margin:0 0 16px}.section{margin-top:31px}.trajectory{background:var(--accent);color:#111;border-radius:24px;padding:25px 23px;margin:18px 0 25px}.trajectory .eyebrow{color:#171717}.trajectory p{color:#333}.trajectory h2{font-size:clamp(31px,8vw,43px);margin:8px 0 14px}.cta{display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;border-radius:14px;padding:15px 17px;background:#111;color:var(--accent);font-weight:750;width:100%;text-align:left}.cta .arrow{font-size:23px}.card{border:1px solid var(--line);border-radius:20px;background:var(--panel);padding:19px;margin-bottom:14px}.card p{font-size:14px}.card .label{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:1px}.card .button{margin-top:15px}.button{display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 16px;background:var(--accent);color:#111;border:0;border-radius:12px;font-weight:750;text-decoration:none}.button.secondary{background:#252525;color:var(--text);border:1px solid #494949}.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tile{min-height:142px;background:#171717;border:1px solid #3d3d3d;border-radius:17px;padding:17px;display:flex;flex-direction:column;justify-content:space-between}.tile .glyph{font-size:28px;color:var(--accent)}.tile strong{font:600 23px/1.1 Oswald,sans-serif}.tile small{font-size:12px;color:var(--muted)}.tile.inactive{opacity:.68}.notice{border:1px solid var(--line);border-radius:15px;padding:17px;background:#111}.notice strong{display:block;margin-bottom:6px}.notice p{margin:0;font-size:13px}.tabs{display:flex;gap:10px;border-bottom:1px solid #444;margin:12px 0 20px}.tab{border:0;background:none;color:#aaa;padding:12px 8px;font-weight:600;flex:1;border-bottom:3px solid transparent}.tab[aria-selected=true]{border-color:var(--accent);color:var(--text)}.empty{border:1px dashed #4b4b4b;border-radius:16px;padding:30px 20px;text-align:center;color:var(--muted)}.empty h3{color:var(--text)}.noya-avatar{width:58px;height:58px;border:3px solid var(--accent);border-radius:50%;object-fit:cover;object-position:center;flex-shrink:0}.noya-avatar-small{width:42px;height:42px;border:2px solid var(--accent);border-radius:50%;object-fit:cover}.noya-intro{display:flex;align-items:center;gap:14px;margin:12px 0 20px}.ai-message{padding:13px 15px;border-radius:16px;margin:12px 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}.ai-message.user{background:#333;color:white;margin-left:15%}.ai-message.assistant{background:#1d1d1d;border:1px solid #444;margin-right:12%}.ai-composer{display:flex;gap:8px;margin-top:16px}.ai-composer textarea{min-height:50px;max-height:130px;resize:vertical;flex:1;min-width:0;background:#1a1a1a;border:1px solid #555;border-radius:12px;color:white;padding:12px;font:inherit}.ai-composer button{background:var(--accent);color:#111;border:0;border-radius:12px;padding:10px 15px;font-weight:700}.ai-suggestions{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.ai-suggestions button{border:1px solid #666;border-radius:20px;background:#222;color:#eee;padding:8px 12px;font-size:13px}.screen[hidden],.panel[hidden]{display:none!important}.route-select{width:100%;padding:13px;background:#171717;color:white;border:1px solid #555;border-radius:11px;margin:10px 0 15px}.route-topic{border:1px solid #393939;border-radius:16px;padding:17px;margin:12px 0;background:#151515}.route-topic h3{margin:5px 0 8px}.route-topic .route-count{color:var(--accent);font-size:12px;font-weight:700}.route-lesson{border-top:1px solid #393939;padding:12px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}.route-lesson button{background:var(--accent);color:#111;border:0;border-radius:9px;padding:9px 12px;font-weight:700}.route-lesson small{display:block;color:#aaa}.bottom{position:fixed;z-index:10;bottom:calc(13px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(calc(100% - 26px),560px);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 5px;background:#171717;border:1px solid #303030;border-radius:26px;box-shadow:0 10px 32px #000b}.nav{background:none;color:#bdbdbd;border:0;border-radius:19px;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;font-size:11px}.nav .ico{font-size:24px;line-height:1.3}.nav[aria-current=page]{background:#090909;color:var(--accent)}.counter{font:600 42px Oswald;color:var(--accent)}.foot{font-size:12px;color:#777;text-align:center;margin-top:34px}@media(max-width:355px){.tile{padding:12px;min-height:130px}.tile strong{font-size:20px}.nav{font-size:10px}}
 .club-quick-nav{position:sticky;top:0;z-index:25;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:10px 0;background:#050505ef;backdrop-filter:blur(10px)}.club-quick-nav a,.club-quick-nav button{flex:none;background:#1b1b1b;color:#eaeaea;border:1px solid #444;text-decoration:none;border-radius:24px;padding:9px 12px;font-size:12px;font-weight:750;white-space:nowrap}.club-quick-nav button[aria-current="page"]{color:#f5fa45;border-color:#f5fa45}.club-quick-nav a:focus-visible,.club-quick-nav button:focus-visible{outline:2px solid #f5fa45}</style><link rel="stylesheet" href="./assets/club-account.css?v=4"><script src="./assets/club-rewards-catalog.js?v=9" defer></script>
 <script src="./assets/club-reward-reader.js?v=5" defer></script>
-<script src="./assets/club-account.js?v=5" defer></script></head><body><main><div id="noya-account-slot"></div>
+<script src="./assets/club-account.js?v=5" defer></script><style>
+html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:none!important}
+#noya-payment-redirect{position:fixed;z-index:9999;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:#050505;color:#f5fa45;text-align:center;padding:24px;font-family:system-ui,-apple-system,sans-serif}
+#noya-payment-redirect[hidden]{display:none!important}
+#noya-payment-redirect .noya-waiting{display:block;width:29px;height:29px;border:3px solid #454b28;border-top-color:#f5fa45;border-radius:100%;animation:noya-rotate .7s linear infinite}
+#noya-payment-redirect button{border:0;border-radius:12px;padding:13px 20px;background:#f5fa45;color:#111;font-weight:800}
+@keyframes noya-rotate{to{transform:rotate(360deg)}}
+</style><script>document.documentElement.classList.add('noya-payment-checking');</script></head><body>
+<div id="noya-payment-redirect" role="status" aria-live="polite">
+ <div class="noya-waiting" aria-hidden="true"></div>
+ <span id="noya-payment-state">Открываем оплату…</span>
+ <button type="button" id="noya-payment-retry" hidden>Попробовать ещё раз</button>
+</div><main><div id="noya-account-slot"></div>
 <nav class="club-quick-nav" aria-label="Быстрый переход по разделам"><button type="button" data-screen="home">⌂ Главная</button><a href="./club-demo.html">◇ Моя собака</a><button type="button" data-screen="route">↗ Маршрут</button><button type="button" data-screen="library">▤ Библиотека</button><button type="button" data-screen="ai">✦ ИИ Ноя</button><button type="button" data-screen="bonuses">☆ Бонусы</button><a href="./index.html">▶ Мой курс</a></nav><header class="top"><div><div class="logo">NOYA CLUB</div><div class="by">by Brooks</div></div></header>
 <section id="home" class="screen" aria-labelledby="home-title"><div id="telegram-auth-state" class="notice" role="status" hidden style="margin-bottom:20px">Проверяем подключение Telegram…</div><div class="eyebrow">Клуб собачников</div><h1 id="home-title">НАЧНИ С КОНТАКТА</h1><p>Твоя собака, твои цели и свой маршрут обучения.</p>
 <div class="trajectory"><div class="eyebrow">ТВОЯ СОБАКА-КОМПАНЬОН</div><h2 id="trajectory-title">СОБАКА-КОМПАНЬОН</h2><p id="trajectory-text">Ответь на 10 вопросов, чтобы определить направления работы с собакой.</p><a class="cta" id="trajectory-link" href="./club-demo.html"><span id="trajectory-action">Начать диагностику</span><span class="arrow">→</span></a></div>
-<section class="section" id="noya-billing" aria-label="Оформить подписку NOYA CLUB" hidden>
- <div class="card" style="border-color:#626942;background:linear-gradient(140deg,#202319,#131510)">
-  <div class="label">ТВОЯ ПОДПИСКА</div><h2 style="margin-top:10px">ВСТУПИТЬ В NOYA CLUB</h2>
-  <p id="noya-billing-price" style="color:#f5fa45;font-weight:800"></p>
-  <p>Подписка продлевается автоматически по условиям платёжной формы. Первую методичку можно получить после подтверждённой оплаты второго месяца.</p>
-  <label style="display:flex;gap:10px;align-items:flex-start;margin:15px 0;color:#ddd;font-size:12px"><input id="noya-billing-consent" type="checkbox" style="accent-color:#f5fa45;width:18px;height:18px;flex-shrink:0"><span>Согласен с условиями подписки, ценой и автоматическими списаниями. <a id="noya-billing-terms" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;color:#f5fa45">Условия и отмена</a></span></label>
-  <button class="button" id="noya-billing-start" type="button" disabled>Оформить подписку <span>→</span></button>
-  <p id="noya-billing-status" role="status" aria-live="polite" style="font-size:12px;margin:10px 0 0"></p>
- </div>
-</section><div class="section"><div class="eyebrow">Твоё пространство</div><h2>НАЧНИ ЗДЕСЬ</h2><div class="tiles">
+<div class="section"><div class="eyebrow">Твоё пространство</div><h2>НАЧНИ ЗДЕСЬ</h2><div class="tiles">
 <a class="tile" href="./club-demo.html"><span class="glyph">◇</span><strong>МОЯ СОБАКА</strong><small>Профиль и диагностика</small></a>
 <button class="tile" type="button" data-screen="route" style="color:inherit;text-align:left;cursor:pointer"><span class="glyph">↗</span><strong>МОЙ МАРШРУТ</strong><small>Темы и уроки для твоей собаки</small></button>
 <button class="tile" type="button" data-screen="library" style="color:inherit;text-align:left;cursor:pointer"><span class="glyph">▤</span><strong>УРОКИ</strong><small>Открыть библиотеку</small></button>
@@ -59,40 +62,47 @@ document.querySelectorAll('.tile[data-screen]').forEach(n=>n.addEventListener('c
 const empty={history:['ИСТОРИЯ ПОКА ПУСТА','Здесь появятся просмотренные уроки, когда мы подключим библиотеку клуба.'],favorites:['НЕТ ИЗБРАННЫХ УРОКОВ','Когда появятся уроки, ты сможешь сохранять понравившиеся.'],completed:['ПОКА НЕТ ПРОЙДЕННЫХ УРОКОВ','После подключения уроков здесь будет история завершённых занятий.']};
 document.querySelectorAll('[data-library]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-library]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));const v=empty[b.dataset.library];const el=document.getElementById('library-content');el.replaceChildren();const h=document.createElement('h3');h.textContent=v[0];el.append(h,document.createTextNode(v[1]));}));
 showScreen(location.hash.slice(1)||'home');
+// New guests go directly to Prodamus, without an intermediate in-app checkout.
 async function setupNoyaBilling(){
- const area=document.getElementById('noya-billing'),btn=document.getElementById('noya-billing-start');
- const consent=document.getElementById('noya-billing-consent'),status=document.getElementById('noya-billing-status');
+ const curtain=document.getElementById('noya-payment-redirect');
+ const state=document.getElementById('noya-payment-state');
+ const retry=document.getElementById('noya-payment-retry');
+ const wait=curtain.querySelector('.noya-waiting');
  const initData=window.Telegram?.WebApp?.initData;
- if(!initData)return;
- try {
-  const configReq=await fetch('/api/club-checkout?status=1',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
-  if(!configReq.ok)return;
-  const config=await configReq.json();
-  if(!config.enabled || !config.termsUrl || !Number.isFinite(config.priceRub))return;
-  const profileReq=await fetch('/api/club-diagnostic?account=1',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
-  const profile=profileReq.ok?await profileReq.json():null;
-  if(profile?.subscription?.status==='active')return;
-  document.getElementById('noya-billing-price').textContent=new Intl.NumberFormat('ru-RU').format(config.priceRub)+' ₽ / месяц';
-  document.getElementById('noya-billing-terms').href=config.termsUrl;
-  area.hidden=false;
-  consent.addEventListener('change',()=>{btn.disabled=!consent.checked});
-  btn.addEventListener('click',async()=>{
-   if(!consent.checked||btn.disabled)return;
-   btn.disabled=true;status.textContent='Создаём защищённую ссылку для оплаты…';
-   try {
-    const r=await fetch('/api/club-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData,acceptedTerms:true}),cache:'no-store'});
-    const data=await r.json();
-    if(!r.ok||!data.checkoutUrl)throw Error(data.error||'Не удалось открыть оплату');
-    status.textContent='Открываем платёжную страницу Prodamus…';
-    if(window.Telegram?.WebApp?.openLink)window.Telegram.WebApp.openLink(data.checkoutUrl);
-    else window.location.assign(data.checkoutUrl);
-   }catch(error){status.textContent=error.message;}
-   finally{btn.disabled=!consent.checked;}
-  });
- }catch(_){ /* The club continues working if billing integration is unavailable. */ }
+ const hide=()=>{document.documentElement.classList.remove('noya-payment-checking');curtain.hidden=true;};
+ if(!initData){hide();return;}
+ const begin=async()=>{
+  retry.hidden=true;wait.hidden=false;state.textContent='Открываем оплату…';
+  try{
+   const status=await fetch('/api/club-checkout?status=1',{
+    headers:{'x-telegram-init-data':initData},cache:'no-store'
+   });
+   if(!status.ok)throw Error('Не удалось проверить оплату');
+   const config=await status.json();
+   if(!config.enabled){hide();return;} // Test mode: only club administrators can pay.
+   const account=await fetch('/api/club-diagnostic?account=1',{
+    headers:{'x-telegram-init-data':initData},cache:'no-store'
+   });
+   if(!account.ok)throw Error('Не удалось проверить подписку');
+   const profile=await account.json();
+   if(profile?.subscription?.status==='active'){hide();return;}
+   const response=await fetch('/api/club-checkout',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({initData}),cache:'no-store'
+   });
+   const data=await response.json();
+   if(!response.ok||!data.checkoutUrl)throw Error('Не удалось сформировать ссылку на оплату');
+   // The Prodamus payform—not our app—displays renewal terms and obtains consent.
+   window.location.replace(data.checkoutUrl);
+  }catch(error){
+   wait.hidden=true;state.textContent=error.message||'Не удалось открыть Prodamus';
+   retry.hidden=false;
+  }
+ };
+ retry.addEventListener('click',begin);
+ await begin();
 }
 setupNoyaBilling();
-
 
 async function loadClubProfile(){
  const initData=window.Telegram?.WebApp?.initData;
