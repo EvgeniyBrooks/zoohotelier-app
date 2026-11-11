@@ -118,3 +118,32 @@ test('verified auto-payment event without status is accepted, failed events are 
   const b=await callback({...success,payment_status:'order_denied'});assert.equal(b.statusCode,200);assert.equal(count,1);
  }finally{global.fetch=oldFetch;cleanup();}
 });
+
+test('Prodamus webhook accepts a valid body sign field but never unsigned or altered content',async()=>{
+ enable();
+ const oldFetch=global.fetch;
+ let calls=0;
+ global.fetch=async()=>{calls++;return {ok:true,json:async()=>[{applied:true,member_id:student,paid_payments:1}]};};
+ try{
+  const good={...success,sign:lib.signedPayload(success,process.env.NOYA_PRODAMUS_SECRET)};
+  const r=res();await webhook({method:'POST',body:good,headers:{}},r);
+  assert.equal(r.statusCode,200);
+  assert.equal(calls,1);
+  const bad=res();await webhook({method:'POST',body:{...good,sum:'1'},headers:{}},bad);
+  assert.equal(bad.statusCode,403);
+  assert.equal(calls,1);
+ }finally{global.fetch=oldFetch;cleanup();}
+});
+
+test('Prodamus webhook validates signed nested submit payloads without leaking to course flows',async()=>{
+ enable();const oldFetch=global.fetch;let calls=0;
+ global.fetch=async()=>{calls++;return {ok:true,json:async()=>[{applied:true,member_id:student,paid_payments:1}]};};
+ try{
+  const wrapper={submit:{...success}};
+  const r=res();await webhook({method:'POST',body:wrapper,headers:{sign:lib.signedPayload(success,process.env.NOYA_PRODAMUS_SECRET)}},r);
+  assert.equal(r.statusCode,200);assert.equal(calls,1);
+  const unrelated={...success,subscription:{id:''}};
+  const ignored=res();await webhook({method:'POST',body:unrelated,headers:{sign:lib.signedPayload(unrelated,process.env.NOYA_PRODAMUS_SECRET)}},ignored);
+  assert.equal(ignored.statusCode,200);assert.equal(calls,1);
+ }finally{global.fetch=oldFetch;cleanup();}
+});
