@@ -1041,6 +1041,7 @@ async function loadLessons(
   blockId,
   blockTitle
 ) {
+  setCourseBack(()=>loadCourse(),'Уроки недели');
 
   const app = document.getElementById("app");
 
@@ -1150,6 +1151,7 @@ async function loadLesson(
   blockId,
   blockTitle
 ) {
+  setCourseBack(()=>loadLessons(blockId,blockTitle),'Видео урока');
 
   const app = document.getElementById("app");
 
