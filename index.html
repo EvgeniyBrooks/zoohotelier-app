@@ -304,6 +304,11 @@
 .week-video-placeholder{display:grid;place-items:center;width:100%;height:100%;min-height:96px;color:#f5fa45;font-size:30px;background:linear-gradient(135deg,#262626,#0c0c0c)}
 .week-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 
+
+.week-thumb iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;background:#101010}
+.week-thumb{isolation:isolate}
+.week-thumb:after{content:'▶';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0009;color:#fff;border:1px solid #fff8;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font-size:15px;pointer-events:none}
+
   </style>
 
 </head>
@@ -782,12 +787,16 @@ async function loadCourse() {
         const result=await courseProgressRequest('course_watch',{lessonId:lesson.id});
         const container=app.querySelector('.week-thumb-'+block.block_number);
         if(!container||!result.token)return;
-        const img=document.createElement('img');
-        img.alt='Кадр из первого видео блока';
-        img.loading='lazy';
-        img.src='https://'+CLOUDFLARE_CUSTOMER+'/'+encodeURIComponent(result.token)+'/thumbnails/thumbnail.jpg?time=1s&width=320&height=240&fit=crop';
-        img.onerror=()=>{img.remove()};
-        container.replaceChildren(img);
+        // Embed the actual Cloudflare video paused on its opening frame,
+        // not an unrelated photo or a generated thumbnail.
+        const frame=document.createElement('iframe');
+        frame.title='Начало первого видео: '+block.title;
+        frame.loading='lazy';
+        frame.allow='encrypted-media; picture-in-picture';
+        frame.tabIndex=-1;
+        frame.setAttribute('aria-hidden','true');
+        frame.src='https://'+CLOUDFLARE_CUSTOMER+'/'+encodeURIComponent(result.token)+'/iframe?preload=metadata&controls=false&autoplay=false&muted=true';
+        container.replaceChildren(frame);
       }catch(e){console.warn('Lesson thumbnail unavailable',block.block_number,e.message)}
     }));
 
