@@ -12,6 +12,7 @@
       <p class="reward-reader-description"></p>
       <p class="reward-reader-access" role="status" aria-live="polite"></p>
       <button class="account-action reward-reader-claim" type="button">Забрать подарок →</button>
+      <a class="account-action reward-reader-pdf" href="#" target="_blank" rel="noopener noreferrer" hidden>Открыть / скачать PDF ↗</a>
       <a class="account-action reward-reader-telegram" href="https://t.me/NoyaClubBrooksBot" target="_blank" rel="noopener noreferrer" hidden>Открыть в Telegram ↗</a>
       <div class="reward-reader-body" hidden></div>`;
     dialog.querySelector('.account-dialog-content').append(panel);
@@ -20,6 +21,7 @@
     const status = $('.reward-reader-access');
     const claim = $('.reward-reader-claim');
     const telegramLink = $('.reward-reader-telegram');
+    const pdfLink = $('.reward-reader-pdf');
     let selected = null, material = null, origin = null, previousScroll = 0;
     let controller = null, requestNumber = 0, ownerId = null, storageKey = null;
     let draft = {fields:{},completed:[]};
@@ -34,7 +36,10 @@
     function cancelRequest() { requestNumber++; controller?.abort(); controller = null; panel.removeAttribute('aria-busy'); }
     function canOpen() {
       const account = getAccount();
-      return getPhase() === 'ready' && account?.subscription?.status === 'active' && Number.isInteger(account?.loyalty?.unlockedMonths) && account.loyalty.unlockedMonths >= selected.month;
+      return getPhase() === 'ready' && account?.subscription?.status === 'active' && (
+        selected?.month === 1 ? account.firstPdfEligible === true :
+        Number.isInteger(account?.loyalty?.unlockedMonths) && account.loyalty.unlockedMonths >= selected.month
+      );
     }
     function eligibility() {
       if (!selected || material) return;
@@ -43,7 +48,7 @@
       telegramLink.hidden = true;
       claim.disabled = false;
       if (phase === 'telegram' || phase === 'auth') {
-        status.textContent = phase === 'auth' ? 'Сессия Telegram закончилась. Открой мини-приложение заново.' : `Подарок откроется после ${selected.month} ${selected.month === 1 ? 'полного месяца' : 'полных месяцев'} участия. Войди через Telegram, чтобы увидеть свой прогресс.`;
+        status.textContent = phase === 'auth' ? 'Сессия Telegram закончилась. Открой мини-приложение заново.' : selected.month === 1 ? 'Методичка открывается после оплаты второго месяца. Войди через Telegram, чтобы проверить доступ.' : `Подарок откроется после ${selected.month} полных месяцев участия. Войди через Telegram, чтобы увидеть свой прогресс.`;
         telegramLink.hidden = false;
       } else if (phase === 'loading') {
         status.textContent = 'Проверяем твою подписку…';
@@ -52,10 +57,10 @@
         status.textContent = 'Не удалось проверить доступ. Попробуй загрузить подписку ещё раз.';
         claim.hidden = false; claim.textContent = 'Повторить проверку';
       } else if (canOpen()) {
-        status.textContent = 'Твой подарок уже доступен. Открой его и выбери первое задание.';
+        status.textContent = selected.month === 1 ? 'Методичка «101 трюк» доступна. Нажми «Забрать», чтобы получить ссылку на PDF.' : 'Твой подарок уже доступен. Открой его и выбери первое задание.';
         claim.hidden = false; claim.textContent = 'Забрать подарок →';
       } else {
-        status.textContent = `Откроется после ${selected.month} ${selected.month === 1 ? 'полного месяца' : 'полных месяцев'} непрерывного участия при активной подписке.`;
+        status.textContent = selected.month === 1 ? 'Методичка откроется после подтверждённой оплаты второго месяца при активной подписке.' : `Откроется после ${selected.month} полных месяцев участия при активной подписке.`;
         claim.hidden = false; claim.disabled = true; claim.textContent = 'Пока закрыто';
       }
     }
@@ -73,6 +78,8 @@
     function close() {
       if (panel.hidden) return false;
       cancelRequest();
+      pdfLink.hidden = true;
+      pdfLink.removeAttribute('href');
       panel.hidden = true;
       overview.hidden = false;
       dialog.scrollTop = previousScroll;
@@ -85,6 +92,7 @@
       cancelRequest();
       if (panel.hidden) previousScroll = dialog.scrollTop;
       selected = entry; material = null; origin = trigger;
+      pdfLink.hidden = true; pdfLink.removeAttribute('href');
       body.replaceChildren(); body.hidden = true;
       fields = []; checks = []; storageKey = null; ownerId = null;
       $('.reward-reader-cover img').src = entry.image;
@@ -96,7 +104,51 @@
       dialog.scrollTop = 0;
       $('#reward-reader-title').focus({preventScroll:true});
       eligibility();
-      if (takeGift && canOpen()) loadGift();
+      if (takeGift && canOpen()) { if(month === 1) loadPdf(); else loadGift(); }
+    }
+
+    async function loadPdf() {
+      if (!selected || selected.month !== 1 || controller) return;
+      const currentAccount = getAccount();
+      const initData = window.Telegram?.WebApp?.initData;
+      if (!canOpen() || !initData || !/^\\d+$/.test(String(currentAccount?.user?.id||''))) { eligibility(); return; }
+      const userId=String(currentAccount.user.id);
+      const number=++requestNumber;
+      controller=new AbortController();
+      const requestController=controller;
+      const timeout=setTimeout(()=>requestController.abort(),12000);
+      claim.disabled=true; claim.textContent='Получаем ссылку…';
+      status.textContent='Проверяем оплату и готовим безопасную ссылку на PDF…';
+      panel.setAttribute('aria-busy','true');
+      pdfLink.hidden=true;
+      try {
+        const response=await fetch('/api/club-reward-pdf',{headers:{'x-telegram-init-data':initData},cache:'no-store',signal:requestController.signal});
+        const data=await response.json();
+        if (number!==requestNumber || panel.hidden || selected.month!==1) return;
+        if (response.status===401) {
+          status.textContent='Сессия Telegram закончилась. Открой мини-приложение заново.';
+          claim.hidden=true;telegramLink.hidden=false;return;
+        }
+        if (response.status===403) {
+          status.textContent='Методичка доступна только после подтверждённой оплаты второго месяца.';
+          claim.hidden=false;claim.disabled=true;claim.textContent='Пока закрыто';
+          await refreshAccount();return;
+        }
+        if (!response.ok || data?.ok!==true || typeof data.url!=='string') throw Error('Unavailable');
+        const url=new URL(data.url);
+        if(url.protocol!=='https:' || !url.hostname.endsWith('.supabase.co') || !canOpen() || String(getAccount()?.user?.id)!==userId) throw Error('Invalid download URL');
+        pdfLink.href=url.href;
+        pdfLink.hidden=false;
+        claim.hidden=false;claim.disabled=false;claim.textContent='Обновить ссылку на PDF';
+        status.textContent='Готово! Нажми «Открыть / скачать PDF» ниже. Ссылка действует 2 минуты.';
+      } catch (_) {
+        if(number!==requestNumber || panel.hidden) return;
+        status.textContent='Не удалось подготовить файл. Проверь соединение и попробуй ещё раз.';
+        claim.hidden=false;claim.disabled=false;claim.textContent='Попробовать ещё раз';
+      } finally {
+        clearTimeout(timeout);
+        if(number===requestNumber){controller=null;panel.removeAttribute('aria-busy');}
+      }
     }
     async function loadGift() {
       if (!selected || controller) return;
@@ -270,6 +322,7 @@
     }
     claim.addEventListener('click', async () => {
       if (getPhase() === 'error') {claim.disabled=true;await refreshAccount();eligibility();}
+      else if (selected?.month === 1) loadPdf();
       else loadGift();
     });
     $('.reward-back').addEventListener('click',close);
