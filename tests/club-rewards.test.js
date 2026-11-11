@@ -31,6 +31,9 @@ async function request(options={}){
   Date.now=()=>Date.parse(options.now||now);
   global.fetch=async(url,init)=>{
     const parsed=new URL(url),table=parsed.pathname.split('/').pop();
+    // The old account/reward fixtures don't create trials. Preserve previous
+    // request-order assertions while explicitly returning no trial access.
+    if(table==='noya_club_trials')return {ok:true,status:200,json:async()=>[]};
     calls.push({url:parsed,init});
     if(options.fetchResponse)return options.fetchResponse(parsed,init);
     let data;
