@@ -50,14 +50,12 @@ test('checkout remains disabled before explicit Prodamus configuration',async()=
  cleanup();
  const r=res();await checkout({method:'GET',query:{status:'1'}},r);
  assert.equal(r.statusCode,200);assert.equal(r.body.enabled,false);
- const pay=res();await checkout({method:'POST',body:{initData:signedInit(),acceptedTerms:true}},pay);
+ const pay=res();await checkout({method:'POST',body:{initData:signedInit()}},pay);
  assert.equal(pay.statusCode,503);
 });
-test('checkout requires explicit agreement and signed Telegram data',async()=>{
+test('checkout requires signed Telegram data; consent happens on the payment provider form',async()=>{
  enable();
- const a=res();await checkout({method:'POST',body:{initData:signedInit(),acceptedTerms:false}},a);
- assert.equal(a.statusCode,400);
- const b=res();await checkout({method:'POST',body:{initData:'bad',acceptedTerms:true}},b);
+ const b=res();await checkout({method:'POST',body:{initData:'bad'}},b);
  assert.equal(b.statusCode,401);
  cleanup();
 });
@@ -176,4 +174,15 @@ test('checkout test mode shows pay button only to a signed admin',async()=>{
   const r=res();await checkout({method:'GET',query:{status:'1'},headers:{'x-telegram-init-data':signedInit()}},r);
   assert.equal(r.statusCode,200);assert.equal(r.body.enabled,true);assert.equal(r.body.priceRub,2900);
  }finally{global.fetch=oldFetch;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
+});
+
+test('club entry immediately gates unpaid guests into Prodamus without an extra form',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require('node:path').join(__dirname,'..','club.html'),'utf8');
+ assert.match(source,/window\.location\.replace\(data\.checkoutUrl\)/);
+ assert.match(source,/setupNoyaBilling\(\);/);
+ assert.match(source,/noya-payment-checking/);
+ assert.equal(source.includes('Подписка продлевается автоматически по условиям платёжной формы. Первую методичку'),false);
+ assert.equal(source.includes('noya-billing-consent'),false);
+ assert.equal(source.includes('noya-billing-start'),false);
 });
