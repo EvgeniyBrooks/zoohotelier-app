@@ -38,6 +38,29 @@ async function live(req,res){
    (!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
   if(!admins.length&&!paidClub&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   const action=req.body.action;
+  if(action==='course_catalog'){
+   const blocks=await db('course_blocks?select=id,title,block_number&course_id=eq.'+courseId+'&order=block_number.asc&limit=30');
+   const allowed=new Set(blocks.map(b=>b.id));
+   const lessons=await db('lessons?select=id,block_id,day_number,title,is_published&is_published=eq.true&order=day_number.asc&limit=500');
+   return res.status(200).json({ok:true,blocks,lessons:lessons.filter(l=>allowed.has(l.block_id))});
+  }
+  if(action==='course_block_lessons'){
+   const blockId=req.body.blockId;
+   if(typeof blockId!=='string'||!/^[a-f0-9-]{36}$/i.test(blockId))throw fail(400,'Invalid block');
+   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(blockId)+'&limit=1');
+   if(!blocks.length)throw fail(404,'Block not found');
+   const lessons=await db('lessons?select=id,title,day_number,is_published,block_id&block_id=eq.'+encodeURIComponent(blockId)+'&is_published=eq.true&order=day_number.asc&limit=150');
+   return res.status(200).json({ok:true,lessons});
+  }
+  if(action==='course_lesson_details'){
+   const lessonId=req.body.lessonId;
+   if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId))throw fail(400,'Invalid lesson');
+   const lessons=await db('lessons?select=id,title,description,homework,crystal_reward,is_published,video_url,block_id&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
+   if(!lessons.length)throw fail(404,'Lesson unavailable');
+   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
+   if(!blocks.length)throw fail(404,'Lesson unavailable');
+   return res.status(200).json({ok:true,lessons});
+  }
   if(action==='course_progress'){
    const [blocks,lessons,completed]=await Promise.all([
     db('course_blocks?select=id,block_number,title&course_id=eq.'+courseId+'&order=block_number.asc&limit=20'),
