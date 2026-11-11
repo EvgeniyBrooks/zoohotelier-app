@@ -45,7 +45,7 @@ function recommend(a){
 }
 module.exports=async function handler(req,res){
   res.setHeader("Cache-Control","no-store");
-  if(!["GET","POST"].includes(req.method)){res.setHeader("Allow","GET, POST");return res.status(405).json({error:"Method not allowed"})}
+  if(!["GET","POST","DELETE"].includes(req.method)){res.setHeader("Allow","GET, POST, DELETE");return res.status(405).json({error:"Method not allowed"})}
   try{
     if(!process.env.NOYA_TELEGRAM_BOT_TOKEN)throw new Error("Missing NOYA bot configuration");
     const telegramId=verify(req.method==="POST"?req.body?.initData:req.headers["x-telegram-init-data"]);
@@ -62,6 +62,14 @@ module.exports=async function handler(req,res){
     const now=Date.now();
     const activeClub=subscriptions.some(s=>(!s.start_date||Date.parse(s.start_date)<=now)&&(!s.end_date||Date.parse(s.end_date)>now));
     if(!activeClub&&!admins.length)return res.status(403).json({error:"Active club subscription required"});
+    if(req.method==="DELETE"){
+      const dogId=req.body?.dogId;
+      if(typeof dogId!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(dogId))return res.status(400).json({error:"Invalid dog ID"});
+      const owned=await db("club_dogs?select=id,name&id=eq."+encodeURIComponent(dogId)+"&student_id=eq."+studentId+"&limit=1");
+      if(!owned?.length)return res.status(404).json({error:"Dog not found"});
+      await db("club_dogs?id=eq."+encodeURIComponent(dogId)+"&student_id=eq."+studentId,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+      return res.status(200).json({ok:true,deletedDogId:dogId});
+    }
     if(req.method==="GET"){
       const dogs=await db("club_dogs?select=id,name,created_at&student_id=eq."+studentId+"&order=created_at.desc");
       const diagnostics=await db("club_diagnostics?select=id,dog_id,answers,recommended_topics,created_at&student_id=eq."+studentId+"&order=created_at.desc&limit=100");
