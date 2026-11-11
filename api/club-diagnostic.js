@@ -13,9 +13,10 @@ function verify(initData){
   const secret=crypto.createHmac("sha256","WebAppData").update(process.env.NOYA_TELEGRAM_BOT_TOKEN).digest();
   const digest=crypto.createHmac("sha256",secret).update(check).digest();
   if(!crypto.timingSafeEqual(digest,Buffer.from(hash,"hex")))throw Object.assign(new Error("Telegram verification failed"),{status:401});
-  const user=JSON.parse(p.get("user")||"{}");
-  if(!Number.isSafeInteger(Number(user.id))||Number(user.id)<=0)throw Object.assign(new Error("Telegram user missing"),{status:401});
-  return String(user.id);
+  let user;
+  try{user=JSON.parse(p.get("user")||"{}")}catch{throw Object.assign(new Error("Telegram user missing"),{status:401})}
+  if(!user||typeof user!=="object"||Array.isArray(user)||!Number.isSafeInteger(Number(user.id))||Number(user.id)<=0)throw Object.assign(new Error("Telegram user missing"),{status:401});
+  return user;
 }
 async function db(path,options={}){
   const response=await fetch(URL_BASE+"/rest/v1/"+path,{...options,headers:{...headers(),...(options.headers||{})}});
@@ -27,6 +28,90 @@ async function db(path,options={}){
     throw Object.assign(new Error("Database operation failed"),{status:502});
   }
   return data;
+}
+function telegramAccount(user){
+  const text=(value,max)=>typeof value==="string"?value.replace(/[\u0000-\u001f\u007f-\u009f]/g,"").trim().slice(0,max):"";
+  const firstName=text(user.first_name,128),lastName=text(user.last_name,128),username=text(user.username,64)||null;
+  let photoUrl=null;
+  if(typeof user.photo_url==="string"&&user.photo_url.length<=2048){
+    try{
+      const url=new URL(user.photo_url);
+      if(url.protocol==="https:"&&!url.username&&!url.password&&url.href.length<=2048)photoUrl=url.href;
+    }catch{}
+  }
+  return {displayName:([firstName,lastName].filter(Boolean).join(" ")||(username?"@"+username:"Участник клуба")).slice(0,256),firstName,lastName,username,photoUrl};
+}
+function dateValue(value){
+  if(typeof value!=="string"||!value)return null;
+  const timestamp=Date.parse(value);
+  return Number.isFinite(timestamp)?timestamp:null;
+}
+function subscriptionPeriod(row,now){
+  const start=dateValue(row.start_date),end=dateValue(row.end_date);
+  const invalid=(row.start_date!=null&&start===null)||(row.end_date!=null&&end===null)||(start!==null&&end!==null&&end<=start);
+  let status="inactive";
+  if(row.status==="cancelled"||row.status==="canceled")status="cancelled";
+  else if(row.status==="expired")status="expired";
+  else if(row.status==="active"&&!invalid){
+    if(end!==null&&end<=now)status="expired";
+    else if(start!==null&&start>now)status="scheduled";
+    else status="active";
+  }
+  return {row,start,end,invalid,status};
+}
+// Calculate each anniversary from the original UTC date, so Jan 31 -> Feb 28 -> Mar 31.
+function monthAnniversary(timestamp,months){
+  const date=new Date(timestamp),day=date.getUTCDate();
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth()+months);
+  const monthEnd=new Date(date);
+  monthEnd.setUTCMonth(monthEnd.getUTCMonth()+1,0);
+  date.setUTCDate(Math.min(day,monthEnd.getUTCDate()));
+  return date.getTime();
+}
+function accountSubscription(rows,now){
+  const periods=rows.map(row=>subscriptionPeriod(row,now));
+  const newest=(a,b)=>(b.start??-Infinity)-(a.start??-Infinity)||(dateValue(b.row.created_at)??0)-(dateValue(a.row.created_at)??0);
+  const current=periods.filter(period=>period.status==="active").sort(newest);
+  const scheduled=periods.filter(period=>period.status==="scheduled").sort((a,b)=>a.start-b.start);
+  const selected=current[0]||scheduled[0]||periods.sort(newest)[0];
+  const iso=timestamp=>timestamp===null?null:new Date(timestamp).toISOString();
+  const subscription=selected?{
+    status:selected.status,
+    startDate:iso(selected.start),
+    endDate:iso(selected.end),
+    nextPaymentDate:iso(dateValue(selected.row.next_payment_date))
+  }:{status:"none",startDate:null,endDate:null,nextPaymentDate:null};
+  const loyalty={unlockedMonths:0,totalMonths:12,nextUnlockAt:null};
+  if(!current.length)return {subscription,loyalty};
+  // Only dated active records establish tenure. created_at is never a membership start.
+  const intervals=periods.filter(period=>period.row.status==="active"&&!period.invalid&&period.start!==null)
+    .map(period=>({start:period.start,end:period.end??Infinity})).sort((a,b)=>a.start-b.start);
+  const continuous=[];
+  for(const interval of intervals){
+    const previous=continuous[continuous.length-1];
+    if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);
+    else continuous.push({...interval});
+  }
+  const membership=continuous.find(period=>period.start<=now&&period.end>now);
+  if(!membership)return {subscription,loyalty};
+  // A level is earned only after a complete calendar month; joining starts at zero.
+  while(loyalty.unlockedMonths<12&&monthAnniversary(membership.start,loyalty.unlockedMonths+1)<=now)loyalty.unlockedMonths++;
+  if(loyalty.unlockedMonths<12){
+    const next=monthAnniversary(membership.start,loyalty.unlockedMonths+1);
+    // A renewal not yet recorded must not be presented as an earned future level.
+    if(next<membership.end)loyalty.nextUnlockAt=iso(next);
+  }
+  return {subscription,loyalty};
+}
+async function accountSubscriptions(studentId){
+  const records=[],pageSize=1000;
+  for(let offset=0;;offset+=pageSize){
+    const page=await db("club_subscriptions?select=id,status,start_date,end_date,next_payment_date,created_at&student_id=eq."+encodeURIComponent(studentId)+"&order=created_at.desc,id.desc&limit="+pageSize+"&offset="+offset);
+    if(!Array.isArray(page))throw Object.assign(new Error("Database operation failed"),{status:502});
+    records.push(...page);
+    if(page.length<pageSize)return records;
+  }
 }
 function recommend(a){
   const s={understanding:0,attention:0,social:0,walks:0,home:0,emotions:0,advanced:0};
@@ -48,10 +133,16 @@ module.exports=async function handler(req,res){
   if(!["GET","POST","DELETE"].includes(req.method)){res.setHeader("Allow","GET, POST, DELETE");return res.status(405).json({error:"Method not allowed"})}
   try{
     if(!process.env.NOYA_TELEGRAM_BOT_TOKEN)throw new Error("Missing NOYA bot configuration");
-    const telegramId=verify(req.method==="GET"?req.headers["x-telegram-init-data"]:req.body?.initData);
+    const telegramUser=verify(req.method==="GET"?req.headers["x-telegram-init-data"]:req.body?.initData);
+    const telegramId=String(telegramUser.id);
     if(req.method==="GET"&&req.query?.authOnly==="1")return res.status(200).json({ok:true,authenticated:true});
     if(!URL_BASE||!KEY)throw new Error("Missing database configuration");
     const students=await db("students?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1");
+    if(req.method==="GET"&&req.query?.account==="1"){
+      if(!Array.isArray(students))throw Object.assign(new Error("Database operation failed"),{status:502});
+      const subscriptions=students.length?await accountSubscriptions(students[0].id):[];
+      return res.status(200).json({ok:true,user:telegramAccount(telegramUser),...accountSubscription(subscriptions,Date.now())});
+    }
     if(!students?.length)return res.status(403).json({error:"Student profile not found"});
     const studentId=students[0].id;
     // Club and course have separate access rules.
@@ -92,3 +183,4 @@ module.exports=async function handler(req,res){
     return res.status(200).json({ok:true,dog,diagnostic:saved[0],topics,separationConcern:answers[6]===0});
   }catch(err){console.error("Club diagnostic error",err.message);return res.status(err.status||500).json({error:err.status?err.message:"Server error"})}
 };
+

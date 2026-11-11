@@ -1,0 +1,80 @@
+/* Shared Telegram account and twelve-month club membership view. */
+.account-card{display:flex;align-items:center;gap:13px;width:100%;min-height:82px;margin:0 0 14px;padding:15px 17px;border:1px solid #62634d;border-radius:22px;background:linear-gradient(115deg,#171815,#111210);color:#f7f7f7;text-align:left;font:inherit;cursor:pointer;transition:border-color .15s,background .15s}
+.account-card:hover{border-color:#f5fa45;background:#1a1b15}
+.account-card:focus-visible,.account-dialog button:focus-visible,.account-dialog a:focus-visible,.account-reward-rail:focus-visible{outline:2px solid #f5fa45;outline-offset:4px}
+.account-avatar{position:relative;display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;overflow:hidden;border-radius:50%;background:#303223;color:#f5fa45;font:700 19px/1 system-ui,sans-serif}
+.account-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.account-identity{flex:1;min-width:0}
+.account-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;font-weight:750;line-height:1.4}
+.account-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 9px;margin-top:3px;font-size:12px;line-height:1.4}
+.account-level{font-weight:750;color:#f5fa45}
+.account-summary{color:#a9a9a3;overflow-wrap:anywhere}
+.account-chevron{flex:0 0 18px;color:#f5fa45}
+.account-chevron svg{display:block;width:18px;height:22px}
+.account-dialog{position:fixed;inset:0;margin:0 auto;width:min(100%,590px);max-width:100%;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;padding:0;border:0;background:#090909;color:#f7f7f7;overflow:auto;overscroll-behavior:contain;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;scrollbar-color:#464735 #090909}
+.account-dialog:not([open]){display:none}
+.account-dialog{z-index:100}
+.account-fallback-backdrop{position:fixed;inset:0;z-index:99;background:#000b;backdrop-filter:blur(5px)}
+.account-background-inert{pointer-events:none!important}
+.account-dialog::backdrop{background:#000b;backdrop-filter:blur(5px)}
+.account-dialog [hidden]{display:none!important}
+.account-dialog-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:13px;padding:18px 20px;padding-top:max(18px,env(safe-area-inset-top));border-bottom:1px solid #2b2c26;background:#0b0b0bf7;backdrop-filter:blur(12px)}
+.account-icon-button{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:1px solid #38392e;border-radius:50%;background:#171814;color:#bfc0b4;cursor:pointer}
+.account-icon-button svg{width:17px;height:17px}
+.account-icon-button:hover{color:#f5fa45;border-color:#73764b}
+.account-icon-button:disabled{opacity:.3;cursor:default}
+.account-dialog-content{padding:25px 20px calc(28px + env(safe-area-inset-bottom));overflow:hidden}
+.account-kicker{margin:0 0 6px;color:#b6b7a9;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.account-dialog h2,.account-dialog h3{font-family:Oswald,Impact,"Arial Narrow",sans-serif;font-weight:600;line-height:1.12;text-transform:uppercase;color:#f7f7f7}
+.account-dialog h2{margin:0;font-size:32px}
+.account-membership{margin-top:16px;padding:18px;border:1px solid #36382a;border-radius:20px;background:linear-gradient(125deg,#1a1c13,#131411 70%)}
+.account-membership-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.account-membership-brand{color:#f5fa45;font-size:11px;font-weight:850;letter-spacing:1.3px}
+.account-membership-status{display:inline-flex;align-items:center;gap:6px;color:#b4b5aa;font-size:11px;font-weight:650;text-align:right}
+.account-membership-status::before{content:"";width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#77796b}
+.account-membership-status[data-active="true"]{color:#f5fa45}
+.account-membership-status[data-active="true"]::before{background:#f5fa45;box-shadow:0 0 12px #f5fa4550}
+.account-membership-message{margin:18px 0 0!important;color:#f0f0e9!important;font-size:16px!important;font-weight:650;line-height:1.4}
+.account-membership-note{margin:8px 0 0!important;color:#a2a495!important;font-size:12px!important;line-height:1.55}
+.account-dates{margin:17px 0 0;padding:14px 0 0;border-top:1px solid #323429}
+.account-dates div{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin:7px 0;font-size:12px;line-height:1.5}
+.account-dates dt{color:#9ea08f}
+.account-dates dd{margin:0;text-align:right;font-weight:650;color:#ededdf}
+.account-action{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:44px;margin-top:16px;padding:10px 14px;border:0;border-radius:12px;background:#f5fa45;color:#111;font:750 13px/1.4 system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.account-action:disabled{opacity:.55;cursor:wait}
+.account-rewards{margin-top:31px}
+.account-rewards h2{max-width:340px;font-size:31px}
+.account-rewards-intro{margin:9px 0 20px!important;max-width:380px;color:#a7a89c!important;font-size:13px!important;line-height:1.55}
+.account-progress-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;color:#a6a79b;font-size:12px}
+.account-progress-count{color:#f5fa45;font:600 25px/1 Oswald,Impact,sans-serif;white-space:nowrap}
+.account-progress{height:3px;background:#2d2f25;overflow:hidden;border-radius:2px}
+.account-progress-fill{height:100%;width:0;background:#f5fa45;transition:width .25s ease}
+.account-rail-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:17px 0 12px}
+.account-rail-hint{color:#858779;font-size:11px}
+.account-rail-controls{display:flex;gap:7px}
+.account-rail-controls .account-icon-button{width:30px;height:30px;flex-basis:30px}
+.account-rail-controls svg{width:13px;height:13px}
+.account-reward-rail{display:flex;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding:20px;scrollbar-width:none;margin:0 -20px;padding:0 20px 3px;outline-offset:-2px}
+.account-reward-rail::-webkit-scrollbar{display:none}
+.account-reward-card{position:relative;display:flex;flex-direction:column;flex:0 0 clamp(164px,44vw,205px);min-height:324px;overflow:hidden;scroll-snap-align:start;border:1px solid #24261f;border-radius:21px;padding:17px 14px 13px;background:#171815}
+.account-reward-card[data-unlocked="true"]{border-color:#6e7334;background:linear-gradient(155deg,#252918,#161910 75%)}
+.account-reward-month{color:#f5fa45;font:500 17px/1.2 Oswald,Impact,sans-serif;text-transform:uppercase}
+.account-reward-card h3{min-height:51px;margin:6px 0 8px;font-size:23px;overflow-wrap:anywhere}
+.account-reward-caption{min-height:35px;margin:0!important;color:#aaaD9d!important;font-size:11px!important;line-height:1.45}
+.account-reward-art{position:relative;display:grid;place-items:center;flex:1;min-height:139px;margin:4px -6px 5px;isolation:isolate}
+.account-reward-art::before{position:absolute;content:"";width:112px;height:112px;border:1px solid #4a4f35;border-radius:50%;box-shadow:0 0 0 12px #292d1b55,0 0 0 24px #292d1b22;transform:rotate(-18deg)}
+.account-reward-art::after{position:absolute;z-index:-1;content:attr(data-month);bottom:4px;right:4px;color:#24271e;font:700 85px/1 Oswald,Impact,sans-serif;letter-spacing:-5px}
+.account-reward-art svg{position:relative;width:73px;height:73px;color:#6b7155;filter:drop-shadow(0 6px 7px #0008)}
+.account-reward-card[data-unlocked="true"] .account-reward-art::before{border-color:#c4ce4f;box-shadow:0 0 0 12px #f5fa4509,0 0 0 24px #f5fa4505,0 0 30px #d9e54213;background:radial-gradient(circle,#a6b32e25,transparent 72%)}
+.account-reward-card[data-unlocked="true"] .account-reward-art svg{color:#e5ee67}
+.account-reward-card[data-unlocked="true"] .account-reward-art::after{color:#353d1b}
+.account-reward-state{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:42px;margin-top:auto;padding:10px 7px;border:0;border-radius:24px;background:#2b2d26;color:#929586;font:750 12px/1.3 system-ui,sans-serif;text-align:center;cursor:default}
+.account-reward-state svg{width:12px;height:12px;flex-shrink:0}
+.account-reward-card[data-unlocked="true"] .account-reward-state{background:#f5fa45;color:#171b0b}
+.account-reward-note{margin:17px 0 0!important;color:#858879!important;font-size:11px!important;line-height:1.6}
+.account-next-level{margin:15px 0 0;padding:13px 14px;border-left:2px solid #f5fa45;border-radius:0 10px 10px 0;background:#14160f;color:#c9ccba;font-size:12px;line-height:1.55}
+.account-footer{margin:28px 0 0!important;text-align:center;color:#626554!important;font-size:10px!important;letter-spacing:1.2px}
+.account-dialog[data-loading="true"] .account-progress-fill{width:18%;opacity:.45}
+@media(min-width:640px){.account-dialog{margin:0 0 0 auto;border-left:1px solid #323427;border-radius:24px 0 0 24px;box-shadow:-25px 0 80px #0008}.account-dialog-header{padding:22px 28px}.account-dialog-content{padding:28px 28px calc(32px + env(safe-area-inset-bottom))}.account-reward-rail{margin:0 -28px;padding:0 28px 3px;scroll-padding:28px}.account-reward-card{flex-basis:205px;min-height:350px}.account-rewards h2{font-size:36px}.account-reward-card h3{font-size:26px;min-height:59px}.account-reward-art{min-height:150px}}
+@media(max-width:355px){.account-card{padding:13px;gap:10px}.account-avatar{width:43px;height:43px;flex-basis:43px}.account-name{font-size:14px}.account-meta{font-size:11px;gap:1px 6px}.account-dialog-header{padding:14px}.account-dialog-content{padding:22px 16px}.account-rewards h2{font-size:28px}.account-reward-rail{margin:0 -16px;padding:0 16px 3px;scroll-padding:16px}.account-reward-card{flex-basis:164px}.account-membership{padding:15px}.account-membership-status{max-width:135px}.account-dates div{gap:10px}}
+@media(prefers-reduced-motion:reduce){.account-card,.account-progress-fill{transition:none}.account-reward-rail{scroll-behavior:auto}}
