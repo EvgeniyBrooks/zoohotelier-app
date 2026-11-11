@@ -38,9 +38,11 @@ module.exports=async function handler(req,res){
    database('admins?select=id&telegram_id=eq.'+encodeURIComponent(telegramId)+'&limit=1'),
    database('club_lessons?select=id,cloudflare_video_id,is_published&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1')
   ]);
+  const trials=await database('noya_club_trials?select=starts_at,ends_at&student_id=eq.'+studentId+'&limit=1');
   const now=Date.now();
+  const trialActive=trials.some(t=>Date.parse(t.starts_at)<=now&&Date.parse(t.ends_at)>now);
   const active=subscriptions.some(s=>(!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&(!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
-  if(!active&&!admins.length)throw fail(403,'Active club subscription required');
+  if(!active&&!trialActive&&!admins.length)throw fail(403,'Active club subscription or valid trial required');
   const lesson=lessons[0];
   if(!lesson||!lesson.cloudflare_video_id)throw fail(404,'Published video lesson not found');
   if(!/^[a-f0-9]{32}$/i.test(lesson.cloudflare_video_id))throw fail(503,'Invalid video configuration');
