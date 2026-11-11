@@ -25,14 +25,18 @@ async function live(req,res){
   const students=await db('students?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1');
   if(!students.length)throw fail(403,'Course access required');
   const student=students[0].id;
-  const [enrollments,admins,courses]=await Promise.all([
+  const [enrollments,admins,courses,clubSubscriptions]=await Promise.all([
    db('enrollments?select=course_id,access_start_date,access_end_date&student_id=eq.'+student+'&status=eq.active&limit=20'),
    db('admins?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1'),
-   db('courses?select=id&title=eq.'+encodeURIComponent('Управление вниманием')+'&limit=1')
+   db('courses?select=id&title=eq.'+encodeURIComponent('Управление вниманием')+'&limit=1'),
+   db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+student+'&status=eq.active&limit=20')
   ]);
   if(!courses.length)throw fail(503,'Course unavailable');
   const courseId=courses[0].id,now=Date.now();
-  if(!admins.length&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
+  const paidClub=clubSubscriptions.some(s=>s.status==='active'&&
+   (!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&
+   (!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
+  if(!admins.length&&!paidClub&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   const action=req.body.action;
   if(action==='course_progress'){
    const [blocks,lessons,completed]=await Promise.all([
