@@ -300,6 +300,10 @@
 #app .block-card{gap:12px!important}
 @media(max-width:400px){#app .block-card .block-title{font-size:16px!important}.week-thumb{width:90px!important;min-width:90px!important}}
 
+
+.week-video-placeholder{display:grid;place-items:center;width:100%;height:100%;min-height:96px;color:#f5fa45;font-size:30px;background:linear-gradient(135deg,#262626,#0c0c0c)}
+.week-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
   </style>
 
 </head>
@@ -729,13 +733,7 @@ async function loadCourse() {
               )"
             >
 
-              <div class="week-thumb week-thumb-${block.block_number}" aria-hidden="true"><img src="${[
-'https://images.unsplash.com/photo-1552053831-71594a27632d?w=360&q=75',
-'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=360&q=75',
-'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=360&q=75',
-'https://images.unsplash.com/photo-1558788353-f76d92427f16?w=360&q=75',
-'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=360&q=75'
-][block.block_number]||'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=360&q=75'}" alt="" loading="lazy" onerror="this.style.display='none'"></div>
+              <div class="week-thumb week-thumb-${block.block_number}" aria-hidden="true"><span class="week-video-placeholder">▶</span></div>
               <div class="week-main"><div class="label">
                 ${block.block_number===0?"ПРЕДОБУЧЕНИЕ":"НЕДЕЛЯ "+block.block_number}
               </div>
@@ -774,7 +772,24 @@ async function loadCourse() {
 
     app.innerHTML =
       html;
-
+    // Show the actual opening frame of the first lesson in each block.
+    // Signed thumbnails are requested only for the authenticated student.
+    const thumbs=blocks.map(block=>({
+      block,lesson:courseProgress.lessons.filter(l=>l.block_id===block.id&&l.is_published).sort((a,b)=>a.day_number-b.day_number)[0]
+    })).filter(x=>x.lesson);
+    await Promise.all(thumbs.map(async ({block,lesson})=>{
+      try{
+        const result=await courseProgressRequest('course_watch',{lessonId:lesson.id});
+        const container=app.querySelector('.week-thumb-'+block.block_number);
+        if(!container||!result.token)return;
+        const img=document.createElement('img');
+        img.alt='Кадр из первого видео блока';
+        img.loading='lazy';
+        img.src='https://'+CLOUDFLARE_CUSTOMER+'/'+encodeURIComponent(result.token)+'/thumbnails/thumbnail.jpg?time=1s&width=320&height=240&fit=crop';
+        img.onerror=()=>{img.remove()};
+        container.replaceChildren(img);
+      }catch(e){console.warn('Lesson thumbnail unavailable',block.block_number,e.message)}
+    }));
 
   } catch (error) {
 
