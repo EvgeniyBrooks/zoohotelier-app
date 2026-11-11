@@ -147,3 +147,33 @@ test('Prodamus webhook validates signed nested submit payloads without leaking t
   assert.equal(ignored.statusCode,200);assert.equal(calls,1);
  }finally{global.fetch=oldFetch;cleanup();}
 });
+
+test('checkout test mode is invisible to non-admin visitors and denies their POST before intent creation',async()=>{
+ enable();
+ process.env.NOYA_PRODAMUS_TEST_MODE='1';
+ const oldFetch=global.fetch;let called=[];
+ global.fetch=async(u,opts={})=>{
+  let uri=new URL(u);called.push(uri.pathname.split('/').pop());
+  if(uri.pathname.endsWith('/admins'))return {ok:true,json:async()=>[]};
+  throw Error('Unexpected access '+u);
+ };
+ try{
+  const unknown=res();await checkout({method:'GET',query:{status:'1'},headers:{}},unknown);
+  assert.equal(unknown.statusCode,200);assert.equal(unknown.body.enabled,false);
+  const member=res();await checkout({method:'POST',body:{initData:signedInit(),acceptedTerms:true}},member);
+  assert.equal(member.statusCode,403);
+  assert.deepEqual(called,['admins']);
+ }finally{global.fetch=oldFetch;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
+});
+test('checkout test mode shows pay button only to a signed admin',async()=>{
+ enable();process.env.NOYA_PRODAMUS_TEST_MODE='1';
+ const oldFetch=global.fetch;
+ global.fetch=async(u)=>{
+  const uri=new URL(u);if(uri.pathname.endsWith('/admins'))return {ok:true,json:async()=>[{id:student}]};
+  throw Error('unexpected '+u);
+ };
+ try{
+  const r=res();await checkout({method:'GET',query:{status:'1'},headers:{'x-telegram-init-data':signedInit()}},r);
+  assert.equal(r.statusCode,200);assert.equal(r.body.enabled,true);assert.equal(r.body.priceRub,2900);
+ }finally{global.fetch=oldFetch;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
+});
