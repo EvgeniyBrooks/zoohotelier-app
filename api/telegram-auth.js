@@ -232,6 +232,22 @@ module.exports = async function handler(req, res) {
         }
       );
 
+    // Paid NOYA CLUB membership grants the full "Управление вниманием" course.
+    // The 48-hour trial does NOT grant course access. Separate course enrollments
+    // remain intact for existing users.
+    const clubResponse = await fetch(
+      process.env.NEXT_PUBLIC_SUPABASE_URL + "/rest/v1/club_subscriptions" +
+      "?select=status,start_date,end_date&student_id=eq." + encodeURIComponent(student.id) +
+      "&status=eq.active&limit=20",
+      {headers:{apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization:"Bearer "+process.env.SUPABASE_SERVICE_ROLE_KEY}}
+    );
+    if (!clubResponse.ok) throw new Error("Club subscription verification failed");
+    const clubRows=await clubResponse.json();
+    const current=Date.now();
+    const paidClubAccess=clubRows.some(s=>s.status==="active" &&
+      (!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=current) &&
+      (!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>current));
     // ==================================================
     // ОТВЕТ
     // ==================================================
@@ -263,10 +279,11 @@ module.exports = async function handler(req, res) {
 
       access: {
         hasAccess:
-          Boolean(activeEnrollment) || isAdmin,
+          Boolean(activeEnrollment) || paidClubAccess || isAdmin,
 
         enrollment:
-          activeEnrollment || null
+          activeEnrollment || null,
+        paidClubAccess
       }
 
     });
