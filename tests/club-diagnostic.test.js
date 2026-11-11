@@ -18,7 +18,11 @@ function signedData(id=123456789){
 }
 function response(){return {statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;return this},status(v){this.statusCode=v;return this},json(v){this.body=v;return this}}}
 async function run(method,initData,body={},mock){
- const old=global.fetch;global.fetch=async(url,opts)=>({ok:true,json:async()=>mock(new URL(url).pathname+new URL(url).search,opts)});
+ const old=global.fetch;global.fetch=async(url,opts)=>{
+  const parsed=new URL(url);
+  if(parsed.pathname.endsWith('/noya_club_trials'))return {ok:true,json:async()=>[]};
+  return {ok:true,json:async()=>mock(parsed.pathname+parsed.search,opts)};
+ };
  const res=response();
  try{await handler({method,body:{...body,initData},headers:{'x-telegram-init-data':initData}},res);return res}
  finally{global.fetch=old}
