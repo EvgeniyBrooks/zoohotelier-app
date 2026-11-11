@@ -71,10 +71,40 @@ async function setupNoyaBilling(){
  const wait=curtain.querySelector('.noya-waiting');
  const initData=window.Telegram?.WebApp?.initData;
  const hide=()=>{document.documentElement.classList.remove('noya-payment-checking');curtain.hidden=true;};
+ const lockTrialCourse=()=>{
+  document.querySelectorAll('a[href="./index.html"]').forEach(anchor=>{
+   anchor.removeAttribute('href');anchor.setAttribute('aria-disabled','true');
+   anchor.style.opacity='.5';anchor.style.cursor='not-allowed';
+   anchor.addEventListener('click',event=>{event.preventDefault();alert('Курс «Управление вниманием» откроется после оплаты 2 900 ₽.');});
+  });
+  const course=document.querySelector('#home .section h3');
+  if(course&&course.textContent.includes('УПРАВЛЕНИЕ ВНИМАНИЕМ'))course.textContent='🔒 УПРАВЛЕНИЕ ВНИМАНИЕМ';
+ };
+ const startParam=window.Telegram?.WebApp?.initDataUnsafe?.start_param||'';
+ const queryTrial=new URLSearchParams(location.search).get('trial');
+ const code=typeof queryTrial==='string'&&/^[A-Za-z0-9_-]{12,70}$/.test(queryTrial)?queryTrial:
+  /^trial_[A-Za-z0-9_-]{12,70}$/.test(startParam)?startParam.slice(6):null;
  if(!initData){hide();return;}
  const begin=async()=>{
-  retry.hidden=true;wait.hidden=false;state.textContent='Открываем оплату…';
+  retry.hidden=true;wait.hidden=false;state.textContent='Проверяем доступ…';
   try{
+   if(code){
+    const redeem=await fetch('/api/club-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem',initData,code}),cache:'no-store'});
+    if(redeem.ok){lockTrialCourse();history.replaceState(null,'',location.pathname+location.hash);hide();return;}
+    const reason=await redeem.json().catch(()=>({}));
+    if(reason.reason==='already_redeemed'){
+     const check=await fetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
+     const state=await check.json().catch(()=>({}));
+     if(state.trialActive){lockTrialCourse();hide();return;}
+    }
+    // Invalid or expired promotions never unlock the club.
+   }
+   const trialStatus=await fetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
+   if(trialStatus.ok){
+    const t=await trialStatus.json();
+    if(t.paidActive){hide();return;}
+    if(t.trialActive){lockTrialCourse();hide();return;}
+   }
    const status=await fetch('/api/club-checkout?status=1',{
     headers:{'x-telegram-init-data':initData},cache:'no-store'
    });
@@ -104,6 +134,33 @@ async function setupNoyaBilling(){
  await begin();
 }
 setupNoyaBilling();
+
+async function makeNoyaTrialCampaign(){
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)return alert('Открой админку через Telegram.');
+ const name=prompt('Название акции на 48 часов','Instagram — пробные 2 дня');
+ if(!name)return;
+ try{
+  const response=await fetch('/api/club-trial',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({action:'create',initData,title:name}),cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'Не удалось создать акцию');
+  const link='https://t.me/NoyaClubBrooksBot?startapp=trial_'+encodeURIComponent(data.code);
+  if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(link);
+  prompt('Ссылка акции (скопирована, если Telegram разрешил):',link);
+  alert('Акция на 48 часов создана. Автоматическое списание после 2 дней ещё НЕ подключено к Prodamus. Не публикуй ссылку как автопродление до проверки платёжного сценария.');
+ }catch(e){alert(e.message||'Не удалось создать акцию')}
+}
+const noyaAdminNav=document.getElementById('admin-nav');
+if(noyaAdminNav){
+ const trialButton=document.createElement('button');
+ trialButton.type='button';trialButton.textContent='Создать акцию на 2 дня';
+ trialButton.style.cssText='padding:13px 16px;border-radius:14px;background:#f5fa45;color:#111;font-weight:800;margin:12px 0';
+ trialButton.addEventListener('click',makeNoyaTrialCampaign);
+ const adminScreen=document.getElementById('admin');
+ if(adminScreen)adminScreen.prepend(trialButton);
+}
 
 async function loadClubProfile(){
  const initData=window.Telegram?.WebApp?.initData;
