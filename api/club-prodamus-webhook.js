@@ -35,7 +35,13 @@ module.exports=async function handler(req,res){
   // Only the club's signed checkout orders or previously recorded subscription IDs
   // can be applied by the database transaction. Any unrelated course payment is ignored.
   if(!providerId || !/^[0-9]{1,30}$/.test(providerId))return text(res,200,'success');
-  if(str(body.payment_status).toLowerCase()!=='success')return text(res,200,'success');
+  const status=str(body.payment_status).toLowerCase();
+  const signedRecurringSuccess=!status && str(subscription?.type)==='action'
+    && str(subscription?.action_code)==='auto_payment'
+    && str(subscription?.autopayment)==='1'
+    && Number(str(subscription?.payment_num))>=2
+    && !str(subscription?.error_code);
+  if(status!=='success' && !signedRecurringSuccess)return text(res,200,'success');
   const paymentId=str(body.order_id);
   const amount=Number(str(body.sum).replace(',','.'));
   const currency=str(body.currency||subscription.currency||'rub').toLowerCase();
