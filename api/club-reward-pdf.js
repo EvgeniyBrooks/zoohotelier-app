@@ -48,49 +48,41 @@ async function table(path) {
   return data;
 }
 const validDate = x => typeof x === 'string' && Number.isFinite(Date.parse(x)) ? Date.parse(x) : null;
-function paidMonths(rows, startTime) {
-  // The provider transaction ID must be present; unsigned client redirects cannot count.
-  // Multiple transactions within one UTC billing month count only once.
-  const byMonth = new Map();
-  const seen = new Set();
-  for (const item of rows) {
-    const id = item.prodamus_payment_id;
-    const time = validDate(item.paid_at);
-    if (typeof id!=='string' || !id.trim() || seen.has(id) || time===null ||
-        time < startTime - 72*3600*1000 ||
-        !SUCCESS.has(String(item.status||'').toLowerCase()) ||
-        !CLUB_PRODUCTS.has(String(item.product_type||'').toLowerCase())) continue;
+function paidMonths(rows,startTime,subscriptionId) {
+  // One confirmed Prodamus transaction per paid cycle, bound to this subscription ID.
+  // A transaction cannot unlock a second gift by replaying a webhook.
+  if(!subscriptionId)return 0;
+  const seen=new Set();
+  for(const item of rows) {
+    const id=item.prodamus_payment_id,stamp=validDate(item.paid_at);
+    if(typeof id!=='string'||!id.trim()||stamp===null||stamp < startTime-72*3600*1000
+      || !SUCCESS.has(String(item.status||'').toLowerCase())
+      || !CLUB_PRODUCTS.has(String(item.product_type||'').toLowerCase())
+      || item.product_id!=='noya:'+subscriptionId) continue;
     seen.add(id);
-    const dt = new Date(time);
-    const index = dt.getUTCFullYear()*12 + dt.getUTCMonth();
-    byMonth.set(index,true);
   }
-  const months = [...byMonth.keys()].sort((a,b)=>a-b);
-  // Each gap in payments starts a new streak. A single annual payment is one period.
-  let last = null, streak = 0;
-  for (const month of months) { streak = month===last+1 ? streak+1 : 1; last=month; }
-  return streak;
+  return seen.size;
 }
 async function eligibility(telegramId) {
   const students = await table('students?select=id&telegram_id=eq.'+encodeURIComponent(telegramId)+'&limit=1');
   if (!students.length) return {active:false,paidMonths:0,eligible:false};
   const studentId = students[0].id;
   const now = Date.now();
-  const subscriptions = await table('club_subscriptions?select=id,status,start_date,end_date&student_id=eq.'+encodeURIComponent(studentId)+'&order=created_at.desc&limit=100');
+  const subscriptions = await table('club_subscriptions?select=id,status,start_date,end_date,prodamus_subscription_id&student_id=eq.'+encodeURIComponent(studentId)+'&order=created_at.desc&limit=100');
   const active = subscriptions.filter(item=> {
     const start=validDate(item.start_date),end=validDate(item.end_date);
     return item.status==='active' && start!==null && start<=now && (end===null || end>now);
   }).sort((a,b)=>Date.parse(b.start_date)-Date.parse(a.start_date))[0];
   if (!active) return {active:false,paidMonths:0,eligible:false};
   const payments = [];
-  const base = 'payments?select=prodamus_payment_id,product_type,status,paid_at&student_id=eq.'+encodeURIComponent(studentId)+'&order=paid_at.asc';
+  const base = 'payments?select=prodamus_payment_id,product_type,product_id,status,paid_at&student_id=eq.'+encodeURIComponent(studentId)+'&order=paid_at.asc';
   for (let offset=0; offset<5000; offset+=1000) {
     const batch=await table(base+'&limit=1000&offset='+offset);
     payments.push(...batch);
     if(batch.length<1000)break;
     if(offset>=4000)throw Object.assign(new Error('Payment history too large'),{status:502});
   }
-  const count = paidMonths(payments,Date.parse(active.start_date));
+  const count = paidMonths(payments,Date.parse(active.start_date),active.prodamus_subscription_id);
   return {active:true,paidMonths:count,eligible:count>=2};
 }
 async function signedDownloadUrl() {
