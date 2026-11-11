@@ -308,7 +308,7 @@ test('the account query flag cannot bypass subscription checks for POST or DELET
       return {ok:true,status:200,json:async()=>table==='students'?[{id:studentId}]:[]};
     }});
     assert.equal(res.statusCode,403);
-    assert.deepEqual(res.body,{error:'Active club subscription required'});
+    assert.deepEqual(res.body,{error:'Active club subscription or valid trial required'});
     assert.equal(calls.length,3);
   }
 });
