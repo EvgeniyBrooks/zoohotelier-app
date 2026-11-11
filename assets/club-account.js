@@ -1,18 +1,14 @@
 /* The server validates Telegram and supplies subscription dates and earned months.
-   Reward content is not published yet. Do not place private reward URLs here. */
+   Only public gift descriptions belong here; the API protects the full materials. */
 (() => {
   'use strict';
   const slot = document.getElementById('noya-account-slot');
   if (!slot) return;
 
-  const LEVELS = [
-    'Новичок', 'Свой человек', 'Напарник', 'Друг клуба',
-    'Одна команда', 'Полгода вместе', 'Свой в клубе', 'В кругу своих',
-    'Часть NOYA', 'Опора клуба', 'Почти год', 'Год с NOYA'
-  ];
+  const REWARDS = window.NOYA_REWARD_CATALOG || [];
+  const LEVELS = REWARDS.map(reward => reward.level);
   const chevron = '<svg viewBox="0 0 20 24" fill="none" aria-hidden="true"><path d="m7 5 6 7-6 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const lock = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="2" stroke="currentColor"/><path d="M5.5 7V4.5a2.5 2.5 0 0 1 5 0V7" stroke="currentColor"/><path d="M8 10v1" stroke="currentColor" stroke-linecap="round"/></svg>';
-  const paw = '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M32 56c7-8 9-18 18-18s11 10 18 18c5 6 10 10 9 18-2 14-16 9-27 9s-25 5-27-9c-1-8 4-12 9-18Z" fill="currentColor"/><ellipse cx="24" cy="36" rx="9" ry="13" transform="rotate(-27 24 36)" fill="currentColor"/><ellipse cx="41" cy="22" rx="9" ry="14" transform="rotate(-8 41 22)" fill="currentColor"/><ellipse cx="61" cy="22" rx="9" ry="14" transform="rotate(8 61 22)" fill="currentColor"/><ellipse cx="78" cy="37" rx="9" ry="13" transform="rotate(27 78 37)" fill="currentColor"/></svg>';
 
   slot.innerHTML = `<button class="account-card" id="account-open" type="button" aria-haspopup="dialog" aria-controls="account-dialog" aria-label="Открыть профиль и подписку">
     <span class="account-avatar" data-account-avatar aria-hidden="true"><span>N</span></span>
@@ -30,8 +26,9 @@
     <div class="account-identity"><span class="account-name" data-account-name>Твой профиль</span><div class="account-meta"><span class="account-level" data-account-level>Аккаунт</span><span class="account-summary" data-account-summary>Загружаем подписку…</span></div></div>
     <button class="account-icon-button" id="account-close" type="button" aria-label="Закрыть профиль"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
   </header>
-  <div class="account-dialog-content">
-    <p class="account-kicker">Личный кабинет</p><h2 id="account-dialog-title">Моя подписка</h2>
+  <div class="account-dialog-content"><div id="account-overview">
+    <h2 id="account-dialog-title" class="account-visually-hidden">Профиль и подарки NOYA CLUB</h2>
+    <details class="account-membership-details" id="account-membership-details"><summary><span>Моя подписка</span><span>Срок и доступ +</span></summary>
     <section class="account-membership" aria-label="Подписка NOYA CLUB" aria-live="polite">
       <div class="account-membership-top"><span class="account-membership-brand">NOYA CLUB</span><span class="account-membership-status" id="account-subscription-status">Проверяем…</span></div>
       <p class="account-membership-message" id="account-membership-message">Загружаем подписку…</p>
@@ -39,31 +36,37 @@
       <dl class="account-dates" id="account-dates" hidden></dl>
       <a class="account-action" id="account-telegram-link" href="https://t.me/NoyaClubBrooksBot" target="_blank" rel="noopener noreferrer" hidden>Открыть в Telegram <span aria-hidden="true">↗</span></a>
       <button class="account-action" id="account-retry" type="button" hidden>Повторить загрузку</button>
-    </section>
+    </section></details>
     <section class="account-rewards" aria-labelledby="account-rewards-title">
       <p class="account-kicker">Твой год в клубе</p><h2 id="account-rewards-title">Подарки за продление</h2>
-      <p class="account-rewards-intro">Каждый полный месяц участия открывает новый уровень. Всего — 12.</p>
+      <p class="account-rewards-intro">12 месяцев — 12 подарков для вашей команды. Игры, практикумы и личные проекты. Первый откроется спустя месяц.</p>
       <div class="account-progress-heading"><span>Прогресс по месяцам</span><span class="account-progress-count" id="account-progress-count">… / 12</span></div>
       <div class="account-progress" id="account-progress" role="progressbar" aria-label="Уровни участия в клубе" aria-valuemin="0" aria-valuemax="12"><div class="account-progress-fill" id="account-progress-fill"></div></div>
       <div class="account-rail-toolbar"><span class="account-rail-hint">Листай, чтобы увидеть все 12 месяцев</span><div class="account-rail-controls"><button class="account-icon-button" id="account-months-prev" type="button" aria-label="Предыдущие месяцы">${chevron.replace('<svg ', '<svg style="transform:rotate(180deg)" ')}</button><button class="account-icon-button" id="account-months-next" type="button" aria-label="Следующие месяцы">${chevron}</button></div></div>
       <div class="account-reward-rail" id="account-reward-rail" role="list" aria-label="12 месяцев участия" tabindex="0"></div>
       <p class="account-next-level" id="account-next-level">Первый подарок — после полного месяца в клубе. Второй — после двух, и так до двенадцатого.</p>
-      <p class="account-reward-note">Подарки для уровней пока не опубликованы. Когда они появятся, их можно будет открыть здесь.</p>
+      <a class="account-route-link" id="account-route-link" href="./club.html#route" hidden>Продолжить свой маршрут →</a>
+      <details class="account-reward-rules"><summary>Как открываются подарки</summary><p>Уровни начисляются за полные календарные месяцы непрерывной подписки. При вступлении — 0 из 12. Оплата за год не открывает все подарки сразу.</p><p>Читать подарки в клубе можно при активной подписке. После перерыва отсчёт начинается заново. Полученные материалы можно скачать и оставить себе.</p><p>Все подарки цифровые. Предметы на картинках — иллюстрации. «Кинолог» и «Суперкинолог» — названия клубных уровней, а не профессиональная квалификация.</p></details>
     </section>
     <p class="account-footer">NOYA CLUB · BY BROOKS</p>
-  </div>`;
+  </div></div>`;
   document.body.append(dialog);
 
   const byId = id => document.getElementById(id);
   const rail = byId('account-reward-rail');
-  const cards = LEVELS.map((title, index) => {
+  const cards = REWARDS.map((reward, index) => {
     const month = index + 1;
     const card = document.createElement('article');
     card.className = 'account-reward-card';
     card.setAttribute('role', 'listitem');
-    card.setAttribute('aria-label', `${month}-й месяц: ${title}`);
-    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-caption"></p><div class="account-reward-art" data-month="${String(month).padStart(2, '0')}" aria-hidden="true">${paw}</div><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button>`;
-    card.querySelector('h3').textContent = title;
+    card.setAttribute('aria-label', `${month}-й месяц: ${reward.level}. ${reward.title}`);
+    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><p class="account-reward-caption"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><span class="account-gift-format">Цифровой подарок</span><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
+    card.querySelector('h3').textContent = reward.level;
+    card.querySelector('.account-reward-title').textContent = reward.title;
+    card.querySelector('.account-reward-caption').textContent = reward.summary;
+    card.querySelector('img').src = reward.image;
+    card.querySelector('.account-reward-state').addEventListener('click', event => reader?.open(month,true,event.currentTarget));
+    card.querySelector('.account-reward-preview').addEventListener('click', event => reader?.open(month,false,event.currentTarget));
     rail.append(card);
     return card;
   });
@@ -79,6 +82,7 @@
   let isOpen = false;
   let fallbackBackdrop = null;
   let backgroundState = [];
+  const reader = typeof window.NoyaRewardReader === 'function' ? window.NoyaRewardReader({dialog,overview:byId('account-overview'),catalog:REWARDS,getAccount:() => account,getPhase:() => phase,refreshAccount:loadAccount}) : null;
   const shortDate = new Intl.DateTimeFormat('ru-RU', {day:'2-digit', month:'2-digit', year:'numeric'});
   const longDate = new Intl.DateTimeFormat('ru-RU', {day:'numeric', month:'long', year:'numeric'});
   function dateLabel(value, long = false) {
@@ -181,15 +185,19 @@
     cards.forEach((card, index) => {
       const unlocked = ready && index < months;
       card.dataset.unlocked = String(unlocked);
-      card.querySelector('.account-reward-caption').textContent = ready ? (unlocked ? 'Этот уровень уже открыт' : `После ${index + 1} ${index === 0 ? 'месяца' : 'месяцев'} в клубе`) : phase === 'loading' ? 'Проверяем твой прогресс…' : 'Прогресс пока недоступен';
       const button = card.querySelector('.account-reward-state');
-      const stateLabel = ready ? (unlocked ? 'Уровень открыт' : 'Закрыто') : phase === 'loading' ? 'Проверяем…' : 'Нет данных';
+      const stateLabel = ready ? (unlocked && active ? 'Забрать →' : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
       button.querySelector('span').textContent = stateLabel;
       button.querySelector('svg').style.display = ready && !unlocked ? '' : 'none';
-      button.setAttribute('aria-label', ready ? (unlocked ? `${index + 1}-й уровень открыт. Подарок пока не опубликован` : `${index + 1}-й уровень закрыт`) : stateLabel);
+      button.disabled = !reader || !unlocked || !active;
+      card.querySelector('.account-reward-preview').disabled = !reader;
+      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок откроется после ${index + 1} ${index === 0 ? 'полного месяца' : 'полных месяцев'} участия`) : stateLabel);
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
-    byId('account-next-level').textContent = months === 12 ? 'Ты открыл все 12 уровней. Целый год вместе с NOYA!' : active && next ? `${months ? 'Следующий' : 'Первый'} подарок — ${next}, при действующей подписке.` : active && months ? 'Следующий подарок — после следующего полного месяца участия при действующей подписке.' : 'Первый подарок — после полного месяца в клубе. Второй — после двух, и так до двенадцатого.';
+    const nextTitle = REWARDS[months]?.title;
+    byId('account-next-level').textContent = months === 12 ? 'Все 12 подарков открыты. Целый год вместе с NOYA! Продолжай работу по своему маршруту.' : active && next && nextTitle ? `Следующий подарок — «${nextTitle}». Откроется ${next} при действующей подписке.` : active && nextTitle ? `Впереди — «${nextTitle}». Подарок откроется после следующего полного месяца непрерывного участия при активной подписке.` : 'Первый подарок — после полного месяца в клубе. Второй — после двух, и так до двенадцатого.';
+    byId('account-route-link').hidden = months !== 12;
+    reader?.refresh();
     updateRailButtons();
   }
   async function loadAccount() {
@@ -220,6 +228,7 @@
   function finishClose() {
     if (!isOpen) return;
     isOpen = false;
+    reader?.close();
     document.body.style.overflow = previousOverflow;
     if (fallbackBackdrop) {fallbackBackdrop.remove();fallbackBackdrop = null;}
     backgroundState.forEach(({element,inert,ariaHidden}) => {
@@ -230,7 +239,7 @@
     });
     backgroundState = [];
     if (backButton) {
-      try {backButton.offClick(closeAccount);if (!wasBackVisible) backButton.hide();} catch (_) {}
+      try {backButton.offClick(backAccount);if (!wasBackVisible) backButton.hide();} catch (_) {}
       backButton = null;
     }
     if (opener?.isConnected) opener.focus({preventScroll:true});
@@ -240,6 +249,7 @@
     if (typeof dialog.close === 'function') dialog.close();
     else {dialog.removeAttribute('open');finishClose();}
   }
+  function backAccount() { if (!reader?.close()) closeAccount(); }
   function openAccount(event) {
     if (isOpen) return;
     opener = event?.currentTarget || document.activeElement;
@@ -256,12 +266,12 @@
     byId('account-close').focus({preventScroll:true});
     const tg = window.Telegram?.WebApp;
     if (tg?.BackButton && (!tg.isVersionAtLeast || tg.isVersionAtLeast('6.1'))) {
-      try {backButton = tg.BackButton;wasBackVisible = Boolean(backButton.isVisible);backButton.onClick(closeAccount);backButton.show();} catch (_) {backButton = null;}
+      try {backButton = tg.BackButton;wasBackVisible = Boolean(backButton.isVisible);backButton.onClick(backAccount);backButton.show();} catch (_) {backButton = null;}
     }
     if (phase !== 'loading' && (phase !== 'ready' || Date.now() - lastLoadedAt > 60000)) loadAccount();
     requestAnimationFrame(() => {
       const months = phase === 'ready' ? account.loyalty?.unlockedMonths || 0 : 0;
-      rail.scrollLeft = Math.max(0, months - 1) * (cards[0].getBoundingClientRect().width + 12);
+      rail.scrollLeft = Math.max(0, months - 1) * ((cards[0]?.getBoundingClientRect().width || 200) + 12);
       updateRailButtons();
     });
   }
@@ -269,16 +279,22 @@
   document.querySelectorAll('[data-open-account]').forEach(button => button.addEventListener('click', openAccount));
   byId('account-close').addEventListener('click', closeAccount);
   byId('account-retry').addEventListener('click', loadAccount);
+  byId('account-route-link').addEventListener('click', event => {
+    if (document.getElementById('route') && typeof window.showScreen === 'function') {
+      event.preventDefault();closeAccount();window.showScreen('route');
+    }
+  });
   dialog.addEventListener('close', finishClose);
+  dialog.addEventListener('cancel', event => { if (reader?.isOpen()) {event.preventDefault();reader.close();} });
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
     const rect = dialog.getBoundingClientRect();
     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeAccount();
   });
   dialog.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && typeof dialog.close !== 'function') {event.preventDefault();closeAccount();}
+    if (event.key === 'Escape' && typeof dialog.close !== 'function') {event.preventDefault();backAccount();}
     if (event.key === 'Tab' && typeof dialog.showModal !== 'function') {
-      const focusable = [...dialog.querySelectorAll('button:not(:disabled),a[href],[tabindex="0"]')].filter(element => element.getClientRects().length);
+      const focusable = [...dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]')].filter(element => element.getClientRects().length);
       const first = focusable[0],last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) {event.preventDefault();last?.focus();}
       else if (!event.shiftKey && document.activeElement === last) {event.preventDefault();first?.focus();}
@@ -286,7 +302,7 @@
   });
   function scrollMonths(direction) {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    rail.scrollBy({left:direction * (cards[0].getBoundingClientRect().width + 12), behavior:reduced ? 'auto' : 'smooth'});
+    rail.scrollBy({left:direction * ((cards[0]?.getBoundingClientRect().width || 200) + 12), behavior:reduced ? 'auto' : 'smooth'});
   }
   byId('account-months-prev').addEventListener('click', () => scrollMonths(-1));
   byId('account-months-next').addEventListener('click', () => scrollMonths(1));

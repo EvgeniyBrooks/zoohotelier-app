@@ -85,7 +85,7 @@ test('authOnly keeps its original response and takes precedence over account wit
 test('signed Telegram profile is returned even when no student exists, without creating anything',async()=>{
   const {res,calls}=await account({students:[]});
   assertLoyalty(res,0);
-  assert.deepEqual(res.body.user,{displayName:'Евгений Брукс',firstName:'Евгений',lastName:'Брукс',username:'zoohotelier',photoUrl:'https://example.com/avatar.jpg'});
+  assert.deepEqual(res.body.user,{id:'123456789',displayName:'Евгений Брукс',firstName:'Евгений',lastName:'Брукс',username:'zoohotelier',photoUrl:'https://example.com/avatar.jpg'});
   assert.deepEqual(res.body.subscription,{status:'none',startDate:null,endDate:null,nextPaymentDate:null});
   assert.equal(calls.length,1);
   assert.equal(calls[0].request.method,undefined);
@@ -93,8 +93,9 @@ test('signed Telegram profile is returned even when no student exists, without c
 });
 
 test('account reads only the signed user student and that student subscriptions; client IDs and profile fields are ignored',async()=>{
-  const {res,calls}=await account({query:{studentId:foreignStudentId,telegramId:'987654321'},body:{user:{...defaultUser,first_name:'Подмена'},studentId:foreignStudentId}});
+  const {res,calls}=await account({query:{studentId:foreignStudentId,telegramId:'987654321'},body:{user:{...defaultUser,id:987654321,first_name:'Подмена'},studentId:foreignStudentId}});
   assertLoyalty(res,0);
+  assert.equal(res.body.user.id,'123456789');
   assert.equal(res.body.user.firstName,'Евгений');
   assert.equal(res.body.subscription.status,'none');
   assert.equal(calls.length,2);
