@@ -9,7 +9,16 @@
 <nav class="club-quick-nav" aria-label="Быстрый переход по разделам"><button type="button" data-screen="home">⌂ Главная</button><a href="./club-demo.html">◇ Моя собака</a><button type="button" data-screen="route">↗ Маршрут</button><button type="button" data-screen="library">▤ Библиотека</button><button type="button" data-screen="ai">✦ ИИ Ноя</button><button type="button" data-screen="bonuses">☆ Бонусы</button><a href="./index.html">▶ Мой курс</a></nav><header class="top"><div><div class="logo">NOYA CLUB</div><div class="by">by Brooks</div></div></header>
 <section id="home" class="screen" aria-labelledby="home-title"><div id="telegram-auth-state" class="notice" role="status" hidden style="margin-bottom:20px">Проверяем подключение Telegram…</div><div class="eyebrow">Клуб собачников</div><h1 id="home-title">НАЧНИ С КОНТАКТА</h1><p>Твоя собака, твои цели и свой маршрут обучения.</p>
 <div class="trajectory"><div class="eyebrow">ТВОЯ СОБАКА-КОМПАНЬОН</div><h2 id="trajectory-title">СОБАКА-КОМПАНЬОН</h2><p id="trajectory-text">Ответь на 10 вопросов, чтобы определить направления работы с собакой.</p><a class="cta" id="trajectory-link" href="./club-demo.html"><span id="trajectory-action">Начать диагностику</span><span class="arrow">→</span></a></div>
-<div class="section"><div class="eyebrow">Твоё пространство</div><h2>НАЧНИ ЗДЕСЬ</h2><div class="tiles">
+<section class="section" id="noya-billing" aria-label="Оформить подписку NOYA CLUB" hidden>
+ <div class="card" style="border-color:#626942;background:linear-gradient(140deg,#202319,#131510)">
+  <div class="label">ТВОЯ ПОДПИСКА</div><h2 style="margin-top:10px">ВСТУПИТЬ В NOYA CLUB</h2>
+  <p id="noya-billing-price" style="color:#f5fa45;font-weight:800"></p>
+  <p>Подписка продлевается автоматически по условиям платёжной формы. Первую методичку можно получить после подтверждённой оплаты второго месяца.</p>
+  <label style="display:flex;gap:10px;align-items:flex-start;margin:15px 0;color:#ddd;font-size:12px"><input id="noya-billing-consent" type="checkbox" style="accent-color:#f5fa45;width:18px;height:18px;flex-shrink:0"><span>Согласен с условиями подписки, ценой и автоматическими списаниями. <a id="noya-billing-terms" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;color:#f5fa45">Условия и отмена</a></span></label>
+  <button class="button" id="noya-billing-start" type="button" disabled>Оформить подписку <span>→</span></button>
+  <p id="noya-billing-status" role="status" aria-live="polite" style="font-size:12px;margin:10px 0 0"></p>
+ </div>
+</section><div class="section"><div class="eyebrow">Твоё пространство</div><h2>НАЧНИ ЗДЕСЬ</h2><div class="tiles">
 <a class="tile" href="./club-demo.html"><span class="glyph">◇</span><strong>МОЯ СОБАКА</strong><small>Профиль и диагностика</small></a>
 <button class="tile" type="button" data-screen="route" style="color:inherit;text-align:left;cursor:pointer"><span class="glyph">↗</span><strong>МОЙ МАРШРУТ</strong><small>Темы и уроки для твоей собаки</small></button>
 <button class="tile" type="button" data-screen="library" style="color:inherit;text-align:left;cursor:pointer"><span class="glyph">▤</span><strong>УРОКИ</strong><small>Открыть библиотеку</small></button>
@@ -50,6 +59,40 @@ document.querySelectorAll('.tile[data-screen]').forEach(n=>n.addEventListener('c
 const empty={history:['ИСТОРИЯ ПОКА ПУСТА','Здесь появятся просмотренные уроки, когда мы подключим библиотеку клуба.'],favorites:['НЕТ ИЗБРАННЫХ УРОКОВ','Когда появятся уроки, ты сможешь сохранять понравившиеся.'],completed:['ПОКА НЕТ ПРОЙДЕННЫХ УРОКОВ','После подключения уроков здесь будет история завершённых занятий.']};
 document.querySelectorAll('[data-library]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-library]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));const v=empty[b.dataset.library];const el=document.getElementById('library-content');el.replaceChildren();const h=document.createElement('h3');h.textContent=v[0];el.append(h,document.createTextNode(v[1]));}));
 showScreen(location.hash.slice(1)||'home');
+async function setupNoyaBilling(){
+ const area=document.getElementById('noya-billing'),btn=document.getElementById('noya-billing-start');
+ const consent=document.getElementById('noya-billing-consent'),status=document.getElementById('noya-billing-status');
+ const initData=window.Telegram?.WebApp?.initData;
+ if(!initData)return;
+ try {
+  const configReq=await fetch('/api/club-checkout?status=1',{cache:'no-store'});
+  if(!configReq.ok)return;
+  const config=await configReq.json();
+  if(!config.enabled || !config.termsUrl || !Number.isFinite(config.priceRub))return;
+  const profileReq=await fetch('/api/club-diagnostic?account=1',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
+  const profile=profileReq.ok?await profileReq.json():null;
+  if(profile?.subscription?.status==='active')return;
+  document.getElementById('noya-billing-price').textContent=new Intl.NumberFormat('ru-RU').format(config.priceRub)+' ₽ / месяц';
+  document.getElementById('noya-billing-terms').href=config.termsUrl;
+  area.hidden=false;
+  consent.addEventListener('change',()=>{btn.disabled=!consent.checked});
+  btn.addEventListener('click',async()=>{
+   if(!consent.checked||btn.disabled)return;
+   btn.disabled=true;status.textContent='Создаём защищённую ссылку для оплаты…';
+   try {
+    const r=await fetch('/api/club-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData,acceptedTerms:true}),cache:'no-store'});
+    const data=await r.json();
+    if(!r.ok||!data.checkoutUrl)throw Error(data.error||'Не удалось открыть оплату');
+    status.textContent='Открываем платёжную страницу Prodamus…';
+    if(window.Telegram?.WebApp?.openLink)window.Telegram.WebApp.openLink(data.checkoutUrl);
+    else window.location.assign(data.checkoutUrl);
+   }catch(error){status.textContent=error.message;}
+   finally{btn.disabled=!consent.checked;}
+  });
+ }catch(_){ /* The club continues working if billing integration is unavailable. */ }
+}
+setupNoyaBilling();
+
 
 async function loadClubProfile(){
  const initData=window.Telegram?.WebApp?.initData;
