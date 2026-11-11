@@ -228,7 +228,7 @@ test('admin test checkout creates a Prodamus DEMO link, not a live charge',async
   if(u.pathname.endsWith('/students')&&!init.method)return {ok:true,json:async()=>[{id:student}]};
   if(u.pathname.endsWith('/noya_club_checkout_intents')&&init.method==='POST'){
    const intent=JSON.parse(init.body);
-   assert.equal(intent.is_demo,true);assert.match(intent.order_num,/^noya-demo-[\\da-f-]{36}$/);
+   assert.equal(intent.is_demo,true);assert.match(intent.order_num,/^noya-demo-[0-9a-f-]{36}$/);
    return {ok:true,json:async()=>[intent]};
   }
   if(u.hostname==='merchant.payform.ru'){
