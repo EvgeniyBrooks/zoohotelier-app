@@ -44,9 +44,9 @@ function signInit(){
  return p.toString();
 }
 test('anonymous and unsigned promotions cannot activate a trial',async()=>{
- const endpoint=require('../api/club-trial.js');
  const prev={...process.env};
  Object.assign(process.env,{NEXT_PUBLIC_SUPABASE_URL:'https://fake.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'test',NOYA_TELEGRAM_BOT_TOKEN:'test-noya-trial-bot'});
+ const endpoint=require('../api/club-trial.js');
  const res=()=>({setHeader(){},status(n){this.code=n;return this},json(v){this.body=v;return this}});
  try{
   const invalid=res();
