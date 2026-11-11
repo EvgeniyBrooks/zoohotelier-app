@@ -428,15 +428,9 @@ async function continueCourse(){
  try{
   let blocks=courseProgress.blocks,lessons=courseProgress.lessons;
   if(!lessons.length){
-   const headers={apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY};
-   const r=await fetch(SUPABASE_URL+'/rest/v1/lessons?select=id,block_id,day_number,title,is_published&is_published=eq.true&order=day_number.asc&limit=100',{headers});
-   if(!r.ok)throw Error('Не удалось загрузить уроки: '+r.status);
-   lessons=await r.json();
-   if(!blocks.length){
-    const b=await fetch(SUPABASE_URL+'/rest/v1/course_blocks?select=id,block_number,title&order=block_number.asc',{headers});
-    if(!b.ok)throw Error('Не удалось загрузить блоки: '+b.status);
-    blocks=await b.json();
-   }
+   const catalog=await courseProgressRequest('course_catalog');
+   lessons=catalog.lessons||[];
+   if(!blocks.length)blocks=catalog.blocks||[];
   }
   const order=new Map(blocks.map(b=>[b.id,b.block_number])),allowed=new Set(blocks.map(b=>b.id)),done=new Set(courseProgress.completed);
   const next=[...lessons].filter(l=>l.is_published&&allowed.has(l.block_id)&&!done.has(l.id)).sort((a,b)=>(order.get(a.block_id)-order.get(b.block_id))||(a.day_number-b.day_number))[0];
@@ -626,39 +620,8 @@ async function loadCourse() {
     // БЛОКИ
     // ----------------------------------------------
 
-    const blocksResponse =
-      await fetch(
-        SUPABASE_URL +
-        "/rest/v1/course_blocks" +
-        "?select=id,title,block_number" +
-        "&order=block_number.asc",
-        {
-          headers: {
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_PUBLISHABLE_KEY
-
-          }
-        }
-      );
-
-
-    if (!blocksResponse.ok) {
-
-      throw new Error(
-        "Ошибка загрузки блоков: " +
-        blocksResponse.status
-      );
-
-    }
-
-
-    const blocks =
-      await blocksResponse.json();
+    const catalog=await courseProgressRequest('course_catalog');
+    const blocks=catalog.blocks||[];
     try{courseProgress=await courseProgressRequest('course_progress')}
     catch(e){console.warn('Course progress not available:',e.message);courseProgress={blocks:[],lessons:[],completed:[],error:e.message}}
 
@@ -1059,26 +1022,8 @@ async function loadLessons(
   `;
 
   try {
-    const response = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/lessons" +
-      "?select=id,title,day_number,is_published,block_id" +
-      "&block_id=eq." + encodeURIComponent(blockId) +
-      "&is_published=eq.true" +
-      "&order=day_number.asc",
-      {
-        headers: {
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
-        }
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Ошибка загрузки уроков: " + response.status);
-    }
-
-    const lessons = await response.json();
+    const data=await courseProgressRequest('course_block_lessons',{blockId});
+    const lessons=data.lessons||[];
     const doneIds=new Set(courseProgress.completed);
     const finished=lessons.filter(l=>doneIds.has(l.id)).length;
     const blockMeta=courseProgress.blocks.find(b=>b.id===blockId);
@@ -1160,32 +1105,10 @@ async function loadLesson(
   `;
 
   try {
-    const response = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/lessons" +
-      "?select=id,title,description,homework,crystal_reward,is_published,video_url,block_id" +
-      "&id=eq." + encodeURIComponent(lessonId) +
-      "&is_published=eq.true" +
-      "&limit=1",
-      {
-        headers: {
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY
-        }
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Ошибка Supabase: " + response.status);
-    }
-
-    const lessons = await response.json();
-
-    if (!lessons.length) {
-      throw new Error("Урок не найден.");
-    }
-
-    const lesson = lessons[0];
+    const data=await courseProgressRequest('course_lesson_details',{lessonId});
+    const lessons=data.lessons||[];
+    if(!lessons.length)throw Error('Урок не найден.');
+    const lesson=lessons[0];
     const alreadyDone=courseProgress.completed.includes(lesson.id);
     const currentBlockId = blockId || lesson.block_id;
     let videoHtml = "";
