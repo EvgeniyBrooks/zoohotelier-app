@@ -39,12 +39,12 @@
     </section></details>
     <section class="account-rewards" aria-labelledby="account-rewards-title">
       <p class="account-kicker">Твой год в клубе</p><h2 id="account-rewards-title">Подарки за продление</h2>
-      <p class="account-rewards-intro">Игры, практикумы и личные проекты для вашей команды. Первый подарок — спустя полный месяц.</p>
+      <p class="account-rewards-intro">Игры, практикумы и личные проекты для вашей команды. Подарок «101 трюк» — после оплаты второго месяца.</p>
       <div class="account-progress-heading"><span>Прогресс по месяцам</span><span class="account-progress-count" id="account-progress-count">… / 12</span></div>
       <div class="account-progress" id="account-progress" role="progressbar" aria-label="Уровни участия в клубе" aria-valuemin="0" aria-valuemax="12"><div class="account-progress-fill" id="account-progress-fill"></div></div>
       <div class="account-rail-toolbar"><span class="account-rail-hint">Листай, чтобы увидеть все 12 месяцев</span><div class="account-rail-controls"><button class="account-icon-button" id="account-months-prev" type="button" aria-label="Предыдущие месяцы">${chevron.replace('<svg ', '<svg style="transform:rotate(180deg)" ')}</button><button class="account-icon-button" id="account-months-next" type="button" aria-label="Следующие месяцы">${chevron}</button></div></div>
       <div class="account-reward-rail" id="account-reward-rail" role="list" aria-label="12 месяцев участия" tabindex="0"></div>
-      <p class="account-next-level" id="account-next-level">Первый подарок — после полного месяца в клубе. Второй — после двух, и так до двенадцатого.</p>
+      <p class="account-next-level" id="account-next-level">Первый подарок открывается после подтверждённой оплаты второго месяца.</p>
       <a class="account-route-link" id="account-route-link" href="./club.html#route" hidden>Продолжить свой маршрут →</a>
       <details class="account-reward-rules"><summary>Как открываются подарки</summary><p>Уровни начисляются за полные календарные месяцы непрерывной подписки. При вступлении — 0 из 12. Оплата за год не открывает все подарки сразу.</p><p>Читать подарки в клубе можно при активной подписке. После перерыва отсчёт начинается заново. Полученные материалы можно скачать и оставить себе.</p><p>Все подарки цифровые. Предметы на картинках — иллюстрации. «Кинолог» и «Суперкинолог» — названия клубных уровней, а не профессиональная квалификация.</p></details>
     </section>
@@ -186,7 +186,7 @@
     if (ready) byId('account-progress').setAttribute('aria-valuenow', String(months));
     else byId('account-progress').removeAttribute('aria-valuenow');
     cards.forEach((card, index) => {
-      const unlocked = ready && index < months;
+      const unlocked = ready && (index === 0 ? account.firstPdfEligible === true : index < months);
       const revealed = unlocked && active;
       if (index >= 6) {
         card.dataset.secret = String(!revealed);
@@ -207,11 +207,11 @@
       button.disabled = !reader || !unlocked || !active;
       card.querySelector('.account-reward-preview').disabled = !reader || (index >= 6 && !revealed);
       card.querySelector('.account-reward-preview').hidden = index >= 6 && !revealed;
-      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок откроется после ${index + 1} ${index === 0 ? 'полного месяца' : 'полных месяцев'} участия`) : stateLabel);
+      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : index === 0 ? 'Методичка откроется после подтверждённой оплаты второго месяца' : `Подарок откроется после ${index + 1} полных месяцев участия`) : stateLabel);
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
     const nextTitle = months >= 6 ? 'секретный подарок' : REWARDS[months]?.title;
-    byId('account-next-level').textContent = months === 12 ? 'Все 12 подарков открыты. Целый год вместе с NOYA! Продолжай работу по своему маршруту.' : active && next && nextTitle ? `Следующий подарок — «${nextTitle}». Откроется ${next} при действующей подписке.` : active && nextTitle ? `Впереди — «${nextTitle}». Подарок откроется после следующего полного месяца непрерывного участия при активной подписке.` : 'Первый подарок — после полного месяца в клубе. Второй — после двух, и так до двенадцатого.';
+    byId('account-next-level').textContent = months === 12 ? 'Все 12 подарков открыты. Целый год вместе с NOYA! Продолжай работу по своему маршруту.' : active && next && nextTitle ? `Следующий подарок — «${nextTitle}». Откроется ${next} при действующей подписке.` : active && nextTitle ? `Впереди — «${nextTitle}». Подарок откроется после следующего полного месяца непрерывного участия при активной подписке.` : 'Первый подарок — после оплаты второго месяца.';
     byId('account-route-link').hidden = months !== 12;
     reader?.refresh();
     updateRailButtons();
@@ -229,7 +229,17 @@
       if (currentRequest !== requestId) return;
       if (response.status === 401) {phase = 'auth';account = null;setIdentity(null);return;}
       if (!response.ok || data.ok !== true || !data.user || !data.subscription || !data.loyalty) throw new Error('Account unavailable');
-      account = data;phase = 'ready';lastLoadedAt = Date.now();setIdentity(data.user);
+      account = data;
+      account.firstPdfEligible = false;
+      try {
+        const pdfStatus = await fetch('/api/club-reward-pdf?check=1', {
+          headers:{'x-telegram-init-data':initData}, cache:'no-store', signal:controller.signal
+        });
+        const pdfData = await pdfStatus.json();
+        if(currentRequest !== requestId) return;
+        if(pdfStatus.ok && pdfData?.ok === true) account.firstPdfEligible = pdfData.eligible === true;
+      } catch (_) { account.firstPdfEligible = false; }
+      phase = 'ready';lastLoadedAt = Date.now();setIdentity(data.user);
     } catch (_) {
       if (currentRequest === requestId) phase = 'error';
     } finally {
