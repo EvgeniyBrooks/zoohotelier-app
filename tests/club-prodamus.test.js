@@ -218,3 +218,62 @@ test('checkout accepts JSON-string Prodamus link response',async()=>{
   assert.equal(r.statusCode,200);assert.equal(r.body.checkoutUrl,'https://payform.ru/jsonpath/');
  }finally{global.fetch=prev;cleanup();}
 });
+
+test('admin test checkout creates a Prodamus DEMO link, not a live charge',async()=>{
+ enable();process.env.NOYA_PRODAMUS_TEST_MODE='1';
+ const originalFetch=global.fetch;const calls=[];
+ global.fetch=async(input,init={})=>{
+  const u=new URL(input);calls.push(u.pathname);
+  if(u.pathname.endsWith('/admins'))return {ok:true,json:async()=>[{id:student}]};
+  if(u.pathname.endsWith('/students')&&!init.method)return {ok:true,json:async()=>[{id:student}]};
+  if(u.pathname.endsWith('/noya_club_checkout_intents')&&init.method==='POST'){
+   const intent=JSON.parse(init.body);
+   assert.equal(intent.is_demo,true);assert.match(intent.order_num,/^noya-demo-[\\da-f-]{36}$/);
+   return {ok:true,json:async()=>[intent]};
+  }
+  if(u.hostname==='merchant.payform.ru'){
+   const params=Object.fromEntries(new URLSearchParams(init.body));
+   const sign=params.signature;delete params.signature;
+   assert.equal(lib.checkSignature(params,sign,process.env.NOYA_PRODAMUS_SECRET),true);
+   assert.equal(params.demo_mode,'1');
+   assert.equal(params.subscription,'12345');
+   return {ok:true,status:200,text:async()=> 'https://payform.ru/checkout-demo/',headers:{get:()=> 'text/plain'}};
+  }
+  throw Error('Unexpected '+input);
+ };
+ try{
+  const r=res();await checkout({method:'POST',body:{initData:signedInit()}},r);
+  assert.equal(r.statusCode,200);assert.equal(r.body.checkoutUrl,'https://payform.ru/checkout-demo/');
+  assert.equal(calls.length,4);
+ }finally{global.fetch=originalFetch;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
+});
+
+test('signed demo payment updates demo receipt only, never grants club access or counts gifts',async()=>{
+ enable();process.env.NOYA_PRODAMUS_TEST_MODE='1';
+ const originalFetch=global.fetch;let patched=0;
+ global.fetch=async(u,init)=>{
+  assert.match(String(u),/noya_club_checkout_intents\\?/);
+  assert.equal(init.method,'PATCH');
+  assert.equal(JSON.parse(init.body).status,'demo_paid');
+  assert.equal(String(u).includes('is_demo=eq.true'),true);
+  patched++;
+  return {ok:true,json:async()=>[{id:'demo-intent'}]};
+ };
+ try{
+  const order='noya-demo-12341234-1234-4234-8234-123412341234';
+  const body={...success,order_num:order};
+  const r=await callback(body);assert.equal(r.statusCode,200);assert.equal(r.body,'success');
+  assert.equal(patched,1);
+  const invalid=await callback({...body,sum:'1'},'a'.repeat(64));assert.equal(invalid.statusCode,403);
+  assert.equal(patched,1);
+ }finally{global.fetch=originalFetch;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
+});
+
+test('demo callback cannot update club access after test mode is switched off',async()=>{
+ enable();delete process.env.NOYA_PRODAMUS_TEST_MODE;
+ const originalFetch=global.fetch;let called=false;global.fetch=async()=>{called=true;throw Error('Unexpected');};
+ try{
+  const r=await callback({...success,order_num:'noya-demo-12341234-1234-4234-8234-123412341234'});
+  assert.equal(r.statusCode,200);assert.equal(called,false);
+ }finally{global.fetch=originalFetch;cleanup();}
+});
