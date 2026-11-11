@@ -9,13 +9,14 @@ function config(){
  const product=process.env.NOYA_PRODAMUS_SUBSCRIPTION_ID;
  const sys=process.env.NOYA_PRODAMUS_SYS;
  const webhook=process.env.NOYA_PRODAMUS_WEBHOOK_URL;
- let safeWebhook=false;
+ let safeWebhook=false, safeTerms=false;
+ try{const terms=new URL(process.env.NOYA_CLUB_TERMS_URL);safeTerms=terms.protocol==='https:'&&!terms.username&&!terms.password;}catch{}
  try{
   const u=new URL(webhook);
   safeWebhook=u.protocol==='https:'&&!u.username&&!u.password&&u.pathname==='/api/club-prodamus-webhook'&&u.search==='';
  }catch{}
  return {form,product,sys,webhook,
-  enabled:process.env.NOYA_PRODAMUS_ENABLE==='1'&&!!form&&/^\d{1,15}$/.test(product||'')&&!!sys&&!!process.env.NOYA_PRODAMUS_SECRET&&safeWebhook};
+  enabled:process.env.NOYA_PRODAMUS_ENABLE==='1'&&!!form&&/^\d{1,15}$/.test(product||'')&&!!sys&&!!process.env.NOYA_PRODAMUS_SECRET&&safeWebhook&&safeTerms&&/^\d{1,6}$/.test(process.env.NOYA_CLUB_PRICE_RUB||'')};
 }
 function response(res,status,data){res.setHeader('Cache-Control','private, no-store, max-age=0');return res.status(status).json(data);}
 function headers(){return {apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'};}
@@ -39,11 +40,12 @@ async function studentFromTelegram(user){
 module.exports=async function handler(req,res){
  const cfg=config();
  if(req.method==='GET'&&req.query?.status==='1'){
-  return response(res,200,{ok:true,enabled:cfg.enabled,priceRub:/^\d{1,6}$/.test(process.env.NOYA_CLUB_PRICE_RUB||'')?Number(process.env.NOYA_CLUB_PRICE_RUB):null});
+  return response(res,200,{ok:true,enabled:cfg.enabled,priceRub:cfg.enabled?Number(process.env.NOYA_CLUB_PRICE_RUB):null,termsUrl:cfg.enabled?process.env.NOYA_CLUB_TERMS_URL:null});
  }
  if(req.method!=='POST'){res.setHeader('Allow','POST,GET');return response(res,405,{error:'Method not allowed'});}
  try{
   if(!cfg.enabled)return response(res,503,{error:'Club payments are not configured yet'});
+  if(req.body?.acceptedTerms!==true)return response(res,400,{error:'Explicit agreement required'});
   if(!url||!service)throw Object.assign(new Error('Database unavailable'),{status:503});
   const user=verifyTelegram(req.body?.initData,process.env.NOYA_TELEGRAM_BOT_TOKEN);
   const studentId=await studentFromTelegram(user);
@@ -56,7 +58,7 @@ module.exports=async function handler(req,res){
   if(intent[0]?.order_num!==order)throw Object.assign(new Error('Order creation failed'),{status:502});
   const data={
    do:'link', subscription:cfg.product, order_id:order, sys:cfg.sys,
-   urlNotification:cfg.webhook,callbackType:'json',currency:'rub'
+   urlNotification:cfg.webhook,currency:'rub'
   };
   const returnUrl=process.env.NOYA_CLUB_RETURN_URL;
   if(returnUrl){
