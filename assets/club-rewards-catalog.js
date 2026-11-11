@@ -7,7 +7,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "20 простых домашних игр для короткого занятия вместе.",
     "description": "Выбирай одну игру под настроение собаки. Для большинства хватит знакомой игрушки, коврика и обычного поощрения.",
     "format": "Карточки",
-    "image": "/assets/rewards/01.webp"
+    "image": "/assets/rewards/01.webp",
+    "cardLabel": "20 игр на 5 минут"
   },
   {
     "month": 2,
@@ -16,7 +17,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "12 спокойных сценариев для знакомых прогулок.",
     "description": "Небольшие изменения делают обычный маршрут разнообразнее: больше выбора, наблюдений и коротких совместных эпизодов.",
     "format": "Карточки",
-    "image": "/assets/rewards/02.webp"
+    "image": "/assets/rewards/02.webp",
+    "cardLabel": "12 прогулок без скуки"
   },
   {
     "month": 3,
@@ -25,7 +27,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "10 спокойных трюков с пошаговыми подсказками.",
     "description": "Короткие добровольные занятия без прыжков: касания, простые позиции и игры с привычной игрушкой.",
     "format": "Практикум",
-    "image": "/assets/rewards/03.webp"
+    "image": "/assets/rewards/03.webp",
+    "cardLabel": "10 трюков для двоих"
   },
   {
     "month": 4,
@@ -34,7 +37,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "12 поисковых мини-квестов для дома.",
     "description": "Квесты с привычным кормом или знакомой игрушкой: от видимой находки до короткого поиска в соседней комнате.",
     "format": "Практикум",
-    "image": "/assets/rewards/04.webp"
+    "image": "/assets/rewards/04.webp",
+    "cardLabel": "12 поисковых квестов"
   },
   {
     "month": 5,
@@ -43,7 +47,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "30 совместных заданий для семьи и собаки.",
     "description": "Наблюдайте, придумывайте и сохраняйте приятные моменты. Можно заполнить одну линию или постепенно собрать всё поле.",
     "format": "Карточки",
-    "image": "/assets/rewards/05.webp"
+    "image": "/assets/rewards/05.webp",
+    "cardLabel": "30 семейных заданий"
   },
   {
     "month": 6,
@@ -52,7 +57,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "6 разделов для спокойного обзора вашего полугода.",
     "description": "Собери реальные наблюдения: что стало привычнее, что нравится собаке и что хочется продолжить. Здесь сравнивают только свою команду с ней же.",
     "format": "Альбом",
-    "image": "/assets/rewards/06.webp"
+    "image": "/assets/rewards/06.webp",
+    "cardLabel": "Карта ваших побед за полгода"
   },
   {
     "month": 7,
@@ -61,7 +67,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "10 спокойных сценариев знакомства с городской средой.",
     "description": "Исследуйте разные условия небольшими шагами: пространство, поверхности и тихие места с удобным выходом.",
     "format": "Карточки",
-    "image": "/assets/rewards/07.webp"
+    "image": "/assets/rewards/07.webp",
+    "cardLabel": "10 городских приключений"
   },
   {
     "month": 8,
@@ -70,7 +77,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "6 списков для сборов, маршрута и спокойного приезда.",
     "description": "Редактируемый органайзер поездки: нужные вещи, привычный распорядок, остановки и контакты в одном месте.",
     "format": "Органайзер",
-    "image": "/assets/rewards/08.webp"
+    "image": "/assets/rewards/08.webp",
+    "cardLabel": "Органайзер поездки с собакой"
   },
   {
     "month": 9,
@@ -79,7 +87,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "Конструктор на 4 недели с лёгкими и обычными вариантами.",
     "description": "Собери удобный ритм коротких занятий из уже знакомых действий и любимых игр. План можно менять без чувства, что вы отстаёте.",
     "format": "Конструктор",
-    "image": "/assets/rewards/09.webp"
+    "image": "/assets/rewards/09.webp",
+    "cardLabel": "Конструктор занятий на 4 недели"
   },
   {
     "month": 10,
@@ -88,7 +97,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "20 идей фото и коротких видео о вашей собаке.",
     "description": "Снимай настоящие привычки, прогулки и совместные моменты. Необычные костюмы, сложные позы и многократные дубли не нужны.",
     "format": "Карточки",
-    "image": "/assets/rewards/10.webp"
+    "image": "/assets/rewards/10.webp",
+    "cardLabel": "20 идей фото и видео"
   },
   {
     "month": 11,
@@ -97,7 +107,8 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "5 игровых станций и заполняемый диплом участия.",
     "description": "Устрой маленький праздник вашей команды: простые знакомые игры, свободный порядок и право пропустить любую станцию.",
     "format": "Практикум",
-    "image": "/assets/rewards/11.webp"
+    "image": "/assets/rewards/11.webp",
+    "cardLabel": "Мини-фестиваль и ваш диплом"
   },
   {
     "month": 12,
@@ -106,6 +117,7 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "12 заполняемых разделов для личной книги вашего года.",
     "description": "Собери историю из настоящих событий, смешных привычек и решений, которые подошли вашей команде.",
     "format": "Альбом",
-    "image": "/assets/rewards/12.webp"
+    "image": "/assets/rewards/12.webp",
+    "cardLabel": "Личная книга вашего года"
   }
 ]);

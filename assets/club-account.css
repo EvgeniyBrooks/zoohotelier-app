@@ -42,8 +42,8 @@
 .account-dates dd{margin:0;text-align:right;font-weight:650;color:#ededdf}
 .account-action{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:44px;margin-top:16px;padding:10px 14px;border:0;border-radius:12px;background:#f5fa45;color:#111;font:750 13px/1.4 system-ui,sans-serif;text-decoration:none;cursor:pointer}
 .account-action:disabled{opacity:.55;cursor:wait}
-.account-rewards{margin-top:31px}
-.account-rewards h2{max-width:340px;font-size:31px}
+.account-rewards{margin-top:20px}
+.account-rewards h2{max-width:none;font-size:31px}
 .account-rewards-intro{margin:9px 0 20px!important;max-width:380px;color:#a7a89c!important;font-size:13px!important;line-height:1.55}
 .account-progress-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;color:#a6a79b;font-size:12px}
 .account-progress-count{color:#f5fa45;font:600 25px/1 Oswald,Impact,sans-serif;white-space:nowrap}
@@ -61,7 +61,7 @@
 .account-reward-month{color:#f5fa45;font:500 17px/1.2 Oswald,Impact,sans-serif;text-transform:uppercase}
 .account-reward-card h3{min-height:51px;margin:6px 0 8px;font-size:23px;overflow-wrap:anywhere}
 .account-reward-caption{min-height:35px;margin:0!important;color:#aaaD9d!important;font-size:11px!important;line-height:1.45}
-.account-reward-art{position:relative;display:grid;place-items:center;min-height:154px;margin:8px -10px 0;overflow:hidden;border-radius:12px;background:#171815}
+.account-reward-art{position:relative;display:grid;place-items:center;min-height:138px;margin:8px 0 0;overflow:hidden;border-radius:12px;background:#171815}
 .account-reward-art img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;mix-blend-mode:lighten}
 .account-reward-state{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:42px;margin-top:auto;padding:10px 7px;border:0;border-radius:24px;background:#2b2d26;color:#929586;font:750 12px/1.3 system-ui,sans-serif;text-align:center;cursor:default}
 .account-reward-state svg{width:12px;height:12px;flex-shrink:0}

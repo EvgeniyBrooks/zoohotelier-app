@@ -39,7 +39,7 @@
     </section></details>
     <section class="account-rewards" aria-labelledby="account-rewards-title">
       <p class="account-kicker">Твой год в клубе</p><h2 id="account-rewards-title">Подарки за продление</h2>
-      <p class="account-rewards-intro">12 месяцев — 12 подарков для вашей команды. Игры, практикумы и личные проекты. Первый откроется спустя месяц.</p>
+      <p class="account-rewards-intro">Игры, практикумы и личные проекты для вашей команды. Первый подарок — спустя полный месяц.</p>
       <div class="account-progress-heading"><span>Прогресс по месяцам</span><span class="account-progress-count" id="account-progress-count">… / 12</span></div>
       <div class="account-progress" id="account-progress" role="progressbar" aria-label="Уровни участия в клубе" aria-valuemin="0" aria-valuemax="12"><div class="account-progress-fill" id="account-progress-fill"></div></div>
       <div class="account-rail-toolbar"><span class="account-rail-hint">Листай, чтобы увидеть все 12 месяцев</span><div class="account-rail-controls"><button class="account-icon-button" id="account-months-prev" type="button" aria-label="Предыдущие месяцы">${chevron.replace('<svg ', '<svg style="transform:rotate(180deg)" ')}</button><button class="account-icon-button" id="account-months-next" type="button" aria-label="Следующие месяцы">${chevron}</button></div></div>
@@ -60,10 +60,9 @@
     card.className = 'account-reward-card';
     card.setAttribute('role', 'listitem');
     card.setAttribute('aria-label', `${month}-й месяц: ${reward.level}. ${reward.title}`);
-    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><p class="account-reward-caption"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><span class="account-gift-format">Цифровой подарок</span><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
+    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><span class="account-gift-format">Цифровой подарок</span><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
     card.querySelector('h3').textContent = reward.level;
-    card.querySelector('.account-reward-title').textContent = reward.title;
-    card.querySelector('.account-reward-caption').textContent = reward.summary;
+    card.querySelector('.account-reward-title').textContent = reward.cardLabel || reward.title;
     card.querySelector('img').src = reward.image;
     card.querySelector('.account-reward-state').addEventListener('click', event => reader?.open(month,true,event.currentTarget));
     card.querySelector('.account-reward-preview').addEventListener('click', event => reader?.open(month,false,event.currentTarget));
