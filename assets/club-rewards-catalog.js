@@ -7,7 +7,7 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "summary": "Методичка с 101 трюком для занятий с собакой.",
     "description": "Методичка «101 трюк, которому вы можете научить свою собаку». Подарок за первый месяц открывается после подтверждённой оплаты второго месяца.",
     "format": "PDF-методичка",
-    "image": "/assets/rewards/01-tricks-book.svg",
+    "image": "/assets/rewards/01-approved.webp",
     "cardLabel": "Методичка «101 трюк»"
   },
   {
