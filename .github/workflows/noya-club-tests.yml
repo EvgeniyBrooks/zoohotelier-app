@@ -25,10 +25,10 @@ jobs:
           node --check api/club-video-token.js
           node --check api/club-lessons.js
           node --check api/club-progress.js
-          node --check api/club-reward-pdf.js
-          node --check api/club-checkout.js
-          node --check api/club-prodamus-webhook.js
-          node --check api/_lib/noya-prodamus.js
+          node --check lib/club-reward-pdf.js
+          node --check lib/club-checkout.js
+          node --check lib/club-prodamus-webhook.js
+          node --check lib/noya-prodamus.js
       - name: Run API tests
         run: node --test tests/*.test.js
       - name: Check embedded page scripts

@@ -2157,6 +2157,11 @@ function recommend(a){
   return Object.entries(s).sort((x,y)=>y[1]-x[1]).filter(x=>x[1]>0).slice(0,3).map(x=>x[0]);
 }
 module.exports=async function handler(req,res){
+  // Share one serverless function for Prodamus and PDF to stay within Vercel Hobby limits.
+  if(req.query?.noyaBilling==='1')return require('../lib/club-checkout')(req,res);
+  if(req.query?.noyaWebhook==='1')return require('../lib/club-prodamus-webhook')(req,res);
+  if(req.query?.noyaPdf==='1')return require('../lib/club-reward-pdf')(req,res);
+
   res.setHeader("Cache-Control","no-store");
   if(!["GET","POST","DELETE"].includes(req.method)){res.setHeader("Allow","GET, POST, DELETE");return res.status(405).json({error:"Method not allowed"})}
   try{

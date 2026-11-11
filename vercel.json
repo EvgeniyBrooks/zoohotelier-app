@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/club-checkout",
+      "destination": "/api/club-diagnostic?noyaBilling=1"
+    },
+    {
+      "source": "/api/club-prodamus-webhook",
+      "destination": "/api/club-diagnostic?noyaWebhook=1"
+    },
+    {
+      "source": "/api/club-reward-pdf",
+      "destination": "/api/club-diagnostic?noyaPdf=1"
+    }
+  ]
+}

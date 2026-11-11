@@ -5,9 +5,9 @@ const original={...process.env};
 process.env.NOYA_TELEGRAM_BOT_TOKEN='test-noya-club-bot';
 process.env.NEXT_PUBLIC_SUPABASE_URL='https://example.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY='test-service-secret';
-const lib=require('../api/_lib/noya-prodamus');
-const checkout=require('../api/club-checkout');
-const webhook=require('../api/club-prodamus-webhook');
+const lib=require('../lib/noya-prodamus');
+const checkout=require('../lib/club-checkout');
+const webhook=require('../lib/club-prodamus-webhook');
 const student='11111111-1111-4111-8111-111111111111';
 function signedInit(){
  const fields=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id:123456789,first_name:'Тест'})});
