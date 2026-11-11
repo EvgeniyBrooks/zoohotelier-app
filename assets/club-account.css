@@ -127,3 +127,8 @@
 @media(min-width:640px){.account-dialog{margin:0 0 0 auto;border-left:1px solid #323427;border-radius:24px 0 0 24px;box-shadow:-25px 0 80px #0008}.account-dialog-header{padding:22px 28px}.account-dialog-content{padding:28px 28px calc(32px + env(safe-area-inset-bottom))}.account-reward-rail{margin:0 -28px;padding:0 28px 3px;scroll-padding:28px}.account-reward-card{flex-basis:205px;min-height:350px}.account-rewards h2{font-size:36px}.account-reward-card h3{font-size:26px;min-height:59px}.account-reward-art{min-height:150px}}
 @media(max-width:355px){.account-card{padding:13px;gap:10px}.account-avatar{width:43px;height:43px;flex-basis:43px}.account-name{font-size:14px}.account-meta{font-size:11px;gap:1px 6px}.account-dialog-header{padding:14px}.account-dialog-content{padding:22px 16px}.account-rewards h2{font-size:28px}.account-reward-rail{margin:0 -16px;padding:0 16px 3px;scroll-padding:16px}.account-reward-card{flex-basis:164px}.account-membership{padding:15px}.account-membership-status{max-width:135px}.account-dates div{gap:10px}}
 @media(prefers-reduced-motion:reduce){.account-card,.account-progress-fill{transition:none}.account-reward-rail{scroll-behavior:auto}}
+
+/* Months 7–12 remain mystery rewards until their earned month. */
+.account-reward-card[data-secret="true"] .account-reward-art{background:#222;min-height:138px}
+.account-secret-lock{display:grid;place-items:center;width:100%;min-height:138px;font-size:68px;filter:drop-shadow(0 6px 8px #0009)}
+.account-reward-card[data-secret="true"] .account-reward-title{color:#a7a7a7!important;font-weight:500}
