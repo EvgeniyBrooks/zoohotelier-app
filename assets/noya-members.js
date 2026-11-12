@@ -33,6 +33,8 @@ function card(person){
  desc.append(name);
  const meta=el('div','noya-person-meta',(person.rank?'№ '+person.rank+' · ':'')+person.points+' баллов');
  desc.append(meta);
+ const brief=[person.city,person.dogName?'🐾 '+person.dogName:'',person.profession].filter(Boolean).join(' · ');
+ if(brief)desc.append(el('div','noya-person-brief',brief));
  if(person.about){const about=el('p','noya-person-short',person.about);desc.append(about);}
  box.append(desc);
  const heart=el('button','noya-person-fav',person.favorite?'♥':'♡');
@@ -67,13 +69,46 @@ function createDialog(title){
 function closeButton(dialog){
  const b=el('button','noya-member-secondary','Закрыть');b.type='button';b.onclick=()=>dialog.close();return b;
 }
+function safeSocial(kind,value){
+ const v=String(value||'').trim();
+ if(!v)return null;
+ const raw=v.replace(/^@/,'');
+ if(kind==='instagram'){
+  const found=raw.match(/^(?:https:\/\/(?:www\.)?instagram\.com\/)?([a-zA-Z0-9._]{1,30})\/?$/i);
+  return found?'https://www.instagram.com/'+encodeURIComponent(found[1])+'/':null;
+ }
+ const found=raw.match(/^(?:https:\/\/t\.me\/)?([a-zA-Z][a-zA-Z0-9_]{4,31})\/?$/i);
+ return found?'https://t.me/'+encodeURIComponent(found[1]):null;
+}
+function detail(d,title,value){
+ if(!value)return;
+ const section=el('section','noya-person-detail');
+ section.append(el('h3','',title));
+ section.append(el('p','',value));
+ d.append(section);
+}
 function openPerson(person){
  const d=createDialog(person.name);
  d.append(avatar(person));
  d.append(el('p','noya-person-score','🏆 '+person.points+' баллов'+(person.rank?' · место '+person.rank:'')));
+ if(person.city)d.append(el('p','noya-person-city','⌖ '+person.city));
  if(person.about)d.append(el('p','noya-person-about',person.about));
  else d.append(el('p','noya-person-about','Участник пока не заполнил описание.'));
+ const info=[person.dogName,person.dogInfo].filter(Boolean).join(' · ');
+ detail(d,'МОЯ СОБАКА',info);
+ detail(d,'ЧЕМ ЗАНИМАЮСЬ',person.profession);
+ detail(d,'ЧЕМУ ХОЧУ НАУЧИТЬ СОБАКУ',person.dogGoals);
+ detail(d,'С ЧЕМ МОГУ ПОМОЧЬ',person.helpWith);
+ detail(d,'ЧТО ИЩУ',person.lookingFor);
+ detail(d,'ИНТЕРЕСЫ',person.hobbies);
  d.append(el('p','noya-person-stats','Уроки: '+person.lessons+' · Практика: '+person.practices+' · Эфиры: '+person.streams+' · Приглашения: '+person.referrals));
+ const links=el('div','noya-member-social-links');
+ for(const [kind,value,label] of [['instagram',person.instagram,'Instagram'],['telegram',person.telegramChannel,'Telegram-канал']]){
+  const url=safeSocial(kind,value);
+  if(!url)continue;
+  const a=el('a','noya-member-social-link',label+' ↗');a.href=url;a.target='_blank';a.rel='noopener noreferrer';links.append(a);
+ }
+ if(links.childElementCount){d.append(el('h3','noya-person-links-title','ССЫЛКИ'));d.append(links);}
  const foot=el('div','noya-member-actions');
  if(person.canMessage&&person.username){
   const a=el('a','noya-member-primary','Написать в Telegram');
@@ -85,25 +120,54 @@ function openPerson(person){
 function edit(){
  if(!me)return;
  const d=createDialog('РЕДАКТИРОВАТЬ ПРОФИЛЬ');
- d.append(el('p','noya-person-hint','Другие участники увидят профиль только с твоего разрешения.'));
- const name=textField('Имя для сообщества',me.name,64);
- const about=textField('О себе и моей собаке',me.about,600,true);
- d.append(name.wrap,about.wrap);
+ d.append(el('p','noya-person-hint','Эти данные другие участники увидят только после включения публичности.'));
+ const fields={};
+ function group(title,entries){
+  d.append(el('h3','noya-person-form-section',title));
+  for(const [key,label,max,textarea] of entries){
+   const v=textField(label,me[key],max,!!textarea);
+   fields[key]=v.input;d.append(v.wrap);
+  }
+ }
+ group('ОСНОВНОЕ',[
+  ['name','Имя и фамилия',64,false],
+  ['city','Город',100,false],
+  ['about','О себе',600,true],
+  ['profession','Чем занимаюсь / специализация',120,false]
+ ]);
+ group('МОЯ СОБАКА',[
+  ['dogName','Кличка собаки',80,false],
+  ['dogInfo','Порода, возраст, особенности',300,true],
+  ['dogGoals','Чему хочу научить собаку',300,true]
+ ]);
+ group('ЗНАКОМСТВА',[
+  ['helpWith','Чем могу быть полезен другим',400,true],
+  ['lookingFor','Что ищу в сообществе',300,true],
+  ['hobbies','Интересы и хобби',200,true]
+ ]);
+ group('ССЫЛКИ',[
+  ['instagram','Instagram — @username',80,false],
+  ['telegramChannel','Telegram-канал — @username',80,false]
+ ]);
+ d.append(el('h3','noya-person-form-section','ВИДИМОСТЬ'));
  const display=el('label','noya-person-toggle');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=me.publicEnabled;
  display.append(checkbox,el('span','','Показывать мой профиль участникам'));d.append(display);
  const msg=el('label','noya-person-toggle');const contact=document.createElement('input');
  contact.type='checkbox';contact.checked=me.messagesEnabled;contact.disabled=!me.canMessage||!me.publicEnabled;
- msg.append(contact,el('span','',me.canMessage?'Разрешить писать мне в Telegram':'Для сообщений установи @username в Telegram'));
+ msg.append(contact,el('span','',me.canMessage?'Разрешить другим написать мне в Telegram':'Для сообщений установи @username в Telegram'));
  d.append(msg);
  checkbox.addEventListener('change',()=>{contact.disabled=!me.canMessage||!checkbox.checked;if(contact.disabled)contact.checked=false;});
  const status=el('p','noya-person-status','');d.append(status);
  const actions=el('div','noya-member-actions');const save=el('button','noya-member-primary','Сохранить');save.type='button';
  save.onclick=async()=>{
   save.disabled=true;status.textContent='Сохраняем…';
-  try{
-   await api('save',{profile:{displayName:name.input.value,about:about.input.value,publicEnabled:checkbox.checked,messagesEnabled:contact.checked}});
-   d.close();await refresh();
-  }catch(e){status.textContent=e.message;save.disabled=false;}
+  const profile={};
+  for(const [name,input] of Object.entries(fields)){
+   profile[name==='name'?'displayName':name]=input.value;
+  }
+  profile.publicEnabled=checkbox.checked;profile.messagesEnabled=contact.checked;
+  try{await api('save',{profile});d.close();await refresh();}
+  catch(e){status.textContent=e.message;save.disabled=false;}
  };
  actions.append(closeButton(d),save);d.append(actions);d.showModal();
 }
