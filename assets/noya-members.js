@@ -46,6 +46,8 @@ function card(person){
 }
 function paint(){
  tabs.forEach(tab=>tab.setAttribute('aria-selected',String(tab.dataset.membersTab===view)));
+ const rankingInfo=document.getElementById('noya-member-points-info');
+ if(rankingInfo)rankingInfo.hidden=view!=='ranking';
  const match=query.value.trim().toLocaleLowerCase('ru');
  const source=view==='ranking'?leaders:people;
  const visible=source.filter(p=>(view!=='favorites'||p.favorite)&&(!match||(p.name+' '+p.about).toLocaleLowerCase('ru').includes(match)));
@@ -116,6 +118,7 @@ function paintMine(){
  myBox.append(body);
  const arrow=el('span','noya-my-member-arrow','→');myBox.append(arrow);
  myBox.onclick=edit;myBox.hidden=false;
+ section.querySelector('#noya-members-edit').hidden=true;
 }
 async function refresh(){
  if(busy)return;
@@ -126,7 +129,7 @@ async function refresh(){
   const ranks=new Map(leaders.map(p=>[p.id,p.rank]));
   people.forEach(p=>p.rank=ranks.get(p.id)||null);
   me=data.me;
-  total.textContent=people.length;
+  total.textContent=Number.isFinite(Number(data.memberCount))?Number(data.memberCount):people.length;
   paintMine();paint();
  }catch(e){root.replaceChildren(el('div','noya-member-empty',e.message));}
  finally{busy=false;}
