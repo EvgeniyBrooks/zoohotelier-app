@@ -66,9 +66,11 @@ dialog iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:
  <p class="muted">Просмотренные эфиры сохраняются в профиле Telegram. Прогресс считается отдельно от уроков курса.</p>
 </main>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="./assets/noya-video-actions.js?v=1"></script>
 <script>
 "use strict";
 let streams=[],favorites=new Set(),watched=new Set(),loading=false,activeDialog=null,playerSdkPromise=null;
+let deepLinkId=new URLSearchParams(location.search).get('open')||null;
 const list=document.getElementById('list'),search=document.getElementById('search');
 const counter=document.getElementById('live-numbers'),statusEl=document.getElementById('status');
 window.Telegram?.WebApp?.ready();
@@ -106,17 +108,7 @@ function render(){
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='card-top';
   const title=document.createElement('h2');title.textContent=s.title;
-  const favoriteBox=document.createElement('div');favoriteBox.className='favorite-wrap';
-  const hint=document.createElement('span');hint.className='favorite-note';hint.textContent=favorites.has(s.id)?'В избранном':'Добавить в избранное';
-  const heart=document.createElement('button');heart.className='heart';heart.type='button';
-  heart.textContent=favorites.has(s.id)?'♥':'♡';heart.setAttribute('aria-pressed',String(favorites.has(s.id)));
-  heart.setAttribute('aria-label',favorites.has(s.id)?'Убрать из избранного':'Добавить в избранное');
-  heart.onclick=async()=>{
-   const favorite=!favorites.has(s.id);heart.disabled=true;
-   try{await api('live_favorite',{streamId:s.id,favorite});if(favorite)favorites.add(s.id);else favorites.delete(s.id);render();}
-   catch(error){statusEl.textContent=error.message;heart.disabled=false;}
-  };
-  favoriteBox.append(hint,heart);head.append(title,favoriteBox);card.append(head);
+  head.append(title);card.append(head);
   const cover=document.createElement('button');cover.className='cover';cover.type='button';cover.setAttribute('aria-label','Смотреть: '+s.title);
   if(s.cover_url&&/^https:\/\//.test(s.cover_url)){
    const img=document.createElement('img');img.src=s.cover_url;img.alt='Обложка: '+s.title;img.loading='lazy';img.decoding='async';
@@ -126,8 +118,13 @@ function render(){
   }
   const play=document.createElement('span');play.className='cover-play';play.textContent='▶';play.setAttribute('aria-hidden','true');cover.append(play);
   cover.onclick=()=>watch(s);card.append(cover);
-  if(watched.has(s.id)){
-   const tag=document.createElement('div');tag.className='watched-tag';tag.textContent='✓ ПРОСМОТРЕНО';card.append(tag);
+  if(window.NOYAMaterials){
+   const widget=window.NOYAMaterials.controls('live',s.id,{onChanged(action,state){
+    if(action==='favorite'){if(state.favorited)favorites.add(s.id);else favorites.delete(s.id);}
+    if(action==='complete'){if(state.completed)watched.add(s.id);else watched.delete(s.id);updateCounter();}
+    render();
+   }});
+   card.append(widget.element);
   }
   fragment.append(card);
  }
@@ -143,6 +140,11 @@ async function reload(){
   watched=new Set(data.watched||[]);
   statusEl.textContent='';
   render();
+  if(deepLinkId){
+   const record=streams.find(x=>x.id===deepLinkId);
+   deepLinkId=null;
+   if(record)watch(record);
+  }
  }catch(error){
   statusEl.textContent=error.message;
   if(!streams.length){list.replaceChildren();const empty=document.createElement('div');empty.className='empty';empty.textContent='Не удалось загрузить записи.';list.append(empty);}
@@ -186,20 +188,32 @@ async function watch(s){
   iframe.allow='accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture';
   iframe.allowFullscreen=true;dialog.append(iframe);
   const actions=document.createElement('div');actions.className='dialog-actions';
-  const done=document.createElement('button');done.className='watched-action';done.type='button';
-  done.textContent=watched.has(s.id)?'✓ Просмотрено':'✓ Отметить просмотренным';
-  done.disabled=watched.has(s.id);
-  done.onclick=()=>markWatched(s,done);
+  let dialogWidget=null;
+  if(window.NOYAMaterials){
+   dialogWidget=window.NOYAMaterials.controls('live',s.id,{onChanged(action,state){
+    if(action==='favorite'){if(state.favorited)favorites.add(s.id);else favorites.delete(s.id);}
+    if(action==='complete'){if(state.completed)watched.add(s.id);else watched.delete(s.id);}
+    render();
+   }});
+   dialog.append(dialogWidget.element);
+  }
   const close=document.createElement('button');close.className='dialog-close';close.type='button';close.textContent='Закрыть';close.onclick=()=>dialog.close();
-  actions.append(done,close);dialog.append(actions);
+  actions.append(close);dialog.append(actions);
   dialog.addEventListener('close',()=>{iframe.src='about:blank';dialog.remove();activeDialog=null;},{once:true});
   document.body.append(dialog);dialog.showModal();
+  if(window.NOYAMaterials)window.NOYAMaterials.touch('live',s.id).catch(error=>console.warn('Live history unavailable:',error.message));
   // Cloudflare Stream fires playback events from its iframe API. Mark as watched
   // near the end of playback, not when a person merely opens a recording.
   ensurePlayerSdk().then(()=>{
    if(!dialog.open)return;
    const player=window.Stream(iframe);
-   const finish=()=>{if(!watched.has(s.id))markWatched(s,done);};
+   let autoSaved=false;
+   const finish=async()=>{
+    if(autoSaved||watched.has(s.id))return;
+    autoSaved=true;
+    await markWatched(s,null);
+    if(dialogWidget&&watched.has(s.id))dialogWidget.refresh().catch(()=>{});
+   };
    player.addEventListener('ended',finish);
    player.addEventListener('timeupdate',()=>{
     const duration=Number(player.duration),position=Number(player.currentTime);
