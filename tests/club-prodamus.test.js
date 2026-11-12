@@ -179,7 +179,7 @@ test('checkout test mode shows pay button only to a signed admin',async()=>{
 test('club entry immediately gates unpaid guests into Prodamus without an extra form',()=>{
  const fs=require('node:fs');
  const source=fs.readFileSync(require('node:path').join(__dirname,'..','club.html'),'utf8');
- assert.match(source,/window\.location\.replace\(data\.checkoutUrl\)/);
+ assert.match(source,/window\.location\.replace\(paymentUrl\)/);
  assert.match(source,/setupNoyaBilling\(\);/);
  assert.match(source,/noya-payment-checking/);
  assert.equal(source.includes('Подписка продлевается автоматически по условиям платёжной формы. Первую методичку'),false);
