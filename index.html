@@ -1013,7 +1013,7 @@ async function loadLessons(
       <div class="card">
         <div class="label">БЛОК</div>
         <div class="lesson-title">${escapeHtml(blockTitle)}</div>
-        <div style="margin-top:12px;font-weight:700">${finished} из ${blockTotal} уроков · ${percent}% пройдено</div>
+        <div data-block-progress style="margin-top:12px;font-weight:700">${finished} из ${blockTotal} уроков · ${percent}% пройдено</div>
         <div role="progressbar" aria-label="Прогресс недели" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}" style="height:10px;border-radius:20px;background:#dedede;overflow:hidden;margin-top:9px"><div style="height:100%;width:${percent}%;background:#e3db25;border-radius:20px"></div></div>
       </div>
     `;
@@ -1045,6 +1045,27 @@ async function loadLessons(
     });
 
     app.innerHTML = html;
+    if(window.NOYAMaterials){
+      const cards=[...app.querySelectorAll('.lesson-card')];
+      cards.forEach((card,index)=>{
+        const lesson=lessons[index];
+        if(!lesson)return;
+        const widget=window.NOYAMaterials.controls('course',lesson.id,{
+          onChanged(action,state){
+            if(action==='complete'){
+              if(state.completed&&!courseProgress.completed.includes(lesson.id))courseProgress.completed.push(lesson.id);
+              if(!state.completed)courseProgress.completed=courseProgress.completed.filter(id=>id!==lesson.id);
+              const eligible=lessons.filter(l=>courseProgress.completed.includes(l.id)).length;
+              const heading=app.querySelector('[data-block-progress]');
+              if(heading)heading.textContent=eligible+' из '+lessons.length+' уроков';
+            }
+          }
+        });
+        widget.element.addEventListener('click',event=>event.stopPropagation());
+        widget.element.addEventListener('keydown',event=>event.stopPropagation());
+        card.append(widget.element);
+      });
+    }
 
   } catch (error) {
     console.error(error);
