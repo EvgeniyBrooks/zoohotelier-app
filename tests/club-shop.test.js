@@ -36,6 +36,12 @@ function network(options={}){
  global.fetch=async(input,request={})=>{
   const url=new URL(input),p=url.pathname,method=request.method||'GET';
   state.calls.push({host:url.hostname,path:p,method});
+  if(url.hostname==='api.telegram.org'){
+   assert.equal(method,'POST');
+   const notice=JSON.parse(request.body);
+   assert.match(notice.text,/Мои разборы/);
+   return new Response(JSON.stringify({ok:true,result:{message_id:1}}));
+  }
   if(url.hostname==='api.cloudflare.com'){
    const data=p.endsWith('/direct_upload')?
     {uid:VIDEO,uploadURL:'https://upload.videodelivery.net/sample'}:
@@ -43,7 +49,9 @@ function network(options={}){
    return new Response(JSON.stringify({success:true,result:data}),{status:200,headers:{'content-type':'application/json'}});
   }
   assert.equal(url.hostname,'fake.supabase.co');
-  if(p.endsWith('/students'))return new Response(JSON.stringify([{id:STUDENT}]));
+  if(p.endsWith('/students'))return new Response(JSON.stringify(
+   url.searchParams.has('id')?[{telegram_id:USER}]:[{id:STUDENT}]
+  ));
   if(p.endsWith('/admins'))return new Response(JSON.stringify(options.admin?[{id:STUDENT}]:[]));
   if(p.endsWith('/noya_review_staff')) {
    if(method==='POST')return new Response(JSON.stringify([{telegram_id:111111111,role:'kinolog',enabled:true}]),{status:201});
@@ -139,6 +147,7 @@ test('admin can complete a valid private review without granting real money-base
   assert.equal(done.body.order.status,'completed');
   assert.equal(done.body.order.reviewText.includes('Сначала'),true);
   assert.equal(mock.state.calls.some(x=>x.path.includes('/payments')),false);
+  assert.equal(mock.state.calls.some(x=>x.host==='api.telegram.org'),true);
  }finally{mock.restore();}
 });
 test('app has a shop navigation and never pretends shop purchases are enabled',()=>{
