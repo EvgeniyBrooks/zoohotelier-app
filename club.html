@@ -26,6 +26,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-media-folder-cover>img{position:absolute;z-index:1;inset:0}
 .noya-media-folder-cover:after{content:"";position:absolute;z-index:2;inset:27% 0 0;background:linear-gradient(transparent 4%,#0009 63%,#000e)}
 .noya-media-folder-title{position:absolute;z-index:3;left:2px;right:2px;bottom:6px;text-align:center;color:#fff;font:700 clamp(16px,4.2vw,24px)/1 Oswald,Impact,sans-serif;white-space:nowrap;letter-spacing:-.25px;text-shadow:0 1px 6px #000,0 2px 10px #000}
+.noya-media-folder-counter{position:absolute;right:7px;top:7px;z-index:4;padding:4px 7px;border:1px solid #7a7c45;border-radius:14px;background:#090909df;color:#f5fa45;font:700 11px/1 Oswald,Impact,sans-serif;letter-spacing:.5px;white-space:nowrap}
 @media(max-width:355px){.noya-media-folders{gap:9px}.noya-media-folder-frame{padding:5px}.noya-media-folder-title{font-size:15px}}
 </style></head><body>
 <div id="noya-payment-redirect" role="status" aria-live="polite">
@@ -44,7 +45,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 <div class="section" aria-label="Курс Управление вниманием"><div class="attention-course-card">
   <h2>КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ</h2>
   <div class="attention-course-actions">
-   <span class="attention-course-count" id="attention-course-progress" aria-label="Пройдено 0 из 26 уроков">0 из 26</span>
+   <span class="attention-course-count" id="attention-course-progress" aria-label="Загружаем прогресс курса">— из —</span>
    <a class="attention-course-link" href="./index.html">Перейти в курс <span aria-hidden="true">→</span></a>
   </div>
  </div>
@@ -55,6 +56,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
    <span class="noya-media-folder-tab" aria-hidden="true"></span>
    <span class="noya-media-folder-frame">
     <span class="noya-media-folder-cover" id="noya-live-cover">
+     <span class="noya-media-folder-counter" id="noya-live-folder-progress" aria-label="Загружаем количество просмотренных эфиров">— ИЗ —</span>
      <svg class="noya-live-illustration" viewBox="0 0 240 162" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
       <defs>
        <linearGradient id="noya-live-bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#443b24"/><stop offset=".6" stop-color="#161616"/><stop offset="1" stop-color="#070707"/></linearGradient>
@@ -273,32 +275,34 @@ async function loadClubProfile(){
   routeSelect.value=clubDiagnostics[0]?.dog_id||clubDogs[0].id;
   await loadRoute();
   const select=document.getElementById("progress-dog");
-  for(const d of data.dogs){const opt=document.createElement("option");opt.value=d.id;opt.textContent=d.name;select.append(opt)}
-  select.value=data.diagnostics?.[0]?.dog_id||data.dogs[0].id;
-  await loadDogProgress();
-  const latest=data.diagnostics?.[0];
-  const dog=latest?data.dogs.find(d=>d.id===latest.dog_id):data.dogs[0];
-  if(!dog)return;
-
- }catch(e){console.warn("Club profile unavailable")}
-}
-checkNoyaTelegram();
-loadClubProfile();
-loadClubLessons();
+  for(const d of data.dogs){const opt=document.createElement("option"let noyaFolderProgressLoading=false;
 async function loadAttentionCourseProgress(){
- const indicator=document.getElementById('attention-course-progress');
+ const courseIndicator=document.getElementById('attention-course-progress');
+ const liveIndicator=document.getElementById('noya-live-folder-progress');
  const initData=window.Telegram?.WebApp?.initData;
- if(!indicator||!initData)return;
+ if(!initData||noyaFolderProgressLoading)return;
+ noyaFolderProgressLoading=true;
  try{
   const response=await fetch('/api/stream-token',{
    method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({action:'course_progress',initData}),
-   cache:'no-store'
+   body:JSON.stringify({action:'folder_summary',initData}),cache:'no-store'
   });
   if(!response.ok)return;
-  const result=await response.json();
-  if(!result.ok||!Array.isArray(result.lessons)||!Array.isArray(result.completed))return;
-  const published=result.lessons.filter(lesson=>lesson.is_published===true);
+  const data=await response.json();
+  if(!data.ok||!data.folders)return;
+  const course=data.folders.course,live=data.folders.live;
+  if(course&&courseIndicator){
+   courseIndicator.textContent=course.watched+' из '+course.total;
+   courseIndicator.setAttribute('aria-label','Пройдено '+course.watched+' из '+course.total+' уроков');
+  }
+  if(live&&liveIndicator){
+   liveIndicator.textContent='✓ '+live.watched+' ИЗ '+live.total;
+   liveIndicator.setAttribute('aria-label','Просмотрено '+live.watched+' из '+live.total+' прямых эфиров');
+  }
+ }catch(error){console.warn('Folder progress unavailable');}
+ finally{noyaFolderProgressLoading=false;}
+}
+published===true);
   const lessonIds=new Set(published.map(lesson=>lesson.id));
   const finished=new Set(result.completed.filter(id=>lessonIds.has(id)));
   const total=published.length||26;
@@ -307,6 +311,10 @@ async function loadAttentionCourseProgress(){
  }catch(error){console.warn('Course progress unavailable');}
 }
 loadAttentionCourseProgress();
+window.addEventListener('pageshow',loadAttentionCourseProgress);
+window.addEventListener('focus',loadAttentionCourseProgress);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadAttentionCourseProgress()});
+setInterval(()=>{if(!document.hidden)loadAttentionCourseProgress()},60000);
 async function loadClubLessons(){
  const el=document.getElementById('club-lessons'),initData=window.Telegram?.WebApp?.initData;
  if(!initData){el.textContent='Открой клуб через Telegram, чтобы увидеть свои уроки.';return}
