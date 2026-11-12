@@ -98,11 +98,12 @@ export default async function handler(req,res){
       return res.status(200).json({ok:true,favorite:req.body.favorite});
     }
     if(action!=='list')throw error(400,'Неизвестное действие');
-    const [profiles,mine,scores,likes]=await Promise.all([
+    const [profiles,mine,scores,likes,counts]=await Promise.all([
       db(base+'&public_enabled=eq.true&order=updated_at.desc&limit=500'),
       db(base+'&student_id=eq.'+me+'&limit=1'),
       db('noya_member_scores_v?select=student_id,points,lessons,practices,streams,referrals&limit=2000'),
-      db('noya_member_favorites?select=favorite_student_id&student_id=eq.'+me+'&limit=1000')
+      db('noya_member_favorites?select=favorite_student_id&student_id=eq.'+me+'&limit=1000'),
+      db('noya_member_count_v?select=count&limit=1')
     ]);
     const scoreById=new Map(scores.map(s=>[s.student_id,s]));
     const liked=new Set(likes.map(f=>f.favorite_student_id));
@@ -113,7 +114,7 @@ export default async function handler(req,res){
     const myRank=leaders.find(x=>x.id===me)?.rank||null;
     const defaultName=(typeof user.first_name==='string'?user.first_name.trim():'')||'Участник NOYA';
     return res.status(200).json({
-      ok:true,users:cards,leaders,
+      ok:true,users:cards,leaders,memberCount:Math.max(0,Number(counts?.[0]?.count)||0),
       me:{id:me,name:mine[0]?.display_name||defaultName,about:mine[0]?.about||'',
           publicEnabled:myPublic,messagesEnabled:mine[0]?.messages_enabled===true,
           canMessage:!!(typeof user.username==='string'&&/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(user.username)),
