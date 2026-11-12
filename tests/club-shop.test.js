@@ -201,7 +201,7 @@ test('NOINCOINS redemption accepts only server-owned prices, not client-supplied
   assert.equal(redeem.body.wallet.items[0].content,'SECRET PURCHASED MATERIAL');
   assert.equal(Object.hasOwn(redeem.body.wallet.items[1],'content'),false);
   const other=await invoke('POST','coin_redeem',{itemCode:'different-secret'});
-  assert.equal(other.statusCode,500); // mocked RPC accepts only the first known item
+  assert.equal(other.statusCode,400); // invalid item codes cannot reach the private RPC
  }finally{mock.restore();}
 });
 
