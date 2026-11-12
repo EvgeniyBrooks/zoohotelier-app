@@ -203,3 +203,23 @@ module.exports = async (req, res) => {
 
   }
 };
+
+
+// Keep legacy endpoints compatible while using one Vercel Serverless Function.
+// Each preserved handler validates its own Telegram admin permissions.
+const noyaLegacyAdminRoutes=Object.freeze({
+  'cohort-create':require('../lib/legacy-admin-cohort-create.js'),
+  'cohort-delete':require('../lib/legacy-admin-cohort-delete.js'),
+  'cohort':require('../lib/legacy-admin-cohort.js'),
+  'student-update':require('../lib/legacy-admin-student-update.js'),
+  'students':require('../lib/legacy-admin-students.js')
+});
+const noyaOriginalCohortsHandler=module.exports;
+module.exports=async function noyaConsolidatedAdminHandler(req,res){
+  const route=req.query?.noyaLegacyAdmin;
+  if(route===undefined)return noyaOriginalCohortsHandler(req,res);
+  if(typeof route!=='string'||!Object.hasOwn(noyaLegacyAdminRoutes,route)){
+    return res.status(404).json({error:'Unknown admin operation'});
+  }
+  return noyaLegacyAdminRoutes[route](req,res);
+};
