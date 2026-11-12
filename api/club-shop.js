@@ -104,6 +104,24 @@ async function videoReady(uid){
  const result=await cloudflare(encodeURIComponent(uid));
  return result?.readyToStream===true ||result?.status?.state==='ready';
 }
+async function notifyReviewReady(row){
+ // A completed review must remain available even if a Telegram message fails.
+ try{
+  const recipients=await db('students?select=telegram_id&id=eq.'+encodeURIComponent(row.student_id)+'&limit=1');
+  const telegramId=recipients[0]?.telegram_id;
+  if(!telegramId)return;
+  const token=process.env.NOYA_TELEGRAM_BOT_TOKEN;
+  const resp=await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    chat_id:telegramId,
+    text:(row.is_test?'[ТЕСТ] ':'')+'NOYA CLUB: персональный разбор готов! Открой клуб → Магазин → Мои разборы.',
+    disable_web_page_preview:true
+   }),signal:AbortSignal.timeout(8000)
+  });
+  if(!resp.ok)console.warn('NOYA shop Telegram notification HTTP',resp.status);
+ }catch(error){console.warn('NOYA shop Telegram notification unavailable');}
+}
 module.exports=async function handler(req,res){
  res.setHeader('X-Content-Type-Options','nosniff');
  if(!['GET','POST'].includes(req.method))return payload(res,405,{error:'Method not allowed'});
@@ -236,6 +254,7 @@ module.exports=async function handler(req,res){
     reviewed_by_telegram_id:Number(auth.user.id)
    },['submitted','in_review']);
    await event(row,auth,'review_finished');
+   await notifyReviewReady(updated);
    return payload(res,200,{ok:true,order:clean(updated,auth)});
   }
   throw fail(400,'Unknown action');
