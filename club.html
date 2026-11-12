@@ -463,7 +463,7 @@ async function loadClubLessons(){
    const h=document.createElement('h3');h.textContent=lesson.title;card.append(h);
    const p=document.createElement('p');p.textContent=lesson.description||'Урок NOYA CLUB';card.append(p);
    const b=document.createElement('button');b.className='button';b.textContent='Открыть урок';b.onclick=()=>openClubLesson(lesson.id,lesson.title);card.append(b);
-   const done=document.createElement('button');done.className='button secondary';done.style.marginTop='8px';done.dataset.completeLesson=lesson.id;done.textContent=dogProgress.has(lesson.id)?'✓ Пройдено':'Отметить пройденным';done.onclick=()=>setLessonProgress(lesson.id,!dogProgress.has(lesson.id));card.append(done);
+   const done=document.createElement('button');done.className='button secondary';done.style.marginTop='8px';done.dataset.completeLesson=lesson.id;done.textContent=dogProgress.has(lesson.id)?'✓ С собакой выполнено':'Отметить для собаки';done.onclick=()=>setLessonProgress(lesson.id,!dogProgress.has(lesson.id));card.append(done);
    // Favorite and completed controls are shared across all video types.
    if(window.NOYAMaterials)card.append(window.NOYAMaterials.controls('club',lesson.id).element);
    el.append(card);
@@ -496,6 +496,11 @@ async function setLessonProgress(lessonId,completed,selectedDogId){
  try{
   const r=await fetch('/api/club-progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData,dogId,lessonId,completed})});
   if(!r.ok)throw Error('Не удалось сохранить отметку');
+  // Practised with a dog counts as completed in the personal material library.
+  if(completed&&window.NOYAMaterials){
+    await window.NOYAMaterials.request('complete','club',lessonId,true);
+  }
+  if(window.NOYALibrary?.refresh)window.NOYALibrary.refresh();
   await loadDogProgress();
   if(document.getElementById('route-dog').value===dogId)await loadRoute();
  }catch(e){alert(e.message)}
