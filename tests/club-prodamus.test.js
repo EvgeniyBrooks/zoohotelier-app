@@ -321,3 +321,43 @@ test('Telegram Android has a tapped browser fallback for Prodamus URLs',()=>{
  assert.match(html,/window\.location\.replace\(paymentUrl\)/);
  assert.match(html,/window\.setTimeout\(/);
 });
+
+test('accepts correctly signed Prodamus multipart/form-data with mixed-case boundary',async()=>{
+ enable();
+ const prev=global.fetch;let count=0;
+ global.fetch=async()=>{count++;return {ok:true,json:async()=>[{applied:true,member_id:student,paid_payments:1}]};};
+ const boundary='AaB03xUPPER';
+ const flat={
+  date:success.date,domain:success.domain,order_id:success.order_id,
+  order_num:success.order_num,sum:success.sum,currency:success.currency,
+  payment_status:success.payment_status,'subscription[id]':success.subscription.id,
+  'subscription[payment_num]':success.subscription.payment_num
+ };
+ const bytes=Object.entries(flat).map(([k,v])=>
+  '--'+boundary+'\\r\\nContent-Disposition: form-data; name="'+k+'"\\r\\n\\r\\n'+v+'\\r\\n'
+ ).join('')+'--'+boundary+'--\\r\\n';
+ try{
+  const r=res();
+  await webhook({method:'POST',body:Buffer.from(bytes),headers:{
+   sign:lib.signedPayload(success,process.env.NOYA_PRODAMUS_SECRET),
+   'content-type':'multipart/form-data; boundary='+boundary
+  }},r);
+  assert.equal(r.statusCode,200);
+  assert.equal(count,1);
+ }finally{global.fetch=prev;cleanup();}
+});
+
+test('signed initial payment without a unique provider subscription ID is retried not falsely activated',async()=>{
+ enable();
+ const prev=global.fetch;let called=false;global.fetch=async()=>{called=true;throw Error('Unexpected RPC');};
+ try{
+  const initial={date:success.date,domain:success.domain,order_id:success.order_id,
+   order_num:success.order_num,sum:success.sum,currency:success.currency,payment_status:'success'};
+  const r=await callback(initial);
+  assert.equal(r.statusCode,503);
+  assert.equal(called,false);
+  const course=await callback({...initial,order_num:'course-existing-order'});
+  assert.equal(course.statusCode,200);
+  assert.equal(called,false);
+ }finally{global.fetch=prev;cleanup();}
+});
