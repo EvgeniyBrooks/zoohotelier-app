@@ -41,3 +41,17 @@ test('legacy course Students and Cohorts administrator dashboard is removed from
  assert.match(page,/async function loadAdmin\(\) \{\s*await loadCourse\(\);/);
  assert.match(page,/УПРАВЛЕНИЕ ВНИМАНИЕМ/);
 });
+
+test('NOYA club Attention Management card is yellow, uses 0 из 26 progress and deep-links to course',()=>{
+ const html=read('club.html');
+ assert.doesNotMatch(html,/Отдельный продукт/);
+ assert.doesNotMatch(html,/<h2>МОЙ КУРС<\/h2>/);
+ assert.match(html,/attention-course-card/);
+ assert.match(html,/background:var\(--accent\);color:#111/);
+ assert.match(html,/КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ/);
+ assert.match(html,/id="attention-course-progress"[^>]*>0 из 26<\/span>/);
+ assert.match(html,/href="\.\/index\.html">Перейти в курс/);
+ assert.match(html,/action:'course_progress',initData/);
+ assert.match(html,/indicator\.textContent=finished\.size\+' из '\+total/);
+ assert.match(html,/new Set\(result\.completed\.filter\(id=>lessonIds\.has\(id\)\)\)/);
+});
