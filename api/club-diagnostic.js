@@ -2103,10 +2103,6 @@ function accountSubscription(rows,now){
   if(!membership)return {subscription,loyalty};
   // A level is earned only after a complete calendar month; joining starts at zero.
   while(loyalty.unlockedMonths<12&&monthAnniversary(membership.start,loyalty.unlockedMonths+1)<=now)loyalty.unlockedMonths++;
-  // A member's visible rank is based on their current membership month.
-  // Gift unlocking is separate and only counts COMPLETE months.
-  // 0 full months = month 1 (Новичок), 11+ full months = month 12 (Суперкинолог).
-  loyalty.membershipMonth=Math.min(12,loyalty.unlockedMonths+1);
   if(loyalty.unlockedMonths<12){
     const next=monthAnniversary(membership.start,loyalty.unlockedMonths+1);
     // A renewal not yet recorded must not be presented as an earned future level.
