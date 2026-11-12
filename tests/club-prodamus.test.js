@@ -310,3 +310,14 @@ test('admin-only LIVE link omits demo_mode and never exposes checkout to non-adm
   assert.equal(submitted,true);
  }finally{global.fetch=prev;delete process.env.NOYA_PRODAMUS_TEST_MODE;cleanup();}
 });
+
+test('Telegram Android has a tapped browser fallback for Prodamus URLs',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'..','club.html'),'utf8');
+ assert.match(html,/id="noya-payment-open"/);
+ assert.match(html,/paymentButton\.addEventListener\('click'/);
+ assert.match(html,/tg\.openLink\(paymentUrl\)/);
+ assert.match(html,/paymentButton\.hidden=false/);
+ assert.match(html,/window\.location\.replace\(paymentUrl\)/);
+ assert.match(html,/window\.setTimeout\(/);
+});
