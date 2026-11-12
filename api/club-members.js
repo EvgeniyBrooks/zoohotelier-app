@@ -50,6 +50,7 @@ function publicCard(p,scores,liked){
   const safeAvatar=typeof p.avatar_url==='string'&&/^https:\/\//i.test(p.avatar_url)?p.avatar_url:null;
   const username=typeof p.contact_username==='string'&&/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(p.contact_username)?p.contact_username:null;
   return {id:p.student_id,name:p.display_name||'Участник NOYA',about:p.about||'',avatar:safeAvatar,
+          city:p.city||'',profession:p.profession||'',dogName:p.dog_name||'',dogInfo:p.dog_info||'',dogGoals:p.dog_goals||'',helpWith:p.help_with||'',lookingFor:p.looking_for||'',hobbies:p.hobbies||'',instagram:p.instagram||'',telegramChannel:p.telegram_channel||'',
           canMessage:!!(p.messages_enabled&&username),username:p.messages_enabled?username:null,
           favorite:liked.has(p.student_id),...stats};
 }
@@ -71,7 +72,7 @@ export default async function handler(req,res){
     const subscribed=subs.some(r=>(!r.start_date||Number.isFinite(Date.parse(r.start_date))&&Date.parse(r.start_date)<=now)&&(!r.end_date||Number.isFinite(Date.parse(r.end_date))&&Date.parse(r.end_date)>now));
     const trial=trials.some(r=>Date.parse(r.starts_at)<=now&&Date.parse(r.ends_at)>now);
     if(!admins.length&&!subscribed&&!trial)throw error(403,'Профили участников доступны при активной подписке NOYA CLUB');
-    const base='noya_member_profiles?select=student_id,display_name,about,avatar_url,public_enabled,messages_enabled,contact_username';
+    const base='noya_member_profiles?select=student_id,display_name,about,avatar_url,public_enabled,messages_enabled,contact_username,city,profession,dog_name,dog_info,dog_goals,help_with,looking_for,hobbies,instagram,telegram_channel';
     if(action==='save'){
       const data=req.body?.profile||{};
       if(typeof data!== 'object'||data===null||Array.isArray(data))throw error(400,'Неверный профиль');
@@ -82,9 +83,13 @@ export default async function handler(req,res){
       const messages=enabled&&data.messagesEnabled===true&&!!telegramName;
       const avatar=typeof user.photo_url==='string'&&/^https:\/\//i.test(user.photo_url)&&user.photo_url.length<1500?user.photo_url:null;
       const displayName=name||(typeof user.first_name==='string'?user.first_name.trim().slice(0,64):'')||'Участник NOYA';
+      const limits={city:100,profession:120,dogName:80,dogInfo:300,dogGoals:300,helpWith:400,lookingFor:300,hobbies:200,instagram:80,telegramChannel:80};
+      const extra={};
+      const columns={city:'city',profession:'profession',dogName:'dog_name',dogInfo:'dog_info',dogGoals:'dog_goals',helpWith:'help_with',lookingFor:'looking_for',hobbies:'hobbies',instagram:'instagram',telegramChannel:'telegram_channel'};
+      for(const [field,max] of Object.entries(limits))extra[columns[field]]=typeof data[field]==='string'?data[field].trim().slice(0,max):'';
       const written=await db('noya_member_profiles?on_conflict=student_id','POST',{
         student_id:me,display_name:displayName,about,public_enabled:enabled,messages_enabled:messages,
-        contact_username:messages?telegramName:null,avatar_url:avatar,updated_at:new Date().toISOString()
+        contact_username:messages?telegramName:null,avatar_url:avatar,...extra,updated_at:new Date().toISOString()
       });
       return res.status(200).json({ok:true,profile:written?.[0]||null});
     }
@@ -116,6 +121,7 @@ export default async function handler(req,res){
     return res.status(200).json({
       ok:true,users:cards,leaders,memberCount:Math.max(0,Number(counts?.[0]?.count)||0),
       me:{id:me,name:mine[0]?.display_name||defaultName,about:mine[0]?.about||'',
+          city:mine[0]?.city||'',profession:mine[0]?.profession||'',dogName:mine[0]?.dog_name||'',dogInfo:mine[0]?.dog_info||'',dogGoals:mine[0]?.dog_goals||'',helpWith:mine[0]?.help_with||'',lookingFor:mine[0]?.looking_for||'',hobbies:mine[0]?.hobbies||'',instagram:mine[0]?.instagram||'',telegramChannel:mine[0]?.telegram_channel||'',
           publicEnabled:myPublic,messagesEnabled:mine[0]?.messages_enabled===true,
           canMessage:!!(typeof user.username==='string'&&/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(user.username)),
           username:typeof user.username==='string'?user.username:null,
