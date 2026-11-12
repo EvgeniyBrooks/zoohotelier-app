@@ -124,3 +124,18 @@ test('NOYA home hides payment redirect only after server confirms admin preview'
  assert.match(source,/if\(!response\.ok\|\|!data\.checkoutUrl\)/);
  assert.match(TRIAL,/admins\?select=id&telegram_id=eq\./);
 });
+
+test('new and saved diagnostics recommend the real first video of Attention Management',()=>{
+ const diagnostic=read('club-demo.html');
+ const course=read('index.html');
+ assert.match(diagnostic,/function renderCourseStartingVideo\(\)/);
+ assert.match(diagnostic,/Курс «Управление вниманием»/);
+ assert.match(diagnostic,/Предобучение — Неделя 1/);
+ assert.match(diagnostic,/href='\.\/index\.html#first-video'/);
+ assert.equal((diagnostic.match(/renderCourseStartingVideo\(\);/g)||[]).length,2);
+ assert.match(course,/window\.location\.hash==='#first-video'/);
+ assert.match(course,/await loadLesson\(first\.id,first\.block_id/);
+ const gate=course.indexOf('!authResult.access.hasAccess');
+ const deepLink=course.indexOf("window.location.hash==='#first-video'");
+ assert.ok(gate>=0&&deepLink>gate,'Direct video link must run after paid-course authentication gate');
+});
