@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909"><title>Магазин · NOYA CLUB</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--ink:#0a0a0a;--panel:#191919;--line:#414141;--light:#f8f8f8;--muted:#aaa;--yellow:#f5fa45;--orange:#ff983c}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--light);font:14px/1.55 system-ui,-apple-system,'Segoe UI',sans-serif}
+main{max-width:640px;margin:auto;padding:22px 16px calc(100px + env(safe-area-inset-bottom))}
+h1,h2,h3{font-family:Oswald,Impact,'Arial Narrow',sans-serif;font-weight:700;line-height:1.1;text-transform:uppercase}
+h1{font-size:clamp(38px,10vw,55px);margin:14px 0}h2{font-size:28px;margin:0 0 12px}h3{font-size:22px;margin:9px 0}
+a{color:inherit;text-decoration:none}p{color:#bdbdbd;margin:0 0 14px}
+.brand{font:700 18px Oswald;color:var(--yellow);letter-spacing:.5px}
+.return{display:inline-flex;align-items:center;min-height:44px;margin-top:12px;color:var(--yellow);font-weight:800}
+.kicker{font-size:12px;font-weight:900;letter-spacing:1.4px;color:var(--yellow);text-transform:uppercase}
+.card{background:#1a1a1a;border:1px solid var(--line);border-radius:22px;padding:20px;margin:13px 0}
+.card.highlight{background:linear-gradient(145deg,#302811,#1b1a13);border-color:#b7be4d}
+.service-name{font:700 29px/1.13 Oswald,Impact,sans-serif;margin:5px 0 12px;text-transform:uppercase}
+.price{font-size:30px;font-weight:900;color:var(--yellow);letter-spacing:-1px}
+.small{font-size:12px;color:#a9a9a9}.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.tag{border:1px solid #5b5b5b;padding:4px 9px;border-radius:30px;font-size:11px;color:#e1e1e1}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.cta{width:100%;min-height:48px;border:0;border-radius:13px;background:var(--yellow);color:#111;font-weight:900;padding:12px 15px;margin-top:12px}
+.cta.alt{background:#2b2b2b;color:var(--yellow);border:1px solid var(--yellow)}
+.tabs{display:flex;gap:7px;position:sticky;top:0;background:#090909ed;backdrop-filter:blur(12px);padding:9px 0;z-index:10;overflow:auto}
+.tabs button{background:#212121;color:#f1f1f1;border:1px solid #4b4b4b;border-radius:25px;min-width:max-content;padding:10px 13px;font-size:12px;font-weight:800}
+.tabs button[aria-selected="true"]{border-color:var(--yellow);color:var(--yellow)}
+[hidden]{display:none!important}
+.screen{padding-top:19px}.notice{border-left:3px solid var(--orange);padding:11px 12px;background:#241e17;border-radius:3px 12px 12px 3px;color:#e6d4c0;font-size:12px}
+.state{color:var(--yellow);font-size:12px;font-weight:900;margin-bottom:8px}
+.status{min-height:25px;color:var(--yellow);margin:12px 0;font-size:13px}
+input,textarea,select{width:100%;border:1px solid #5b5b5b;background:#252525;border-radius:11px;padding:12px;color:white;font:inherit}
+textarea{resize:vertical;min-height:90px}
+label{display:block;color:#e0e0e0;font-size:13px;font-weight:700;margin:15px 0 7px}
+.file{padding:12px;background:#1e1e1e}iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:black}
+hr{border:0;border-top:1px solid #424242;margin:19px 0}
+.footer{font-size:12px;color:#aaa;margin-top:26px;text-align:center}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
+</style>
+<script src="./assets/club-shop.js?v=1" defer></script>
+</head><body><main>
+<div class="brand">NOYA CLUB · BY BROOKS</div>
+<a class="return" href="./club.html#home">← Вернуться в клуб</a>
+<div class="kicker" style="margin-top:15px">ПЕРСОНАЛЬНАЯ ПОМОЩЬ</div>
+<h1>МАГАЗИН</h1>
+<p>Нужна помощь с упражнением? Отправь видео и получи персональный разбор. Это разовая услуга, а не новая подписка.</p>
+<div class="tabs" role="tablist" aria-label="Разделы магазина">
+<button type="button" data-tab="catalog" aria-selected="true">Услуги</button>
+<button type="button" data-tab="orders" aria-selected="false">Мои разборы</button>
+<button type="button" data-tab="queue" aria-selected="false" id="noya-shop-reviewer-tab" hidden>Специалист</button>
+</div>
+<div id="shop-message" class="status" role="status" aria-live="polite">Загружаем магазин…</div>
+<section id="shop-catalog" class="screen" aria-label="Каталог услуг"><div id="shop-services"></div>
+<div class="notice">Оплата разовых разборов пока не подключена. Новые платные заказы не принимаются; это не влияет на действующую подписку NOYA CLUB.</div>
+</section>
+<section id="shop-orders" class="screen" aria-label="Мои разборы" hidden><h2>МОИ РАЗБОРЫ</h2><div id="shop-orders-list"></div></section>
+<section id="shop-queue" class="screen" aria-label="Панель специалиста" hidden><h2>ПАНЕЛЬ СПЕЦИАЛИСТА</h2><p>Здесь появляются оплаченные заявки и тестовые заказы. Ответить может только назначенный специалист или администратор.</p>
+<div id="shop-queue-list"></div>
+<div class="card" id="shop-staff-manager" hidden>
+<h3>ДОСТУП КИНОЛОГА</h3>
+<p>Чтобы подключить кинолога, введи его Telegram ID. Это не даёт доступ к управлению всем клубом.</p>
+<label for="shop-staff-id">Telegram ID</label><input id="shop-staff-id" inputmode="numeric" placeholder="123456789">
+<label for="shop-staff-role">Роль</label><select id="shop-staff-role"><option value="kinolog">Кинолог</option><option value="evgeniy">Персональный разбор</option></select>
+<button class="cta alt" id="shop-staff-save" type="button">Добавить специалиста</button>
+<div id="shop-staff-list"></div>
+</div></section>
+<div class="footer">NOYA CLUB · 2 900 ₽ / 30 дней · Индивидуальные разборы оплачиваются отдельно</div>
+</main></body></html>
