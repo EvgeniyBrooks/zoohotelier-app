@@ -373,6 +373,7 @@ function courseGoBack(){
  else loadCourse();
 }
 let activeCourseWatch=null;
+let activeCourseVideoControls=null;
 function setupAutomaticLessonCompletion(lessonId,alreadyDone){
  if(activeCourseWatch){activeCourseWatch.cancelled=true;activeCourseWatch=null}
  const iframe=document.getElementById('course-video-player');
@@ -405,6 +406,7 @@ function setupAutomaticLessonCompletion(lessonId,alreadyDone){
     if(status)status.textContent='✓ Урок просмотрен и отмечен пройденным';
     const button=document.getElementById('course-manual-complete');
     if(button)button.textContent='Урок завершён ✓';
+    if(activeCourseVideoControls)activeCourseVideoControls.refresh().catch(error=>console.warn('Course completion status unavailable:',error.message));
    }catch(e){watch.saving=false;if(status)status.textContent='Не удалось сохранить просмотр: '+e.message}
   };
   player.addEventListener('timeupdate',update);
@@ -1090,6 +1092,7 @@ async function loadLesson(
   blockId,
   blockTitle
 ) {
+  activeCourseVideoControls=null;
   setCourseBack(()=>loadLessons(blockId,blockTitle),'Видео урока');
 
   const app = document.getElementById("app");
@@ -1192,7 +1195,11 @@ async function loadLesson(
           }
         }
       });
+      activeCourseVideoControls=widget;
       wrapper.append(widget.element);
+      // Keep the original manual button only as a fallback when shared controls are unavailable.
+      const legacyButton=app.querySelector('#course-manual-complete');
+      if(legacyButton?.closest('.card'))legacyButton.closest('.card').hidden=true;
       const lessonCard=app.querySelector('.lesson-title')?.closest('.card');
       if(lessonCard)lessonCard.append(wrapper);
       if(lesson.video_url)window.NOYAMaterials.touch('course',lesson.id).catch(error=>console.warn('Course history unavailable:',error.message));
