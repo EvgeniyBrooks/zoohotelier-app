@@ -17,6 +17,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
  <span id="noya-payment-state">Открываем оплату…</span>
+ <button type="button" id="noya-payment-open" hidden>Открыть оплату в браузере</button>
  <button type="button" id="noya-payment-retry" hidden>Попробовать ещё раз</button>
 </div><main><div id="noya-account-slot"></div>
 <nav class="club-quick-nav" aria-label="Быстрый переход по разделам"><button type="button" data-screen="home">⌂ Главная</button><a href="./club-demo.html">◇ Моя собака</a><button type="button" data-screen="route">↗ Маршрут</button><button type="button" data-screen="library">▤ Библиотека</button><button type="button" data-screen="ai">✦ ИИ Ноя</button><button type="button" data-screen="bonuses">☆ Бонусы</button><a href="./index.html">▶ Мой курс</a></nav><header class="top"><div><div class="logo">NOYA CLUB</div><div class="by">by Brooks</div></div></header>
@@ -68,8 +69,21 @@ async function setupNoyaBilling(){
  const curtain=document.getElementById('noya-payment-redirect');
  const state=document.getElementById('noya-payment-state');
  const retry=document.getElementById('noya-payment-retry');
+ const paymentButton=document.getElementById('noya-payment-open');
  const wait=curtain.querySelector('.noya-waiting');
  const initData=window.Telegram?.WebApp?.initData;
+ let paymentUrl='';
+ // Telegram Android may refuse a cross-domain WebView navigation that works on iOS.
+ // Telegram.WebApp.openLink must run synchronously from a real tap on Android.
+ paymentButton.addEventListener('click',()=>{
+  if(!paymentUrl)return;
+  const tg=window.Telegram?.WebApp;
+  if(typeof tg?.openLink==='function'){
+   try{tg.openLink(paymentUrl);return;}catch(_){}
+  }
+  // A regular browser always gets a clickable HTTPS fallback too.
+  window.location.assign(paymentUrl);
+ });
  const hide=()=>{document.documentElement.classList.remove('noya-payment-checking');curtain.hidden=true;};
  const lockTrialCourse=()=>{
   document.querySelectorAll('a[href="./index.html"]').forEach(anchor=>{
@@ -86,7 +100,8 @@ async function setupNoyaBilling(){
   /^trial_[A-Za-z0-9_-]{12,70}$/.test(startParam)?startParam.slice(6):null;
  if(!initData){hide();return;}
  const begin=async()=>{
-  retry.hidden=true;wait.hidden=false;state.textContent='Проверяем доступ…';
+  retry.hidden=true;paymentButton.hidden=true;paymentUrl='';
+  wait.hidden=false;state.textContent='Проверяем доступ…';
   try{
    if(code){
     const redeem=await fetch('/api/club-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem',initData,code}),cache:'no-store'});
@@ -124,7 +139,21 @@ async function setupNoyaBilling(){
    const data=await response.json();
    if(!response.ok||!data.checkoutUrl)throw Error('Не удалось сформировать ссылку на оплату');
    // The Prodamus payform—not our app—displays renewal terms and obtains consent.
-   window.location.replace(data.checkoutUrl);
+   paymentUrl=data.checkoutUrl;
+   paymentButton.hidden=false;
+   state.textContent='Открываем Prodamus…';
+   // Keep automatic navigation for compatible Telegram/WebView clients.
+   // On Android, a direct cross-origin redirect may be blocked or stay inside
+   // the Mini App; the visible button lets the customer open the same URL with
+   // the official Telegram openLink API (which requires a user gesture).
+   try{window.location.replace(paymentUrl);}catch(_){}
+   window.setTimeout(()=>{
+    if(!curtain.hidden && paymentUrl && document.visibilityState!=='hidden'){
+     wait.hidden=true;
+     state.textContent='Если оплата не открылась автоматически, нажми кнопку:';
+     paymentButton.hidden=false;
+    }
+   },1800);
   }catch(error){
    wait.hidden=true;state.textContent=error.message||'Не удалось открыть Prodamus';
    retry.hidden=false;
