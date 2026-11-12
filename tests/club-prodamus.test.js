@@ -361,3 +361,27 @@ test('signed initial payment without a unique provider subscription ID is retrie
   assert.equal(called,false);
  }finally{global.fetch=prev;cleanup();}
 });
+
+test('Prodamus signed settings test notification with no subscription does not crash or grant access',async()=>{
+ enable();
+ const oldFetch=global.fetch;
+ let calls=0;
+ global.fetch=async()=>{calls++;throw Error('Unexpected database call for test webhook')};
+ try{
+  const sample={
+   date:'2026-11-12T08:05:30+03:00',domain:'merchant.payform.ru',
+   order_id:'10099',order_num:'test-notification',
+   sum:'2900.00',payment_status:'success'
+  };
+  const r=await callback(sample);
+  assert.equal(r.statusCode,200);
+  assert.equal(r.body,'success');
+  assert.equal(calls,0);
+  const noSubscriptionOrder={
+   ...sample,order_num:'noya-12341234-1234-4234-8234-123412341234'
+  };
+  const missing=await callback(noSubscriptionOrder);
+  assert.equal(missing.statusCode,503);
+  assert.equal(calls,0);
+ }finally{global.fetch=oldFetch;cleanup();}
+});
