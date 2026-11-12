@@ -103,18 +103,26 @@ export default async function handler(req,res){
       return res.status(200).json({ok:true,favorite:req.body.favorite});
     }
     if(action!=='list')throw error(400,'Неизвестное действие');
-    const [profiles,mine,scores,likes,counts]=await Promise.all([
+    const [profiles,mine,scores,likes,counts,activeSubscriptions,activeTrials]=await Promise.all([
       db(base+'&public_enabled=eq.true&order=updated_at.desc&limit=500'),
       db(base+'&student_id=eq.'+me+'&limit=1'),
       db('noya_member_scores_v?select=student_id,points,lessons,practices,streams,referrals&limit=2000'),
       db('noya_member_favorites?select=favorite_student_id&student_id=eq.'+me+'&limit=1000'),
-      db('noya_member_count_v?select=count&limit=1')
+      db('noya_member_count_v?select=count&limit=1'),
+      db('club_subscriptions?select=student_id,start_date,end_date&status=eq.active&limit=10000'),
+      db('noya_club_trials?select=student_id,starts_at,ends_at&limit=10000')
     ]);
+    // A public profile is discoverable only while its owner has active club access.
+    const activeIds=new Set([
+      ...activeSubscriptions.filter(r=>(!r.start_date||Date.parse(r.start_date)<=now)&&(!r.end_date||Date.parse(r.end_date)>now)).map(r=>r.student_id),
+      ...activeTrials.filter(r=>Date.parse(r.starts_at)<=now&&Date.parse(r.ends_at)>now).map(r=>r.student_id)
+    ]);
+    const visibleProfiles=profiles.filter(p=>activeIds.has(p.student_id));
     const scoreById=new Map(scores.map(s=>[s.student_id,s]));
     const liked=new Set(likes.map(f=>f.favorite_student_id));
-    const cards=profiles.map(p=>publicCard(p,scoreById,liked));
+    const cards=visibleProfiles.map(p=>publicCard(p,scoreById,liked));
     const leaders=[...cards].sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'ru')||a.id.localeCompare(b.id)).map((card,i)=>({...card,rank:i+1}));
-    const myPublic=profiles.some(p=>p.student_id===me);
+    const myPublic=visibleProfiles.some(p=>p.student_id===me);
     const myScore=score(scoreById.get(me));
     const myRank=leaders.find(x=>x.id===me)?.rank||null;
     const defaultName=(typeof user.first_name==='string'?user.first_name.trim():'')||'Участник NOYA';
