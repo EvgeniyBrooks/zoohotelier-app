@@ -135,10 +135,10 @@ async function coinWallet(auth){
    code:referrals[0]?.referral_code||'',
    pending:Number(referrals[0]?.pending_count)||0,
    rewarded:Number(referrals[0]?.rewarded_count)||0,
-   coinsPerFirstPayment:500
+   coinsPerConfirmedPayment:500
   },
   earningRules:[{event:'Первая активная подписка',coins:100},{event:'Подтверждённое прохождение урока',coins:25},
-   {event:'Друг впервые оплатил NOYA CLUB',coins:500}],
+   {event:'Каждая подтверждённая оплата приглашённого друга (2 900 ₽)',coins:500}],
   // Never expose the digital bonus content until its redemption is recorded.
   items:items.map(x=>({code:x.code,title:x.title,description:x.description,cost:x.cost,
    owned:owned.has(x.code),...(owned.has(x.code)?{content:x.content}:{})})),
