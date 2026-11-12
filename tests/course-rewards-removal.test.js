@@ -73,7 +73,8 @@ test('NOYA club has one bottom navigation, without a duplicated sticky header me
 test('NOYA home starts with feature tiles then a single yellow course card without extra labels',()=>{
  const page=read('club.html');
  const home=page.slice(page.indexOf('<section id="home"'),page.indexOf('<section id="route"'));
- assert.match(home,/<h1 id="home-title">НАЧНИ ЗДЕСЬ<\/h1>/);
+ assert.doesNotMatch(home,/<h1 id="home-title">НАЧНИ ЗДЕСЬ<\/h1>/);
+ assert.doesNotMatch(page,/<header class="top">|<div class="logo">NOYA CLUB<\/div>|<div class="by">by Brooks<\/div>/);
  assert.ok(home.indexOf('class="tiles"')<home.indexOf('class="attention-course-card"'));
  assert.equal((home.match(/class="attention-course-card"/g)||[]).length,1);
  assert.doesNotMatch(home,/ТВОЙ КУРС|ТВОЯ СОБАКА-КОМПАНЬОН|МАГАЗИН РАЗБОРОВ|Отдельный продукт/);
@@ -81,4 +82,27 @@ test('NOYA home starts with feature tiles then a single yellow course card witho
  assert.match(home,/0 из 26/);
  assert.match(page,/<nav class="bottom"/);
  assert.doesNotMatch(page,/trajectory-title|trajectory-action|trajectory-link/);
+});
+
+test('NOYA home places recordings into a standalone folder below Attention Management course',()=>{
+ const club=read('club.html');
+ const home=club.slice(club.indexOf('<section id="home"'),club.indexOf('<section id="route"'));
+ const course=read('index.html');
+ const live=read('course-live.html');
+ assert.ok(home.indexOf('class="tiles"')<home.indexOf('class="attention-course-card"'));
+ assert.ok(home.indexOf('class="attention-course-card"')<home.indexOf('noya-material-folder'));
+ assert.match(home,/class="noya-material-folder" href="\.\/course-live\.html"/);
+ assert.match(home,/ПРЯМЫЕ ЭФИРЫ/);
+ assert.match(home,/Записи встреч и разборы с Евгением/);
+ assert.doesNotMatch(course,/href="\.\/course-live\.html"|ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ/);
+ assert.match(live,/class="back" href="\.\/club\.html#home"/);
+});
+
+test('Attention Management course always has a direct return link to club home',()=>{
+ const course=read('index.html');
+ const nav=course.indexOf('class="course-club-return" href="./club.html#home"');
+ const header=course.indexOf('<div class="header">');
+ assert.ok(nav>0&&header>nav);
+ assert.match(course,/На главную NOYA CLUB/);
+ assert.match(course,/course-club-return:focus-visible/);
 });
