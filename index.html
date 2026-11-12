@@ -343,6 +343,7 @@
   </div>
 
 
+<script src="./assets/noya-video-actions.js?v=1"></script>
 <script>
 
 
@@ -634,8 +635,10 @@ async function loadCourse() {
     let html = "";
 
 
-    const done=new Set(courseProgress.completed);
-    const total=courseProgress.lessons.length||26;
+    const publishedLessons=courseProgress.lessons.filter(lesson=>lesson.is_published===true);
+    const publishedIds=new Set(publishedLessons.map(l=>l.id));
+    const done=new Set(courseProgress.completed.filter(id=>publishedIds.has(id)));
+    const total=publishedLessons.length;
     const profileName=[currentUser?.first_name,currentUser?.last_name].filter(Boolean).join(' ')||currentUser?.username||'Участник курса';
     const profilePhoto=currentUser?.photo_url&&/^https:\/\//.test(currentUser.photo_url)?currentUser.photo_url:'';
     html += `
@@ -647,7 +650,7 @@ async function loadCourse() {
       <section class="course-hero">
         <div class="course-hero-kicker">МОЙ КУРС</div>
         <div class="course-hero-title">УПРАВЛЕНИЕ<br>ВНИМАНИЕМ</div>
-        <div class="course-hero-subtitle">26 уроков · 4 недели + предобучение</div>
+        <div class="course-hero-subtitle">${total} уроков · 4 недели + предобучение</div>
         <div class="course-hero-actions">
           <span class="course-hero-count">${done.size} ИЗ ${total}</span>
           <button class="course-hero-continue" onclick="continueCourse()">${done.size?'Продолжить':'Начать обучение'} <span>→</span></button>
@@ -998,7 +1001,7 @@ async function loadLessons(
     const doneIds=new Set(courseProgress.completed);
     const finished=lessons.filter(l=>doneIds.has(l.id)).length;
     const blockMeta=courseProgress.blocks.find(b=>b.id===blockId);
-    const blockTotal=blockMeta?.block_number===0?2:6;
+    const blockTotal=lessons.length;
     const percent=Math.round(100*finished/blockTotal);
 
 
@@ -1153,6 +1156,27 @@ async function loadLesson(
       </div>
       ${completeHtml}
     `;
+    // Every lesson has the same favorite/completed actions as the NOYA library.
+    if(window.NOYAMaterials){
+      const wrapper=document.createElement('div');
+      const widget=window.NOYAMaterials.controls('course',lesson.id,{
+        onChanged(action,state){
+          if(action==='complete'){
+            if(state.completed&&!courseProgress.completed.includes(lesson.id))courseProgress.completed.push(lesson.id);
+            if(!state.completed)courseProgress.completed=courseProgress.completed.filter(id=>id!==lesson.id);
+            const button=document.getElementById('course-manual-complete');
+            if(button){
+              button.textContent=state.completed?'Отменить отметку':'Отметить урок пройденным';
+              button.onclick=()=>markCourseLesson(lesson.id,!state.completed,currentBlockId,blockTitle);
+            }
+          }
+        }
+      });
+      wrapper.append(widget.element);
+      const lessonCard=app.querySelector('.lesson-title')?.closest('.card');
+      if(lessonCard)lessonCard.append(wrapper);
+      if(lesson.video_url)window.NOYAMaterials.touch('course',lesson.id).catch(error=>console.warn('Course history unavailable:',error.message));
+    }
     if(lesson.video_url)setupAutomaticLessonCompletion(lesson.id,alreadyDone);
 
   } catch (error) {
@@ -2268,6 +2292,16 @@ async function startApp() {
 
 
   await loadCourse();
+
+  // Open a video selected from NOYA's unified library.
+  const selectedLesson=new URLSearchParams(location.search).get('lesson');
+  if(selectedLesson&&/^[a-f0-9-]{36}$/i.test(selectedLesson)){
+    const courseLesson=(courseProgress.lessons||[]).find(l=>l.id===selectedLesson&&l.is_published);
+    if(courseLesson){
+      const block=courseProgress.blocks.find(b=>b.id===courseLesson.block_id);
+      if(block){await loadLesson(courseLesson.id,block.id,block.title||'Урок');return;}
+    }
+  }
 
   // A diagnostic recommendation links to the actual first published video.
   // The authenticated course page still enforces paid/admin access before here.
