@@ -137,7 +137,7 @@ async function coinWallet(auth){
    rewarded:Number(referrals[0]?.rewarded_count)||0,
    coinsPerConfirmedPayment:500
   },
-  earningRules:[{event:'Первая активная подписка',coins:100},{event:'Подтверждённое прохождение урока',coins:25},
+  earningRules:[{event:'Первый оплаченный доступ в клуб',coins:100},
    {event:'Каждая подтверждённая оплата приглашённого друга (2 900 ₽)',coins:500}],
   // Never expose the digital bonus content until its redemption is recorded.
   items:items.map(x=>({code:x.code,title:x.title,description:x.description,cost:x.cost,
