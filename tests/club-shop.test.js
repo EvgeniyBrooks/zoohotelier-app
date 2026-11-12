@@ -74,6 +74,16 @@ function network(options={}){
    return new Response(JSON.stringify(state.orders.length?state.orders:[...(options.orders||[])]));
   }
   if(p.endsWith('/noya_review_order_events'))return new Response(null,{status:204});
+  if(p.endsWith('/noya_referral_ensure_code'))return new Response(JSON.stringify([{
+   referral_code:'a'.repeat(24),pending_count:2,rewarded_count:1
+  }]));
+  if(p.endsWith('/noya_referral_claim')){
+   const payload=JSON.parse(request.body);
+   assert.equal(payload.p_code,'a'.repeat(24));
+   assert.equal(payload.p_referred_student_id,STUDENT);
+   assert.equal(Object.hasOwn(payload,'inviterId'),false);
+   return new Response(JSON.stringify([{applied:true,reason:'registered'}]));
+  }
   if(p.endsWith('/noya_coin_sync'))return new Response(JSON.stringify([{balance:100,lifetime_earned:100,lifetime_spent:0}]));
   if(p.endsWith('/noya_coin_redeem')){
    const payload=JSON.parse(request.body);
@@ -187,6 +197,10 @@ test('NOINCOINS wallet verifies user identity and never discloses locked paid bo
   assert.equal(wallet.body.balance,100);
   assert.equal(wallet.body.items[0].cost,80);
   assert.equal(wallet.body.items[0].owned,false);
+  assert.equal(wallet.body.referral.coinsPerFirstPayment,500);
+  assert.equal(wallet.body.referral.pending,2);
+  assert.equal(wallet.body.referral.rewarded,1);
+  assert.equal(wallet.body.referral.code,'a'.repeat(24));
   assert.equal(Object.hasOwn(wallet.body.items[0],'content'),false);
   assert.equal(wallet.body.history.length,1);
  }finally{mock.restore();}
@@ -226,4 +240,31 @@ test('NOINCOINS shop contains wallet and a working earned bonus redemption contr
  assert.match(ui,/coin_redeem/);
  assert.match(ui,/data\.balance/);
  assert.match(ui,/item\.content/);
+});
+
+test('referral claims use signed Telegram recipient and cannot create NOINCOINS directly',async()=>{
+ const mock=network({member:true});
+ try{
+  const claim=await invoke('POST','referral_claim',{referralCode:'a'.repeat(24),inviterId:'FAKE'});
+  assert.equal(claim.statusCode,200);
+  assert.equal(claim.body.applied,true);
+  assert.equal(claim.body.reason,'registered');
+  assert.equal(mock.state.calls.some(x=>x.path.endsWith('/noya_coin_ledger')),false);
+  const invalid=await invoke('POST','referral_claim',{referralCode:'not-a-code'});
+  assert.equal(invalid.statusCode,400);
+ }finally{mock.restore();}
+});
+test('referral section is above redeemable goods with copy/share controls',()=>{
+ const root=path.join(__dirname,'..');
+ const html=fs.readFileSync(path.join(root,'shop.html'),'utf8');
+ const shop=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
+ const club=fs.readFileSync(path.join(root,'club.html'),'utf8');
+ assert.ok(html.indexOf('id="shop-referral-card"')<html.indexOf('id="shop-coin-items"'));
+ assert.match(html,/500 🪙 ЗА ДРУГА/);
+ assert.match(html,/id="shop-referral-copy"/);
+ assert.match(html,/id="shop-referral-share"/);
+ assert.match(shop,/NoyaClubBrooksBot\?startapp=ref_/);
+ assert.match(shop,/shop-referral-rewarded/);
+ assert.match(club,/action:'referral_claim',initData,referralCode/);
+ assert.ok(club.indexOf("action:'referral_claim'")<club.indexOf("const status=await fetch('/api/club-checkout?status=1'"));
 });
