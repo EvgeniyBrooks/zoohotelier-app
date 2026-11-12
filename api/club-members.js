@@ -62,6 +62,15 @@ export default async function handler(req,res){
     const students=await db('students?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1');
     if(!students.length)throw error(403,'Для участия нужно вступить в клуб');
     const me=students[0].id,action=String(req.body?.action||'list');
+    const now=Date.now();
+    const [admins,subs,trials]=await Promise.all([
+      db('admins?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1'),
+      db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+me+'&status=eq.active&limit=30'),
+      db('noya_club_trials?select=starts_at,ends_at&student_id=eq.'+me+'&limit=20')
+    ]);
+    const subscribed=subs.some(r=>(!r.start_date||Number.isFinite(Date.parse(r.start_date))&&Date.parse(r.start_date)<=now)&&(!r.end_date||Number.isFinite(Date.parse(r.end_date))&&Date.parse(r.end_date)>now));
+    const trial=trials.some(r=>Date.parse(r.starts_at)<=now&&Date.parse(r.ends_at)>now);
+    if(!admins.length&&!subscribed&&!trial)throw error(403,'Профили участников доступны при активной подписке NOYA CLUB');
     const base='noya_member_profiles?select=student_id,display_name,about,avatar_url,public_enabled,messages_enabled,contact_username';
     if(action==='save'){
       const data=req.body?.profile||{};
