@@ -12,7 +12,22 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 #noya-payment-redirect .noya-waiting{display:block;width:29px;height:29px;border:3px solid #454b28;border-top-color:#f5fa45;border-radius:100%;animation:noya-rotate .7s linear infinite}
 #noya-payment-redirect button{border:0;border-radius:12px;padding:13px 20px;background:#f5fa45;color:#111;font-weight:800}
 @keyframes noya-rotate{to{transform:rotate(360deg)}}
-</style><script>document.documentElement.classList.add('noya-payment-checking');</script></head><body>
+</style><script>document.documentElement.classList.add('noya-payment-checking');</script><style>
+/* Material folders — dark photo-cover cards with a raised folder tab */
+.noya-material-folders{margin-top:22px}
+.noya-media-folders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.noya-media-folder{position:relative;display:block;min-width:0;height:clamp(166px,43vw,205px);padding-top:16px;color:#fff;isolation:isolate;transition:transform .16s ease}
+.noya-media-folder:active{transform:scale(.97)}
+.noya-media-folder:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:18px}
+.noya-media-folder-tab{position:absolute;top:0;left:2px;width:62%;height:39px;border:1px solid #444;border-bottom:0;border-radius:17px 16px 0 0;background:linear-gradient(180deg,#333,#1b1b1b);z-index:-1}
+.noya-media-folder-frame{position:relative;display:block;height:100%;padding:7px;border-radius:17px;border:1px solid #3c3c3c;background:linear-gradient(145deg,#343434 0%,#1c1c1c 37%,#111);box-shadow:0 8px 22px #0008,inset 0 2px 5px #ffffff18}
+.noya-media-folder-cover{position:relative;display:block;width:100%;height:100%;overflow:hidden;border:4px solid #0b0b0b;border-radius:13px;background:#141414}
+.noya-live-illustration,.noya-media-folder-cover>img{display:block;width:100%;height:100%;object-fit:cover}
+.noya-media-folder-cover>img{position:absolute;z-index:1;inset:0}
+.noya-media-folder-cover:after{content:"";position:absolute;z-index:2;inset:27% 0 0;background:linear-gradient(transparent 4%,#0009 63%,#000e)}
+.noya-media-folder-title{position:absolute;z-index:3;left:2px;right:2px;bottom:6px;text-align:center;color:#fff;font:700 clamp(16px,4.2vw,24px)/1 Oswald,Impact,sans-serif;white-space:nowrap;letter-spacing:-.25px;text-shadow:0 1px 6px #000,0 2px 10px #000}
+@media(max-width:355px){.noya-media-folders{gap:9px}.noya-media-folder-frame{padding:5px}.noya-media-folder-title{font-size:15px}}
+</style></head><body>
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
  <span id="noya-payment-state">Открываем оплату…</span>
@@ -35,12 +50,29 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
  </div>
 </div>
 <div class="section noya-material-folders" aria-label="Папки с материалами">
- <div class="noya-material-label">ПАПКИ</div>
- <a class="noya-material-folder" href="./course-live.html" aria-label="Открыть папку Прямые эфиры с Евгением">
-  <span class="noya-folder-icon" aria-hidden="true">▤</span>
-  <span class="noya-folder-info"><strong>ПРЯМЫЕ ЭФИРЫ</strong><small>Записи встреч и разборы с Евгением</small></span>
-  <span class="noya-folder-arrow" aria-hidden="true">→</span>
- </a>
+ <div class="noya-media-folders">
+  <a class="noya-media-folder" href="./course-live.html" aria-label="Прямые эфиры с Евгением — открыть записи">
+   <span class="noya-media-folder-tab" aria-hidden="true"></span>
+   <span class="noya-media-folder-frame">
+    <span class="noya-media-folder-cover" id="noya-live-cover">
+     <svg class="noya-live-illustration" viewBox="0 0 240 162" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+       <linearGradient id="noya-live-bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#443b24"/><stop offset=".6" stop-color="#161616"/><stop offset="1" stop-color="#070707"/></linearGradient>
+       <radialGradient id="noya-live-glow"><stop stop-color="#f5fa45" stop-opacity=".45"/><stop offset="1" stop-color="#f5fa45" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect width="240" height="162" fill="url(#noya-live-bg)"/><ellipse cx="176" cy="35" rx="90" ry="75" fill="url(#noya-live-glow)"/>
+      <path d="M-10 75 250 23M-20 136 260 77" stroke="#efdf82" stroke-opacity=".16" stroke-width="3"/>
+      <rect x="13" y="17" width="79" height="23" rx="4" fill="#f5fa45" transform="rotate(-5 13 17)"/>
+      <text x="20" y="33" font-family="sans-serif" font-weight="900" font-size="12" fill="#151515" transform="rotate(-5 13 17)">NOYA LIVE</text>
+      <circle cx="106" cy="78" r="26" fill="#74634d"/><path d="M56 162c3-41 24-58 50-58s49 17 51 58" fill="#363536"/>
+      <circle cx="176" cy="80" r="21" fill="#8b7760"/><path d="M139 162c4-36 17-52 39-52 24 0 41 16 45 52" fill="#252626"/>
+      <rect x="123" y="68" width="7" height="42" rx="3" fill="#f5fa45" transform="rotate(-8 123 68)"/><circle cx="125" cy="65" r="10" fill="#eee"/>
+     </svg>
+     <strong class="noya-media-folder-title">ПРЯМЫЕ ЭФИРЫ</strong>
+    </span>
+   </span>
+  </a>
+ </div>
 </div></section>
 <section id="route" class="screen" hidden><div class="eyebrow">NOYA / персональный путь</div><h1>МОЙ МАРШРУТ</h1><p>Направления подобраны по твоей последней анкете. Для каждой собаки маршрут отдельный.</p><label for="route-dog">Выбери собаку</label><select class="route-select" id="route-dog"><option value="">Нет собак</option></select><div id="route-status" class="notice" aria-live="polite">Загружаем персональный маршрут…</div><div id="route-topics"></div><a class="button secondary" href="./club-demo.html" style="margin-top:18px">Добавить собаку или обновить диагностику <span>↗</span></a></section>
 <section id="ai" class="screen" hidden><div class="eyebrow">NOYA / персональный помощник</div><h1>ИИ НОЯ</h1><div class="noya-intro"><img class="noya-avatar" src="data:image/webp;base64,UklGRpwDAABXRUJQVlA4IJADAADQFgCdASpgAGAAPqVGnUkmJCMqrjgMAVAUiWcAzYr1/lLEjHeICG6Vk6LFEvBAenHl/V2ocWfqBDwDMoWJmuekeaojmzf7rr1hazhgHH0YAJp2asQbV5StpZ5EHVPa+/EqKlq8KlMl7jz57ujSc1Xav61yOWcFPFMSbzy79d1Hu/qbshWtLkJkpZ1cxx/eTnjaXXjq3s8hr+++fPgNuRjpXHiW1NiYOrSmhAYo4r6HDPn23GIvpdUUoD5/fhiCcAD++qgI3WS/9BrWmA3mKv9ELuYmvV/y2pYomGA9SuA5xCoJ8sPYILjFaSDvHdd9HunPzosEcnj4uK63pX3VqjAJlcnERnxXifcrQqdLqoVp2HcuRBs9kmBL7ckb/Dl7XMWRh+DZqkDMHVNZNi3ZcnXpMfOE9GlxcRSVFUHbV58C+1qumm8OpJjGnjUFxpjeRmX7Yvouas+lVPySLp3YomWzu9sQqacMN3OXAppxaJwHchz2IGUKoFOr5VcRHt78FXAHI8WGl60kUCQw2OEvWKF8ZGA//CKCqaY1I0Wwj3T3wLRBRLyF8m9eyKSI1rr2Mc0qWkgwObYPt0FM+eEisSy/u7FBC4emk0wI6qxhDM8ig8wFKXrF+yzEmVToToNh6OA/S6E5CP0mCSVlQruJK2N1fvCxNqe9LDOWrsY99uhFrntQlsdf8KToLzHvd386L4URDUho86CGgMaIyTfToZnvrT/tBOykAYV1m6mFXYJMhQqMTjDVbwuPds47vUns4tRrrZe7AetdRl8VOmI5Rn4qmKftepxLmz85LLoTaWIgghU8Ol+qvWv6QWNcDJPgJ2uh3Y/+TiTIISBL6dyXtkxg5EFrA8EMQsWJLQqNMxwo5Big7YO9MYcLHG9+5XLneJnK3v2dGOkNNVRoQpSgnwsMccKbIqGmCXOtR4u1w20cGsZmn62DmU1oQOXiG16t/FQLKrojakH6MRGhMm0Ms80PiP/GFq3lytuAZhfHnTwXi+PRsgLSs2Hg2V+V5RIyZSUgmGBftP+o0NEjT0LAMv5MyvkaNMLrHNvr27flmFMEuG/IFNU1R+zhoCXTx1nKzT79XI2EhPcGtnDX64SfFBzfKouAVQ6zIZwZiX68vR/1eh5M2NUu4Yk6wih7a+1D08rZ83X1rHFPDXg2g00giOU7eGh4x9WMeJnqfKKzupZiK3+uD4fhf71tj31wp6zRoAA=" alt="Фотография Нои"><div><strong>НОЯ</strong><div style="color:#aaa;font-size:13px">Твой ИИ-помощник по воспитанию собак</div></div></div><p>Спроси о поведении собаки, упражнениях и воспитании. Ответы ИИ не заменяют специалиста.</p><div class="notice"><strong>ИИ НОЯ · тестовый режим</strong><p>До 10 вопросов в сутки на участника. Ответы ИИ могут содержать ошибки; при риске для здоровья или безопасности обратись к специалисту.</p></div><label for="ai-dog">О какой собаке поговорим?</label><select id="ai-dog" class="route-select"><option value="">Без профиля</option></select><div id="ai-recommendations" class="notice" aria-live="polite">Подбор видео появится после анализа диагностики.</div><div class="notice" style="margin:12px 0"><label style="display:flex;gap:10px;align-items:center"><input id="ai-memory-optin" type="checkbox" style="width:20px;height:20px;accent-color:#F5FA45"><span><strong>Помнить мои вопросы и ответы</strong><small style="display:block;color:#bbb">Сохранять личную историю для следующих рекомендаций. Можно отключить и удалить историю в любой момент.</small></span></label><p id="ai-memory-status" style="font-size:12px;color:#bbb;margin-top:7px">История не сохраняется без согласия.</p></div><div class="ai-suggestions"><button type="button" data-ai-suggestion="Как научить собаку обращать на меня внимание на прогулке?">Внимание на улице</button><button type="button" data-ai-suggestion="Почему собака лает на других собак?">Лай на собак</button><button type="button" data-ai-suggestion="Как помочь собаке спокойнее оставаться одной?">Одиночество</button></div><div id="ai-messages" aria-live="polite"><div class="ai-message assistant">Привет! Я НОЯ 🐾 Помогу разобраться в поведении собаки. С чего начнём?</div></div><form id="ai-form" class="ai-composer"><textarea id="ai-input" maxlength="1200" placeholder="Напиши вопрос о своей собаке…" aria-label="Вопрос для Нои"></textarea><button id="ai-send" type="submit">→</button></form><p id="ai-status" style="margin-top:10px" aria-live="polite"></p></section>
@@ -546,4 +578,22 @@ async function loadClubAdmin(){
 }
 document.getElementById('admin-refresh').addEventListener('click',loadClubAdmin);
 loadClubAdmin();
+</script><script>
+/* Show the cover of a published live recording when the viewer can access it. */
+(function(){
+ async function loadLiveFolderCover(){
+  const poster=document.getElementById('noya-live-cover');
+  const initData=window.Telegram?.WebApp?.initData;
+  if(!poster||!initData)return;
+  try{
+   const response=await fetch('/api/stream-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'live_list',initData})});
+   if(!response.ok)return;
+   const data=await response.json();
+   const found=(data.streams||[]).find(x=>typeof x.cover_url==='string'&&x.cover_url.startsWith('https://'));
+   if(!found)return;
+   const img=document.createElement('img');img.src=found.cover_url;img.alt='';img.loading='lazy';img.decoding='async';poster.append(img);
+  }catch(error){console.debug('Live cover unavailable');}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadLiveFolderCover,{once:true});else loadLiveFolderCover();
+})();
 </script></body></html>
