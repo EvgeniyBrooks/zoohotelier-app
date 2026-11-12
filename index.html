@@ -2363,6 +2363,20 @@ async function startApp() {
 
   await loadCourse();
 
+  // A diagnostic recommendation links to the actual first published video.
+  // The authenticated course page still enforces paid/admin access before here.
+  if(window.location.hash==='#first-video'){
+    const blocks=courseProgress.blocks||[];
+    const order=new Map(blocks.map(b=>[b.id,b.block_number]));
+    const first=(courseProgress.lessons||[])
+      .filter(l=>l.is_published&&order.has(l.block_id))
+      .sort((a,b)=>(order.get(a.block_id)-order.get(b.block_id))||(a.day_number-b.day_number))[0];
+    if(first){
+      const block=blocks.find(b=>b.id===first.block_id);
+      await loadLesson(first.id,first.block_id,block?.title||'Предобучение');
+    }
+  }
+
 }
 
 
