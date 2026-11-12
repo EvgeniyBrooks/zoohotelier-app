@@ -117,6 +117,9 @@ async function setupNoyaBilling(){
    const trialStatus=await fetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
    if(trialStatus.ok){
     const t=await trialStatus.json();
+    // Owner/admin gets a permanent preview of the club without a fake payment.
+    // Paid-course permissions and gift accrual remain enforced independently.
+    if(t.adminPreview===true){hide();return;}
     if(t.paidActive){hide();return;}
     if(t.trialActive){lockTrialCourse();hide();return;}
    }
