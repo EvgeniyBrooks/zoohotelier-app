@@ -32,3 +32,11 @@ test('completed lessons can still track progress but no longer advertise NOINCOI
  assert.match(course,/course_complete/);
  assert.match(course,/Отметить урок пройденным/);
 });
+
+test('legacy course Students and Cohorts administrator dashboard is removed from course UI',()=>{
+ const page=read('index.html');
+ assert.doesNotMatch(page,/👨‍💼 Админка|Панель администратора|👥 Ученики|📚 Потоки/);
+ assert.doesNotMatch(page,/onclick="loadAdmin\(\)"/);
+ assert.match(page,/async function loadAdmin\(\) \{\s*await loadCourse\(\);/);
+ assert.match(page,/УПРАВЛЕНИЕ ВНИМАНИЕМ/);
+});
