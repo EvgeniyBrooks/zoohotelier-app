@@ -55,3 +55,17 @@ test('NOYA club Attention Management card is yellow, uses 0 из 26 progress and
  assert.match(html,/indicator\.textContent=finished\.size\+' из '\+total/);
  assert.match(html,/new Set\(result\.completed\.filter\(id=>lessonIds\.has\(id\)\)\)/);
 });
+
+test('NOYA club has one bottom navigation, without a duplicated sticky header menu',()=>{
+ const page=read('club.html');
+ assert.doesNotMatch(page,/club-quick-nav|Быстрый переход по разделам/);
+ assert.match(page,/<nav class="bottom" aria-label="Основная навигация">/);
+ assert.equal((page.match(/<nav class="bottom"/g)||[]).length,1);
+ for(const name of ['Главная','Участники','Библиотека','Магазин','Бонусы']){
+  assert.match(page,new RegExp('>'+name+'<\\/span>'));
+ }
+ assert.match(page,/href="\.\/club-demo\.html"/);
+ assert.match(page,/data-screen="route"/);
+ assert.match(page,/data-screen="ai"/);
+ assert.match(page,/id="attention-course-progress"[^>]*>0 из 26<\/span>/);
+});
