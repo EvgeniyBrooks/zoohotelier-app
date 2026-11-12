@@ -97,9 +97,10 @@ async function live(req,res){
    return res.status(200).json({ok:true,token:data.result.token});
   }
   if(action==='live_list'){
-   const [streams,favorites]=await Promise.all([
-    db('course_live_streams?select=id,title,description,cover_url,cloudflare_video_id,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=200'),
-    db('course_live_favorites?select=stream_id&student_id=eq.'+student+'&limit=500')
+   const [streams,favorites,views]=await Promise.all([
+    db('course_live_streams?select=id,title,description,cover_url,cloudflare_video_id,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=1000'),
+    db('course_live_favorites?select=stream_id&student_id=eq.'+student+'&limit=1000'),
+    db('course_live_views?select=stream_id&student_id=eq.'+student+'&limit=1000')
    ]);
    const signed=await Promise.all(streams.map(async stream=>{
     let cover=stream.cover_url;
@@ -112,7 +113,7 @@ async function live(req,res){
     }
     return {id:stream.id,title:stream.title,description:stream.description,cover_url:cover,sort_order:stream.sort_order};
    }));
-   return res.status(200).json({ok:true,streams:signed,favorites:favorites.map(f=>f.stream_id)});
+   return res.status(200).json({ok:true,streams:signed,favorites:favorites.map(f=>f.stream_id),watched:views.map(v=>v.stream_id)});
   }
   const streamId=req.body.streamId;
   if(typeof streamId!=='string'||!/^[a-f0-9-]{36}$/i.test(streamId))throw fail(400,'Invalid stream');
@@ -123,6 +124,11 @@ async function live(req,res){
    if(req.body.favorite)await db('course_live_favorites?on_conflict=student_id,stream_id','POST',{student_id:student,stream_id:streamId});
    else await db('course_live_favorites?student_id=eq.'+student+'&stream_id=eq.'+streamId,'DELETE');
    return res.status(200).json({ok:true});
+  }
+  if(action==='live_mark_watched'){
+   // Authenticated Telegram user and the published stream were validated above.
+   await db('course_live_views?on_conflict=student_id,stream_id','POST',{student_id:student,stream_id:streamId});
+   return res.status(200).json({ok:true,watched:true});
   }
   if(action==='live_watch'){
    if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Video service unavailable');
