@@ -104,11 +104,27 @@ async function setupNoyaBilling(){
  const queryTrial=new URLSearchParams(location.search).get('trial');
  const code=typeof queryTrial==='string'&&/^[A-Za-z0-9_-]{12,70}$/.test(queryTrial)?queryTrial:
   /^trial_[A-Za-z0-9_-]{12,70}$/.test(startParam)?startParam.slice(6):null;
+ const queryReferral=new URLSearchParams(location.search).get('ref');
+ const referralStart=startParam||new URLSearchParams(location.search).get('tgWebAppStartParam')||'';
+ const referralCode=/^[a-f0-9]{24}$/.test(queryReferral||'')?queryReferral:
+   /^ref_[a-f0-9]{24}$/.test(referralStart)?referralStart.slice(4):null;
  if(!initData){hide();return;}
  const begin=async()=>{
   retry.hidden=true;paymentButton.hidden=true;paymentUrl='';
   wait.hidden=false;state.textContent='Проверяем доступ…';
   try{
+   if(referralCode){
+    // Record the invite BEFORE creating a Prodamus checkout link. This
+    // only attributes a referral; NOINCOINS are earned after verified payment.
+    // The recipient identity comes from Telegram's signed initData.
+    try{
+     await fetch('/api/club-shop',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'referral_claim',initData,referralCode}),
+      cache:'no-store'
+     });
+    }catch(error){console.warn('NOYA referral claim unavailable');}
+   }
    if(code){
     const redeem=await fetch('/api/club-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem',initData,code}),cache:'no-store'});
     if(redeem.ok){lockTrialCourse();history.replaceState(null,'',location.pathname+location.hash);hide();return;}
