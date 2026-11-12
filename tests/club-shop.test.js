@@ -74,6 +74,20 @@ function network(options={}){
    return new Response(JSON.stringify(state.orders.length?state.orders:[...(options.orders||[])]));
   }
   if(p.endsWith('/noya_review_order_events'))return new Response(null,{status:204});
+  if(p.endsWith('/noya_coin_sync'))return new Response(JSON.stringify([{balance:100,lifetime_earned:100,lifetime_spent:0}]));
+  if(p.endsWith('/noya_coin_redeem')){
+   const payload=JSON.parse(request.body);
+   assert.equal(payload.p_item_code,'walk_checklist');
+   assert.equal(Object.hasOwn(payload,'coins'),false);
+   return new Response(JSON.stringify([{applied:true,balance:20,item_code:'walk_checklist'}]));
+  }
+  if(p.endsWith('/noya_coin_store_items'))return new Response(JSON.stringify([
+   {code:'walk_checklist',title:'Чек-лист: спокойная прогулка',description:'Первый бонус',cost:80,content:'SECRET PURCHASED MATERIAL',sort_order:1},
+   {code:'attention_week',title:'7 дней: план на внимание',description:'План',cost:150,content:'UNREDEEMED SECRET',sort_order:2}
+  ]));
+  if(p.endsWith('/noya_coin_redemptions'))return new Response(JSON.stringify(options.claimed?[{item_code:'walk_checklist',paid_coins:80,created_at:'2026-11-12T00:00:00Z'}]:[]));
+  if(p.endsWith('/noya_coin_ledger'))return new Response(JSON.stringify([{coins:100,reason:'Стартовый бонус',created_at:'2026-11-12T00:00:00Z'}]));
+
   throw Error('Unexpected DB '+p);
  };
  return {state,restore(){global.fetch=old}};
@@ -162,4 +176,54 @@ test('app has a shop navigation and never pretends shop purchases are enabled',(
  assert.match(ui,/Оплата разборов скоро появится/);
  assert.match(api,/purchaseEnabled:false/);
  assert.doesNotMatch(api,/action==='purchase'/);
+});
+
+test('NOINCOINS wallet verifies user identity and never discloses locked paid bonus content',async()=>{
+ const mock=network({member:true});
+ try{
+  const wallet=await invoke('GET','coins');
+  assert.equal(wallet.statusCode,200);
+  assert.equal(wallet.body.currency,'НОИНКОИНЫ');
+  assert.equal(wallet.body.balance,100);
+  assert.equal(wallet.body.items[0].cost,80);
+  assert.equal(wallet.body.items[0].owned,false);
+  assert.equal(Object.hasOwn(wallet.body.items[0],'content'),false);
+  assert.equal(wallet.body.history.length,1);
+ }finally{mock.restore();}
+});
+
+test('NOINCOINS redemption accepts only server-owned prices, not client-supplied coin amounts',async()=>{
+ const mock=network({member:true,claimed:true});
+ try{
+  const redeem=await invoke('POST','coin_redeem',{itemCode:'walk_checklist',coins:-999999});
+  assert.equal(redeem.statusCode,200);
+  assert.equal(redeem.body.applied,true);
+  assert.equal(redeem.body.wallet.items[0].content,'SECRET PURCHASED MATERIAL');
+  assert.equal(Object.hasOwn(redeem.body.wallet.items[1],'content'),false);
+  const other=await invoke('POST','coin_redeem',{itemCode:'different-secret'});
+  assert.equal(other.statusCode,500); // mocked RPC accepts only the first known item
+ }finally{mock.restore();}
+});
+
+test('without paid or trial club access, NOINCOINS cannot be earned or spent',async()=>{
+ const mock=network();
+ try{
+  const denied=await invoke('GET','coins');
+  assert.equal(denied.statusCode,403);
+  const spend=await invoke('POST','coin_redeem',{itemCode:'walk_checklist'});
+  assert.equal(spend.statusCode,403);
+  assert.equal(mock.state.calls.some(x=>x.path.endsWith('/noya_coin_sync')),false);
+ }finally{mock.restore();}
+});
+
+test('NOINCOINS shop contains wallet and a working earned bonus redemption control',()=>{
+ const root=path.join(__dirname,'..');
+ const html=fs.readFileSync(path.join(root,'shop.html'),'utf8');
+ const ui=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
+ assert.match(html,/data-tab="coins"/);
+ assert.match(html,/shop-coins-balance/);
+ assert.match(html,/НОИНКОИНЫ/);
+ assert.match(ui,/coin_redeem/);
+ assert.match(ui,/data\.balance/);
+ assert.match(ui,/item\.content/);
 });
