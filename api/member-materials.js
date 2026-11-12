@@ -28,6 +28,22 @@ async function db(resource,method='GET',payload){
 }
 const activePeriod=(s,now)=>(!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&(!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now);
 const keyFor=(type,id)=>type+':'+id;
+async function signedThumbnail(id){
+ if(typeof id!=='string'||!/^[a-f0-9]{32}$/i.test(id))return null;
+ const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
+ if(!account||!token)return null;
+ try{
+  const res=await fetch('https://api.cloudflare.com/client/v4/accounts/'+account+'/stream/'+id+'/token',{
+   method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),
+   signal:AbortSignal.timeout(5000)
+  });
+  if(!res.ok)return null;
+  const data=await res.json();
+  if(!data?.success||!data?.result?.token)return null;
+  return 'https://customer-9y0wom20nneqpu4g.cloudflarestream.com/'+encodeURIComponent(data.result.token)+'/thumbnails/thumbnail.jpg';
+ }catch{return null;}
+}
 export default async function handler(req,res){
  res.setHeader('Cache-Control','private,no-store');
  if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Use POST'})}
@@ -57,22 +73,29 @@ export default async function handler(req,res){
     query.push(db('course_blocks?select=id,title&course_id=eq.'+courseId+'&limit=100'));
     query.push(db('lessons?select=id,title,block_id,day_number,video_url&is_published=eq.true&order=day_number.asc&limit=1000'));
    }else query.push(Promise.resolve([]),Promise.resolve([]));
-   if(canLive)query.push(db('course_live_streams?select=id,title,cover_url,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=1000'));else query.push(Promise.resolve([]));
-   if(canClub)query.push(db('club_lessons?select=id,title,topic,sort_order&is_published=eq.true&order=sort_order.asc&limit=1000'));else query.push(Promise.resolve([]));
+   if(canLive)query.push(db('course_live_streams?select=id,title,cover_url,cloudflare_video_id,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=1000'));else query.push(Promise.resolve([]));
+   if(canClub)query.push(db('club_lessons?select=id,title,topic,sort_order,cloudflare_video_id&is_published=eq.true&order=sort_order.asc&limit=1000'));else query.push(Promise.resolve([]));
    query.push(db('noya_material_state?select=material_type,material_id,favorited,completed,last_viewed_at,updated_at&student_id=eq.'+student+'&limit=5000'));
    const [blocks,lessons,live,club,states]=await Promise.all(query);
    const blockMap=new Map(blocks.map(b=>[b.id,b.title]));
    const materials=[
-    ...lessons.filter(l=>blockMap.has(l.block_id)).map(l=>({type:'course',id:l.id,title:l.title,folder:blockMap.get(l.block_id)||'Управление вниманием',cover:null})),
-    ...live.map(l=>({type:'live',id:l.id,title:l.title,folder:'Прямые эфиры',cover:typeof l.cover_url==='string'&&l.cover_url.startsWith('https://')?l.cover_url:null})),
-    ...club.map(l=>({type:'club',id:l.id,title:l.title,folder:'Клубные уроки',cover:null}))
+    ...lessons.filter(l=>blockMap.has(l.block_id)).map(l=>({type:'course',id:l.id,title:l.title,folder:blockMap.get(l.block_id)||'Управление вниманием',cover:null,videoId:l.video_url})),
+    ...live.map(l=>({type:'live',id:l.id,title:l.title,folder:'Прямые эфиры',cover:typeof l.cover_url==='string'&&l.cover_url.startsWith('https://')?l.cover_url:null,videoId:l.cloudflare_video_id})),
+    ...club.map(l=>({type:'club',id:l.id,title:l.title,folder:'Клубные уроки',cover:null,videoId:l.cloudflare_video_id}))
    ];
    const stateMap=new Map(states.map(s=>[keyFor(s.material_type,s.material_id),s]));
    const items=materials.map(item=>{
     const state=stateMap.get(keyFor(item.type,item.id));
     return {...item,favorited:state?.favorited===true,completed:state?.completed===true,lastViewedAt:state?.last_viewed_at||null,updatedAt:state?.updated_at||null};
    });
-   return res.status(200).json({ok:true,items,counts:{history:items.filter(i=>i.lastViewedAt).length,favorites:items.filter(i=>i.favorited).length,completed:items.filter(i=>i.completed).length}});
+   // Resolve signed video thumbnails only for materials the member has used.
+   // The full catalog remains fast and no private Cloudflare identifiers are sent to the browser.
+   const featured=items.filter(i=>!i.cover&&i.videoId&&(i.lastViewedAt||i.favorited||i.completed))
+    .sort((a,b)=>Date.parse(b.lastViewedAt||b.updatedAt||0)-Date.parse(a.lastViewedAt||a.updatedAt||0))
+    .slice(0,30);
+   await Promise.all(featured.map(async item=>{item.cover=await signedThumbnail(item.videoId);}));
+   const safeItems=items.map(({videoId,...item})=>item);
+   return res.status(200).json({ok:true,items:safeItems,counts:{history:items.filter(i=>i.lastViewedAt).length,favorites:items.filter(i=>i.favorited).length,completed:items.filter(i=>i.completed).length}});
   }
   if(!['touch','favorite','complete','get'].includes(action))throw fail(400,'Неизвестная команда');
   const type=req.body?.type,id=req.body?.id;
