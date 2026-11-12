@@ -142,6 +142,13 @@
     const subscription = ready ? account.subscription : null;
     const active = subscription?.status === 'active';
     const months = ready && Number.isInteger(account.loyalty?.unlockedMonths) ? Math.min(12, Math.max(0, account.loyalty.unlockedMonths)) : 0;
+    // Rank month begins at 1 for a new paid member. Reward progress stays at 0
+    // until the first full membership month has finished.
+    const rankMonth = active ? (
+      Number.isInteger(account.loyalty?.membershipMonth)
+        ? Math.min(12, Math.max(1, account.loyalty.membershipMonth))
+        : Math.min(12, months + 1)
+    ) : 0;
     let label = 'Проверяем…';
     let summary = 'Загружаем подписку…';
     let message = summary;
@@ -169,7 +176,10 @@
         label = 'Не оформлена';summary = 'Без подписки';message = 'Подписка ещё не оформлена';note = 'После оформления здесь появятся срок доступа и твой прогресс в клубе.';
       }
     }
-    setText('[data-account-level]', months ? LEVELS[months - 1] : ready ? 'Участник' : 'Аккаунт');
+    setText('[data-account-level]', rankMonth ? LEVELS[rankMonth - 1] : ready && subscription?.status === 'trial' ? 'Пробный доступ' : ready ? 'Участник' : 'Аккаунт');
+    document.querySelectorAll('[data-account-level]').forEach(el => {
+      el.title = rankMonth ? 'Месяц участия: ' + rankMonth + ' из 12' : '';
+    });
     setText('[data-account-summary]', summary);
     byId('account-subscription-status').textContent = label;
     byId('account-subscription-status').dataset.active = String(active);
