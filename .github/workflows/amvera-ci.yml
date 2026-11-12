@@ -1,0 +1,32 @@
+name: NOYA Amvera migration checks
+on:
+  push:
+    branches: [feature/amvera-migration]
+  pull_request:
+    paths:
+      - server.cjs
+      - amvera.yml
+      - package.json
+      - api/**
+      - lib/**
+      - tests/amvera-server.test.cjs
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Validate server and handler syntax
+        run: |
+          node --check server.cjs
+          for f in api/*.js lib/*.js; do node --check "$f"; done
+      - name: Test Amvera HTTP adapter
+        run: node --test tests/amvera-server.test.cjs
+      - name: Run existing NOYA regression tests
+        run: node --test tests/*.test.js
