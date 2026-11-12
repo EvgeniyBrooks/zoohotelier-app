@@ -42,18 +42,18 @@ test('legacy course Students and Cohorts administrator dashboard is removed from
  assert.match(page,/УПРАВЛЕНИЕ ВНИМАНИЕМ/);
 });
 
-test('NOYA club Attention Management card is yellow, uses 0 из 26 progress and deep-links to course',()=>{
+test('NOYA club Attention Management card is yellow, loads dynamic progress and deep-links to course',()=>{
  const html=read('club.html');
  assert.doesNotMatch(html,/Отдельный продукт/);
  assert.doesNotMatch(html,/<h2>МОЙ КУРС<\/h2>/);
  assert.match(html,/attention-course-card/);
  assert.match(html,/background:var\(--accent\);color:#111/);
  assert.match(html,/КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ/);
- assert.match(html,/id="attention-course-progress"[^>]*>0 из 26<\/span>/);
+ assert.match(html,/id="attention-course-progress"[^>]*>— из —<\/span>/);
  assert.match(html,/href="\.\/index\.html">Перейти в курс/);
- assert.match(html,/action:'course_progress',initData/);
- assert.match(html,/indicator\.textContent=finished\.size\+' из '\+total/);
- assert.match(html,/new Set\(result\.completed\.filter\(id=>lessonIds\.has\(id\)\)\)/);
+ assert.match(html,/action:'folder_summary',initData/);
+ assert.match(html,/courseIndicator\.textContent=course\.watched\+' из '\+course\.total/);
+ assert.match(html,/liveIndicator\.textContent='✓ '\+live\.watched\+' ИЗ '\+live\.total/);
 });
 
 test('NOYA club has one bottom navigation, without a duplicated sticky header menu',()=>{
@@ -67,7 +67,7 @@ test('NOYA club has one bottom navigation, without a duplicated sticky header me
  assert.match(page,/href="\.\/club-demo\.html"/);
  assert.match(page,/data-screen="route"/);
  assert.match(page,/data-screen="ai"/);
- assert.match(page,/id="attention-course-progress"[^>]*>0 из 26<\/span>/);
+ assert.match(page,/id="attention-course-progress"[^>]*>— из —<\/span>/);
 });
 
 test('NOYA home starts with feature tiles then a single yellow course card without extra labels',()=>{
@@ -79,7 +79,7 @@ test('NOYA home starts with feature tiles then a single yellow course card witho
  assert.equal((home.match(/class="attention-course-card"/g)||[]).length,1);
  assert.doesNotMatch(home,/ТВОЙ КУРС|ТВОЯ СОБАКА-КОМПАНЬОН|МАГАЗИН РАЗБОРОВ|Отдельный продукт/);
  assert.match(home,/КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ/);
- assert.match(home,/0 из 26/);
+ assert.match(home,/attention-course-count/);
  assert.match(page,/<nav class="bottom"/);
  assert.doesNotMatch(page,/trajectory-title|trajectory-action|trajectory-link/);
 });
@@ -90,10 +90,10 @@ test('NOYA home places recordings into a standalone folder below Attention Manag
  const course=read('index.html');
  const live=read('course-live.html');
  assert.ok(home.indexOf('class="tiles"')<home.indexOf('class="attention-course-card"'));
- assert.ok(home.indexOf('class="attention-course-card"')<home.indexOf('noya-material-folder'));
- assert.match(home,/class="noya-material-folder" href="\.\/course-live\.html"/);
+ assert.ok(home.indexOf('class="attention-course-card"')<home.indexOf('noya-material-folders'));
+ assert.match(home,/class="noya-media-folder" href="\.\/course-live\.html"/);
  assert.match(home,/ПРЯМЫЕ ЭФИРЫ/);
- assert.match(home,/Записи встреч и разборы с Евгением/);
+ assert.match(home,/class="noya-media-folder-title">ПРЯМЫЕ ЭФИРЫ<\/strong>/);
  assert.doesNotMatch(course,/href="\.\/course-live\.html"|ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ/);
  assert.match(live,/class="back" href="\.\/club\.html#home"/);
 });
