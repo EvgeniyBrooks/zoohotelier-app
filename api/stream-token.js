@@ -38,6 +38,16 @@ async function live(req,res){
    (!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
   if(!admins.length&&!paidClub&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   const action=req.body.action;
+  // Share course/live completion with the unified personal library.
+  async function mirrorState(type,id,field,value){
+    const filter='noya_material_state?select=favorited,completed,last_viewed_at&student_id=eq.'+student+'&material_type=eq.'+type+'&material_id=eq.'+id+'&limit=1';
+    const prior=(await db(filter))[0]||{};
+    const row={student_id:student,material_type:type,material_id:id,
+      favorited:field==='favorited'?value:prior.favorited===true,
+      completed:field==='completed'?value:prior.completed===true,
+      last_viewed_at:prior.last_viewed_at||null,updated_at:new Date().toISOString()};
+    await db('noya_material_state?on_conflict=student_id,material_type,material_id','POST',row);
+  }
   if(action==='course_catalog'){
    const blocks=await db('course_blocks?select=id,title,block_number&course_id=eq.'+courseId+'&order=block_number.asc&limit=30');
    const allowed=new Set(blocks.map(b=>b.id));
@@ -79,6 +89,7 @@ async function live(req,res){
    if(!blocks.length)throw fail(404,'Lesson unavailable');
    if(completed)await db('course_lesson_completions?on_conflict=student_id,lesson_id','POST',{student_id:student,lesson_id:lessonId});
    else await db('course_lesson_completions?student_id=eq.'+student+'&lesson_id=eq.'+lessonId,'DELETE');
+   await mirrorState('course',lessonId,'completed',completed);
    return res.status(200).json({ok:true,completed});
   }
   if(action==='course_watch'){
@@ -140,11 +151,13 @@ async function live(req,res){
    if(typeof req.body.favorite!=='boolean')throw fail(400,'Invalid favorite');
    if(req.body.favorite)await db('course_live_favorites?on_conflict=student_id,stream_id','POST',{student_id:student,stream_id:streamId});
    else await db('course_live_favorites?student_id=eq.'+student+'&stream_id=eq.'+streamId,'DELETE');
+   await mirrorState('live',streamId,'favorited',req.body.favorite);
    return res.status(200).json({ok:true});
   }
   if(action==='live_mark_watched'){
    // Authenticated Telegram user and the published stream were validated above.
    await db('course_live_views?on_conflict=student_id,stream_id','POST',{student_id:student,stream_id:streamId});
+   await mirrorState('live',streamId,'completed',true);
    return res.status(200).json({ok:true,watched:true});
   }
   if(action==='live_watch'){
