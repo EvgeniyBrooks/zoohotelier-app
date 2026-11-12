@@ -26,15 +26,18 @@ module.exports=async(req,res)=>{
   const user=verifyTelegram(raw,process.env.NOYA_TELEGRAM_BOT_TOKEN);
   const student=await findStudent(user,req.method==='POST'&&req.body?.action==='redeem');
   if(req.method==='GET'){
-   if(!student)return reply(res,200,{ok:true,trialActive:false,paidActive:false});
-   const [trials,subs]=await Promise.all([
-    db('noya_club_trials?select=starts_at,ends_at&student_id=eq.'+student+'&limit=1'),
-    db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+student+'&status=eq.active&limit=20')
+   // Admin preview is based exclusively on verified Telegram initData and the
+   // server-owned admins table, never an ID or role supplied by the client.
+   const [admins,trials,subs]=await Promise.all([
+    db('admins?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1'),
+    student?db('noya_club_trials?select=starts_at,ends_at&student_id=eq.'+student+'&limit=1'):Promise.resolve([]),
+    student?db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+student+'&status=eq.active&limit=20'):Promise.resolve([])
    ]);
+   const adminPreview=admins.length>0;
    const now=Date.now();
    const trialActive=trials.some(t=>Date.parse(t.starts_at)<=now&&Date.parse(t.ends_at)>now);
    const paidActive=subs.some(t=>t.status==='active'&&(!t.start_date||Date.parse(t.start_date)<=now)&&(!t.end_date||Date.parse(t.end_date)>now));
-   return reply(res,200,{ok:true,trialActive:trialActive&&!paidActive,paidActive,trialEndsAt:trialActive&&!paidActive?trials[0].ends_at:null,courseEnabled:paidActive});
+   return reply(res,200,{ok:true,adminPreview,trialActive:trialActive&&!paidActive,paidActive,trialEndsAt:trialActive&&!paidActive?trials[0].ends_at:null,courseEnabled:paidActive});
   }
   if(req.body?.action==='redeem'){
    const code=req.body?.code;
