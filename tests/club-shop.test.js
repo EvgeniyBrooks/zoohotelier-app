@@ -65,7 +65,7 @@ function network(options={}){
    }
    return new Response(JSON.stringify(state.orders.length?state.orders:[...(options.orders||[])]));
   }
-  if(p.endsWith('/noya_review_order_events'))return new Response('',{status:204});
+  if(p.endsWith('/noya_review_order_events'))return new Response(null,{status:204});
   throw Error('Unexpected DB '+p);
  };
  return {state,restore(){global.fetch=old}};
@@ -149,7 +149,7 @@ test('app has a shop navigation and never pretends shop purchases are enabled',(
  const api=fs.readFileSync(path.join(root,'api','club-shop.js'),'utf8');
  assert.match(html,/href="\.\/shop\.html"/);
  assert.match(shop,/noya-shop-reviewer-tab/);
- assert.match(shop,/noya-shop.*js/);
+ assert.match(shop,/club-shop\.js\?v=1/);
  assert.match(ui,/Оплата разборов скоро появится/);
  assert.match(api,/purchaseEnabled:false/);
  assert.doesNotMatch(api,/action==='purchase'/);
