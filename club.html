@@ -227,7 +227,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 <button class="nav" data-screen="library"><span class="ico">▥</span><span>Библиотека</span></button>
 <a class="nav" href="./shop.html"><span class="ico">▣</span><span>Магазин</span></a>
 <button class="nav" data-screen="bonuses"><span class="ico">☆</span><span>Бонусы</span></button>
-<button class="nav" id="admin-nav" data-screen="admin" style="display:none"><span class="ico">⚙</span><span>Админ</span></button></nav><script>
+<button class="nav" id="admin-nav" data-screen="admin" style="display:none"><span class="ico">⚙</span><span>Админ</span></button></nav><script src="./assets/noya-video-actions.js?v=1"></script><script>
 let clubLessonCache=[];let dogProgress=new Map();let clubDogs=[];let clubDiagnostics=[];let routeProgress=new Map();
 const screens=[...document.querySelectorAll('.screen')],nav=[...document.querySelectorAll('.nav')];
 function showScreen(id){if(!screens.some(s=>s.id===id))id='home';screens.forEach(s=>s.hidden=s.id!==id);nav.forEach(n=>{if(n.dataset.screen===id)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current')});history.replaceState(null,'','#'+id);window.scrollTo(0,0)}
@@ -464,6 +464,8 @@ async function loadClubLessons(){
    const p=document.createElement('p');p.textContent=lesson.description||'Урок NOYA CLUB';card.append(p);
    const b=document.createElement('button');b.className='button';b.textContent='Открыть урок';b.onclick=()=>openClubLesson(lesson.id,lesson.title);card.append(b);
    const done=document.createElement('button');done.className='button secondary';done.style.marginTop='8px';done.dataset.completeLesson=lesson.id;done.textContent=dogProgress.has(lesson.id)?'✓ Пройдено':'Отметить пройденным';done.onclick=()=>setLessonProgress(lesson.id,!dogProgress.has(lesson.id));card.append(done);
+   // Favorite and completed controls are shared across all video types.
+   if(window.NOYAMaterials)card.append(window.NOYAMaterials.controls('club',lesson.id).element);
    el.append(card);
   }
   updateProgressSummary();
@@ -566,6 +568,10 @@ async function openClubLesson(id,title){
   const player=document.createElement('iframe');player.title=title;player.allow='accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture';player.allowFullscreen=true;player.referrerPolicy='no-referrer';player.style.cssText='width:100%;aspect-ratio:16/9;border:0';
   player.src='https://customer-9y0wom20nneqpu4g.cloudflarestream.com/'+encodeURIComponent(data.token)+'/iframe';
   modal.append(player);
+  if(window.NOYAMaterials){
+   modal.append(window.NOYAMaterials.controls('club',id).element);
+   window.NOYAMaterials.touch('club',id).catch(error=>console.warn('Club history unavailable:',error.message));
+  }
   const close=document.createElement('button');close.className='button secondary';close.textContent='Закрыть';close.onclick=()=>modal.close();modal.append(close);
   modal.addEventListener('close',()=>modal.remove());document.body.append(modal);modal.showModal();
  }catch(e){alert(e.message)}
