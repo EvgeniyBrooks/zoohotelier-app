@@ -275,7 +275,19 @@ async function loadClubProfile(){
   routeSelect.value=clubDiagnostics[0]?.dog_id||clubDogs[0].id;
   await loadRoute();
   const select=document.getElementById("progress-dog");
-  for(const d of data.dogs){const opt=document.createElement("option"let noyaFolderProgressLoading=false;
+  for(const d of data.dogs){const opt=document.createElement("option");opt.value=d.id;opt.textContent=d.name;select.append(opt)}
+  select.value=data.diagnostics?.[0]?.dog_id||data.dogs[0].id;
+  await loadDogProgress();
+  const latest=data.diagnostics?.[0];
+  const dog=latest?data.dogs.find(d=>d.id===latest.dog_id):data.dogs[0];
+  if(!dog)return;
+
+ }catch(e){console.warn("Club profile unavailable")}
+}
+checkNoyaTelegram();
+loadClubProfile();
+loadClubLessons();
+let noyaFolderProgressLoading=false;
 async function loadAttentionCourseProgress(){
  const courseIndicator=document.getElementById('attention-course-progress');
  const liveIndicator=document.getElementById('noya-live-folder-progress');
@@ -302,14 +314,7 @@ async function loadAttentionCourseProgress(){
  }catch(error){console.warn('Folder progress unavailable');}
  finally{noyaFolderProgressLoading=false;}
 }
-published===true);
-  const lessonIds=new Set(published.map(lesson=>lesson.id));
-  const finished=new Set(result.completed.filter(id=>lessonIds.has(id)));
-  const total=published.length||26;
-  indicator.textContent=finished.size+' из '+total;
-  indicator.setAttribute('aria-label','Пройдено '+finished.size+' из '+total+' уроков');
- }catch(error){console.warn('Course progress unavailable');}
-}
+
 loadAttentionCourseProgress();
 window.addEventListener('pageshow',loadAttentionCourseProgress);
 window.addEventListener('focus',loadAttentionCourseProgress);
