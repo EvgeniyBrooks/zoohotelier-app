@@ -25,6 +25,13 @@ jobs:
           node --check api/club-video-token.js
           node --check api/club-lessons.js
           node --check api/club-progress.js
+          node --check api/club-members.js
+          node --check api/member-materials.js
+          node --check api/stream-token.js
+          node --check assets/noya-library.js
+          node --check assets/noya-members.js
+          node --check assets/noya-video-actions.js
+          node --check assets/club-account.js
           node --check lib/club-reward-pdf.js
           node --check lib/club-checkout.js
           node --check lib/club-prodamus-webhook.js
@@ -35,7 +42,7 @@ jobs:
         run: |
           node - <<'NODE'
           const fs=require('node:fs'),vm=require('node:vm');
-          for(const file of ['club.html','club-demo.html']){
+          for(const file of ['club.html','club-demo.html','index.html','course-live.html','about.html','faq.html','community-rules.html']){
             const html=fs.readFileSync(file,'utf8');
             const matches=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
             if(!matches.length)throw new Error('No inline script in '+file);
