@@ -268,5 +268,5 @@ test('referral section is above redeemable goods with copy/share controls',()=>{
  assert.match(shop,/NoyaClubBrooksBot\?startapp=ref_/);
  assert.match(shop,/shop-referral-rewarded/);
  assert.match(club,/action:'referral_claim',initData,referralCode/);
- assert.ok(club.indexOf("action:'referral_claim'")<club.indexOf("const status=await fetch('/api/club-checkout?status=1'"));
+ assert.ok(club.indexOf("action:'referral_claim'")<club.indexOf("const status=await billingFetch('/api/club-checkout?status=1'"));
 });
