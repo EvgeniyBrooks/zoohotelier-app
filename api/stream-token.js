@@ -55,7 +55,7 @@ async function live(req,res){
   if(action==='course_lesson_details'){
    const lessonId=req.body.lessonId;
    if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId))throw fail(400,'Invalid lesson');
-   const lessons=await db('lessons?select=id,title,description,homework,crystal_reward,is_published,video_url,block_id&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
+   const lessons=await db('lessons?select=id,title,description,homework,is_published,video_url,block_id&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
    if(!lessons.length)throw fail(404,'Lesson unavailable');
    const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
    if(!blocks.length)throw fail(404,'Lesson unavailable');
