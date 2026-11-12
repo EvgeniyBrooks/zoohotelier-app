@@ -5,6 +5,7 @@
  const initData=tg?.initData||'';
  const message=document.getElementById('shop-message');
  const screens={catalog:document.getElementById('shop-catalog'),
+  coins:document.getElementById('shop-coins'),
   orders:document.getElementById('shop-orders'),queue:document.getElementById('shop-queue')};
  let isAdmin=false,isReviewer=false;
  const labels={
@@ -47,10 +48,61 @@
   document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===name)));
   history.replaceState(null,'','#'+name);
   setMessage('');
+  if(name==='coins')loadCoins();
   if(name==='orders')loadOrders();
   if(name==='queue')loadQueue();
  }
  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+ async function loadCoins(){
+  const balance=document.getElementById('shop-coins-balance');
+  const list=document.getElementById('shop-coin-items');
+  const history=document.getElementById('shop-coin-history');
+  list.replaceChildren();history.replaceChildren();
+  try{
+   setMessage('Загружаем кошелёк…');
+   const data=await request('coins');
+   balance.textContent=new Intl.NumberFormat('ru-RU').format(data.balance);
+   const owned=data.items.filter(x=>x.owned);
+   for(const item of data.items){
+    const card=el('article','card'+(item.owned?' highlight':''));
+    card.append(el('div','kicker',item.owned?'КУПЛЕНО':'БОНУСНЫЙ МАГАЗИН'),
+     el('h3','',item.title),el('p','',item.description),
+     el('div','price',new Intl.NumberFormat('ru-RU').format(item.cost)+' 🪙'));
+    if(item.owned){
+     const details=el('details');
+     const summary=el('summary','', 'Открыть купленный материал');
+     const content=el('pre');
+     content.style.cssText='white-space:pre-wrap;overflow-wrap:break-word;font:13px/1.65 system-ui,sans-serif;color:#e6e6e6;margin-top:14px';
+     content.textContent=item.content||'Материал пока недоступен';
+     details.append(summary,content);card.append(details);
+    }else{
+     const buy=button('Купить за '+item.cost+' НОИНКОИНОВ',async()=>{
+      if(!window.confirm('Обменять '+item.cost+' НОИНКОИНОВ на «'+item.title+'»?'))return;
+      const result=await request('coin_redeem',{itemCode:item.code},'POST');
+      setMessage(result.applied?'Бонус куплен! Он появился в кошельке.':'Этот бонус уже куплен.');
+      await loadCoins();
+     });
+     buy.disabled=data.balance<item.cost;
+     card.append(buy);
+     if(data.balance<item.cost)card.append(el('div','small','Не хватает '+(item.cost-data.balance)+' НОИНКОИНОВ'));
+    }
+    list.append(card);
+   }
+   if(!data.items.length)list.append(el('p','small','Бонусы появятся здесь.'));
+   const changes=Array.isArray(data.history)?data.history:[];
+   if(!changes.length)history.append(el('p','small','Операций пока нет.'));
+   changes.forEach(tx=>{
+    const row=el('div','card');
+    const n=Number(tx.coins)||0;
+    row.append(el('div','state',(n>0?'+':'')+n+' 🪙'),
+     el('div','',tx.reason),
+     el('div','small',new Date(tx.created_at).toLocaleDateString('ru-RU')));
+    history.append(row);
+   });
+   setMessage('');
+  }catch(e){setMessage(e.message);}
+ }
+ document.getElementById('shop-coins-reload').addEventListener('click',loadCoins);
  async function loadCatalog(){
   const data=await request('catalog');
   isAdmin=data.adminPreview===true;
