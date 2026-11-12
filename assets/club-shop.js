@@ -62,6 +62,13 @@
    setMessage('Загружаем кошелёк…');
    const data=await request('coins');
    balance.textContent=new Intl.NumberFormat('ru-RU').format(data.balance);
+   const referral=data.referral||{};
+   const code=String(referral.code||'');
+   const inviteUrl=/^[a-f0-9]{24}$/.test(code)?
+    'https://t.me/NoyaClubBrooksBot?startapp=ref_'+code:'';
+   document.getElementById('shop-referral-link').value=inviteUrl;
+   document.getElementById('shop-referral-pending').textContent=Number(referral.pending)||0;
+   document.getElementById('shop-referral-rewarded').textContent=Number(referral.rewarded)||0;
    const owned=data.items.filter(x=>x.owned);
    for(const item of data.items){
     const card=el('article','card'+(item.owned?' highlight':''));
@@ -102,6 +109,34 @@
    setMessage('');
   }catch(e){setMessage(e.message);}
  }
+ function getReferralLink(){
+  const value=document.getElementById('shop-referral-link').value;
+  if(!/^https:\/\/t\.me\/NoyaClubBrooksBot\?startapp=ref_[a-f0-9]{24}$/.test(value))
+   throw Error('Реферальная ссылка пока не готова');
+  return value;
+ }
+ document.getElementById('shop-referral-copy').addEventListener('click',async()=>{
+  try{
+   const link=getReferralLink();
+   if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(link);
+   else{
+    const input=document.getElementById('shop-referral-link');
+    input.focus();input.select();
+    if(!document.execCommand('copy'))throw Error('Скопируй ссылку из поля вручную');
+   }
+   setMessage('Реферальная ссылка скопирована!');
+  }catch(e){setMessage(e.message||'Скопируй ссылку вручную');}
+ });
+ document.getElementById('shop-referral-share').addEventListener('click',()=>{
+  try{
+   const link=getReferralLink();
+   const share='https://t.me/share/url?'+new URLSearchParams({
+    url:link,text:'Присоединяйся к NOYA CLUB! 🐕'
+   });
+   if(typeof tg?.openTelegramLink==='function')tg.openTelegramLink(share);
+   else window.location.assign(share);
+  }catch(e){setMessage(e.message||'Не удалось открыть приглашение');}
+ });
  document.getElementById('shop-coins-reload').addEventListener('click',loadCoins);
  async function loadCatalog(){
   const data=await request('catalog');
