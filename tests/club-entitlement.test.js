@@ -54,3 +54,73 @@ test('anonymous and unsigned promotions cannot activate a trial',async()=>{
   assert.equal(invalid.code,401);
  }finally{for(const k of ['NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','NOYA_TELEGRAM_BOT_TOKEN'])if(prev[k]===undefined)delete process.env[k];else process.env[k]=prev[k];}
 });
+
+test('verified administrator can preview NOYA without a paid club subscription',async()=>{
+ const originalEnv={...process.env};
+ Object.assign(process.env,{
+  NEXT_PUBLIC_SUPABASE_URL:'https://fake.supabase.co',
+  SUPABASE_SERVICE_ROLE_KEY:'test-service',
+  NOYA_TELEGRAM_BOT_TOKEN:'test-noya-trial-bot'
+ });
+ const endpoint=require('../api/club-trial.js');
+ const signed=signInit();
+ const previousFetch=global.fetch;
+ const seen=[];
+ global.fetch=async(url)=>{
+  const parsed=new URL(url),t=parsed.pathname.split('/').at(-1);
+  seen.push(t);
+  let value=[];
+  if(t==='students')value=[{id:'11111111-1111-4111-8111-111111111111'}];
+  if(t==='admins')value=[{id:'22222222-2222-4222-8222-222222222222'}];
+  return {ok:true,status:200,json:async()=>value};
+ };
+ const response=()=>({setHeader(){},status(n){this.code=n;return this},json(body){this.body=body;return this}});
+ try{
+  const res=response();
+  await endpoint({method:'GET',headers:{'x-telegram-init-data':signed}},res);
+  assert.equal(res.code,200);
+  assert.equal(res.body.adminPreview,true);
+  assert.equal(res.body.paidActive,false);
+  assert.equal(res.body.courseEnabled,false);
+  assert.deepEqual(seen.sort(),['admins','club_subscriptions','noya_club_trials','students'].sort());
+ }finally{
+  global.fetch=previousFetch;
+  for(const k of ['NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','NOYA_TELEGRAM_BOT_TOKEN'])
+   if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];
+ }
+});
+
+test('ordinary user cannot bypass payment through NOYA admin preview',async()=>{
+ const originalEnv={...process.env};
+ Object.assign(process.env,{
+  NEXT_PUBLIC_SUPABASE_URL:'https://fake.supabase.co',
+  SUPABASE_SERVICE_ROLE_KEY:'test-service',
+  NOYA_TELEGRAM_BOT_TOKEN:'test-noya-trial-bot'
+ });
+ const endpoint=require('../api/club-trial.js');
+ const previousFetch=global.fetch;
+ global.fetch=async(url)=>{
+  const t=new URL(url).pathname.split('/').at(-1);
+  return {ok:true,status:200,json:async()=>t==='students'?[{id:'11111111-1111-4111-8111-111111111111'}]:[]};
+ };
+ try{
+  const res={setHeader(){},status(n){this.code=n;return this},json(body){this.body=body;return this}};
+  await endpoint({method:'GET',headers:{'x-telegram-init-data':signInit()}},res);
+  assert.equal(res.code,200);
+  assert.equal(res.body.adminPreview,false);
+  assert.equal(res.body.paidActive,false);
+  assert.equal(res.body.trialActive,false);
+ }finally{
+  global.fetch=previousFetch;
+  for(const k of ['NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','NOYA_TELEGRAM_BOT_TOKEN'])
+   if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];
+ }
+});
+
+test('NOYA home hides payment redirect only after server confirms admin preview',()=>{
+ const source=read('club.html');
+ assert.match(source,/if\(t\.adminPreview===true\)\{hide\(\);return;\}/);
+ assert.match(source,/if\(t\.paidActive\)\{hide\(\);return;\}/);
+ assert.match(source,/if\(!response\.ok\|\|!data\.checkoutUrl\)/);
+ assert.match(TRIAL,/admins\?select=id&telegram_id=eq\./);
+});
