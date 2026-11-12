@@ -1,0 +1,13 @@
+{
+  "name": "noya-club-amvera",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NOYA CLUB web app and API for Amvera Cloud",
+  "scripts": {
+    "start": "node server.cjs",
+    "test:amvera": "node --test tests/amvera-server.test.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
