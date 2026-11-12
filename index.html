@@ -217,8 +217,6 @@
     .error { color:#bc1535; }
     .video-wrapper { border-radius:16px; }
     .news-card { display:none; }
-    #app > a[href="./course-live.html"] { border:1px solid #424242!important; border-radius:22px!important; }
-    #app > a[href="./course-live.html"] div:first-child { color:var(--course-yellow); }
     input, textarea, select { max-width:100%; }
     @media (max-width:420px) { .app{padding:20px 14px 70px} .card{padding:17px} h1{font-size:29px} }
 
@@ -309,7 +307,7 @@
 .week-thumb{isolation:isolate}
 .week-thumb:after{content:'▶';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0009;color:#fff;border:1px solid #fff8;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font-size:15px;pointer-events:none}
 
-.course-back-nav{display:flex;align-items:center;gap:12px;margin:0 0 16px;position:sticky;top:0;z-index:50;background:#090909ee;backdrop-filter:blur(12px);padding:9px 0 12px}.course-back-nav[hidden]{display:none!important}.course-back-nav button{border:1px solid #f5fa45;background:#171717;color:#f5fa45;border-radius:30px;padding:11px 18px;font-size:15px;font-weight:800;cursor:pointer;min-height:44px}.course-back-nav span{font-size:13px;font-weight:700;color:#ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.back-button{display:none!important}
+.course-club-return{display:inline-flex;align-items:center;justify-content:center;border:1px solid #f5fa45;border-radius:30px;padding:10px 17px;min-height:44px;color:#f5fa45;background:#151515;text-decoration:none;font-size:13px;font-weight:850;margin:0 0 18px}.course-club-return:focus-visible{outline:2px solid #f5fa45;outline-offset:3px}.course-back-nav{display:flex;align-items:center;gap:12px;margin:0 0 16px;position:sticky;top:0;z-index:50;background:#090909ee;backdrop-filter:blur(12px);padding:9px 0 12px}.course-back-nav[hidden]{display:none!important}.course-back-nav button{border:1px solid #f5fa45;background:#171717;color:#f5fa45;border-radius:30px;padding:11px 18px;font-size:15px;font-weight:800;cursor:pointer;min-height:44px}.course-back-nav span{font-size:13px;font-weight:700;color:#ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.back-button{display:none!important}
   </style>
 
 </head>
@@ -317,6 +315,8 @@
 <body>
 
   <div class="app">
+
+    <a class="course-club-return" href="./club.html#home" aria-label="Вернуться на главную NOYA CLUB">← На главную NOYA CLUB</a>
 
     <div class="header">
 
@@ -725,14 +725,6 @@ async function loadCourse() {
 
     }
 
-
-    html += `
-      <a href="./course-live.html" style="display:block;background:#181818;color:#fff;padding:20px;border-radius:18px;margin:24px 0;text-decoration:none;border:1px solid #444">
-        <div style="color:#f5fa45;font-weight:800;font-size:12px;letter-spacing:1.4px">ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ</div>
-        <div style="font-size:24px;font-weight:900;margin:8px 0">ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ</div>
-        <div style="color:#aaa">Отдельная библиотека записей · 3 записи</div>
-        <div style="color:#f5fa45;margin-top:12px">Открыть раздел →</div>
-      </a>`;
 
     app.innerHTML =
       html;
