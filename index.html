@@ -655,27 +655,6 @@ async function loadCourse() {
       </section>
       <div class="course-section-head"><span>▷ МОИ УРОКИ</span><small>26 УРОКОВ · 5 ЭТАПОВ</small></div>`;
     // ----------------------------------------------
-    // АДМИНКА
-    // ----------------------------------------------
-
-    if (window.isAdmin) {
-
-      html += `
-
-        <button
-          class="button"
-          onclick="loadAdmin()"
-          style="margin-bottom:16px;"
-        >
-          👨‍💼 Админка
-        </button>
-
-      `;
-
-    }
-
-
-    // ----------------------------------------------
     // НОВОСТИ
     // ----------------------------------------------
 
@@ -1213,63 +1192,11 @@ async function loadLesson(
 // АДМИНКА
 // ==================================================
 
+// Legacy course administration remains in API for future use, but
+// the old user/cohort dashboard is intentionally removed from the course UI.
 async function loadAdmin() {
-  setCourseBack(()=>loadCourse(),'Админка');
-
-  if (!window.isAdmin) {
-
-    alert(
-      "Доступ запрещён."
-    );
-
-    return;
-
-  }
-
-
-  const app =
-    document.getElementById("app");
-
-
-  app.innerHTML = `
-
-    <button
-      class="button back-button"
-      onclick="loadCourse()"
-    >
-      ← Назад
-    </button>
-
-
-    <div class="card">
-
-      <div class="label">
-        👨‍💼 АДМИНКА
-      </div>
-
-      <div class="lesson-title">
-        Панель администратора
-      </div>
-
-
-      <button
-        class="button"
-        onclick="loadStudents()"
-      >
-        👥 Ученики
-      </button>
-<button
-  class="button"
-  onclick="loadCohorts()"
->
-  📚 Потоки
-</button>
-    </div>
-
-  `;
-
+  await loadCourse();
 }
-
 
 // ==================================================
 // УЧЕНИКИ
