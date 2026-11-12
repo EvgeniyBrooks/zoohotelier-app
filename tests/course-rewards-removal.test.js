@@ -69,3 +69,16 @@ test('NOYA club has one bottom navigation, without a duplicated sticky header me
  assert.match(page,/data-screen="ai"/);
  assert.match(page,/id="attention-course-progress"[^>]*>0 из 26<\/span>/);
 });
+
+test('NOYA home starts with feature tiles then a single yellow course card without extra labels',()=>{
+ const page=read('club.html');
+ const home=page.slice(page.indexOf('<section id="home"'),page.indexOf('<section id="route"'));
+ assert.match(home,/<h1 id="home-title">НАЧНИ ЗДЕСЬ<\/h1>/);
+ assert.ok(home.indexOf('class="tiles"')<home.indexOf('class="attention-course-card"'));
+ assert.equal((home.match(/class="attention-course-card"/g)||[]).length,1);
+ assert.doesNotMatch(home,/ТВОЙ КУРС|ТВОЯ СОБАКА-КОМПАНЬОН|МАГАЗИН РАЗБОРОВ|Отдельный продукт/);
+ assert.match(home,/КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ/);
+ assert.match(home,/0 из 26/);
+ assert.match(page,/<nav class="bottom"/);
+ assert.doesNotMatch(page,/trajectory-title|trajectory-action|trajectory-link/);
+});
