@@ -25,7 +25,9 @@ async function db(path,method='GET',body=null,prefer=null){
   throw fail(502,'Database unavailable');
  }
  if(response.status===204)return [];
- return response.json();
+ const raw=await response.text();
+ if(!raw.trim())return [];
+ try{return JSON.parse(raw);}catch{throw fail(502,'Unexpected database response');}
 }
 async function cloudflare(path,method='GET',body=null){
  if(!CF()||!TOKEN())throw fail(503,'Video service is not configured');
