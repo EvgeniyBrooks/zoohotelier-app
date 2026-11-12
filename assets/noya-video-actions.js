@@ -18,6 +18,16 @@ async function request(action,type,id,value){
  if(!response.ok)throw Error(data.error||'Не удалось сохранить изменение');
  return data;
 }
+let stateCache=null,statesPending=null;
+function cacheKey(type,id){return type+':'+id;}
+async function getStates(){
+ if(stateCache)return stateCache;
+ if(!statesPending)statesPending=request('states').then(result=>{
+  stateCache=new Map((result.states||[]).map(item=>[cacheKey(item.type,item.id),item]));
+  return stateCache;
+ }).catch(error=>{statesPending=null;throw error;});
+ return statesPending;
+}
 async function touch(type,id){return request('touch',type,id);}
 function controls(type,id,options={}){
  const wrap=document.createElement('div');wrap.className='noya-material-actions';wrap.setAttribute('aria-label','Действия с видео');
@@ -42,13 +52,22 @@ function controls(type,id,options={}){
   try{
    const data=await request(action,type,id,desired);
    state=Object.assign({},state,data.state);
+   if(stateCache)stateCache.set(cacheKey(type,id),Object.assign({},state));
    if(typeof options.onChanged==='function')options.onChanged(action,Object.assign({},state),desired);
   }catch(e){report(e);}finally{busy=false;paint();}
  }
  favorite.onclick=()=>change('favorite');complete.onclick=()=>change('complete');
  busy=true;paint();
- request('get',type,id).then(data=>{state=Object.assign({},state,data.state);}).catch(report).finally(()=>{busy=false;paint();});
- return {element:wrap,read:()=>Object.assign({},state),refresh:async()=>{const data=await request('get',type,id);state=Object.assign({},state,data.state);paint();return state;}};
+ const loadState=options.initialState?Promise.resolve(options.initialState):
+  getStates().then(states=>states.get(cacheKey(type,id))||{favorited:false,completed:false});
+ loadState.then(data=>{state=Object.assign({},state,data);}).catch(report).finally(()=>{busy=false;paint();});
+ return {element:wrap,read:()=>Object.assign({},state),refresh:async()=>{
+  const data=await request('get',type,id);
+  state=Object.assign({},state,data.state);
+  if(stateCache)stateCache.set(cacheKey(type,id),Object.assign({},state));
+  paint();return state;
+ }};
 }
-window.NOYAMaterials={request,touch,controls};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){stateCache=null;statesPending=null;}});
+window.NOYAMaterials={request,touch,controls,getStates};
 })();
