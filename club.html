@@ -112,7 +112,16 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
 .noya-member-primary,.noya-member-secondary{flex:1;min-width:130px;text-align:center;text-decoration:none;font-size:13px;font-weight:850;border-radius:12px;padding:12px;border:0;cursor:pointer}
 .noya-member-primary{background:#f5fa45;color:#111}.noya-member-secondary{background:#343434;color:#fff}
-</style><script src="./assets/noya-members.js?v=1" defer></script></head><body>
+</style><script src="./assets/noya-members.js?v=1" defer></script><style>
+.noya-member-titlebar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:10px 0 20px}
+.noya-member-titlebar h1{margin:0;min-width:0;font:700 clamp(27px,7.1vw,42px)/1 Oswald,Impact,sans-serif;letter-spacing:-.7px}
+.noya-member-titlebar h1 span{color:#f5fa45}
+.noya-member-info-button{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:#191919;color:#f7f7f7;border:1px solid #373737;font:400 29px/1 system-ui,sans-serif}
+.noya-member-info-button:focus-visible{outline:2px solid #f5fa45;outline-offset:3px}
+.noya-member-tabs{margin-bottom:12px}
+.noya-my-member-card{margin-bottom:15px}
+.noya-member-points-info[hidden],.noya-member-edit[hidden]{display:none!important}
+</style></head><body>
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
  <span id="noya-payment-state">Открываем оплату…</span>
@@ -163,26 +172,20 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 <section id="route" class="screen" hidden><div class="eyebrow">NOYA / персональный путь</div><h1>МОЙ МАРШРУТ</h1><p>Направления подобраны по твоей последней анкете. Для каждой собаки маршрут отдельный.</p><label for="route-dog">Выбери собаку</label><select class="route-select" id="route-dog"><option value="">Нет собак</option></select><div id="route-status" class="notice" aria-live="polite">Загружаем персональный маршрут…</div><div id="route-topics"></div><a class="button secondary" href="./club-demo.html" style="margin-top:18px">Добавить собаку или обновить диагностику <span>↗</span></a></section>
 <section id="ai" class="screen" hidden><div class="eyebrow">NOYA / персональный помощник</div><h1>ИИ НОЯ</h1><div class="noya-intro"><img class="noya-avatar" src="data:image/webp;base64,UklGRpwDAABXRUJQVlA4IJADAADQFgCdASpgAGAAPqVGnUkmJCMqrjgMAVAUiWcAzYr1/lLEjHeICG6Vk6LFEvBAenHl/V2ocWfqBDwDMoWJmuekeaojmzf7rr1hazhgHH0YAJp2asQbV5StpZ5EHVPa+/EqKlq8KlMl7jz57ujSc1Xav61yOWcFPFMSbzy79d1Hu/qbshWtLkJkpZ1cxx/eTnjaXXjq3s8hr+++fPgNuRjpXHiW1NiYOrSmhAYo4r6HDPn23GIvpdUUoD5/fhiCcAD++qgI3WS/9BrWmA3mKv9ELuYmvV/y2pYomGA9SuA5xCoJ8sPYILjFaSDvHdd9HunPzosEcnj4uK63pX3VqjAJlcnERnxXifcrQqdLqoVp2HcuRBs9kmBL7ckb/Dl7XMWRh+DZqkDMHVNZNi3ZcnXpMfOE9GlxcRSVFUHbV58C+1qumm8OpJjGnjUFxpjeRmX7Yvouas+lVPySLp3YomWzu9sQqacMN3OXAppxaJwHchz2IGUKoFOr5VcRHt78FXAHI8WGl60kUCQw2OEvWKF8ZGA//CKCqaY1I0Wwj3T3wLRBRLyF8m9eyKSI1rr2Mc0qWkgwObYPt0FM+eEisSy/u7FBC4emk0wI6qxhDM8ig8wFKXrF+yzEmVToToNh6OA/S6E5CP0mCSVlQruJK2N1fvCxNqe9LDOWrsY99uhFrntQlsdf8KToLzHvd386L4URDUho86CGgMaIyTfToZnvrT/tBOykAYV1m6mFXYJMhQqMTjDVbwuPds47vUns4tRrrZe7AetdRl8VOmI5Rn4qmKftepxLmz85LLoTaWIgghU8Ol+qvWv6QWNcDJPgJ2uh3Y/+TiTIISBL6dyXtkxg5EFrA8EMQsWJLQqNMxwo5Big7YO9MYcLHG9+5XLneJnK3v2dGOkNNVRoQpSgnwsMccKbIqGmCXOtR4u1w20cGsZmn62DmU1oQOXiG16t/FQLKrojakH6MRGhMm0Ms80PiP/GFq3lytuAZhfHnTwXi+PRsgLSs2Hg2V+V5RIyZSUgmGBftP+o0NEjT0LAMv5MyvkaNMLrHNvr27flmFMEuG/IFNU1R+zhoCXTx1nKzT79XI2EhPcGtnDX64SfFBzfKouAVQ6zIZwZiX68vR/1eh5M2NUu4Yk6wih7a+1D08rZ83X1rHFPDXg2g00giOU7eGh4x9WMeJnqfKKzupZiK3+uD4fhf71tj31wp6zRoAA=" alt="Фотография Нои"><div><strong>НОЯ</strong><div style="color:#aaa;font-size:13px">Твой ИИ-помощник по воспитанию собак</div></div></div><p>Спроси о поведении собаки, упражнениях и воспитании. Ответы ИИ не заменяют специалиста.</p><div class="notice"><strong>ИИ НОЯ · тестовый режим</strong><p>До 10 вопросов в сутки на участника. Ответы ИИ могут содержать ошибки; при риске для здоровья или безопасности обратись к специалисту.</p></div><label for="ai-dog">О какой собаке поговорим?</label><select id="ai-dog" class="route-select"><option value="">Без профиля</option></select><div id="ai-recommendations" class="notice" aria-live="polite">Подбор видео появится после анализа диагностики.</div><div class="notice" style="margin:12px 0"><label style="display:flex;gap:10px;align-items:center"><input id="ai-memory-optin" type="checkbox" style="width:20px;height:20px;accent-color:#F5FA45"><span><strong>Помнить мои вопросы и ответы</strong><small style="display:block;color:#bbb">Сохранять личную историю для следующих рекомендаций. Можно отключить и удалить историю в любой момент.</small></span></label><p id="ai-memory-status" style="font-size:12px;color:#bbb;margin-top:7px">История не сохраняется без согласия.</p></div><div class="ai-suggestions"><button type="button" data-ai-suggestion="Как научить собаку обращать на меня внимание на прогулке?">Внимание на улице</button><button type="button" data-ai-suggestion="Почему собака лает на других собак?">Лай на собак</button><button type="button" data-ai-suggestion="Как помочь собаке спокойнее оставаться одной?">Одиночество</button></div><div id="ai-messages" aria-live="polite"><div class="ai-message assistant">Привет! Я НОЯ 🐾 Помогу разобраться в поведении собаки. С чего начнём?</div></div><form id="ai-form" class="ai-composer"><textarea id="ai-input" maxlength="1200" placeholder="Напиши вопрос о своей собаке…" aria-label="Вопрос для Нои"></textarea><button id="ai-send" type="submit">→</button></form><p id="ai-status" style="margin-top:10px" aria-live="polite"></p></section>
 <section id="members" class="screen" hidden>
- <div class="noya-member-top"><span class="eyebrow">NOYA / ЛЮДИ И СОБАКИ</span><a class="noya-member-about-link" href="./about.html" aria-label="О сообществе и ответы на вопросы">О СООБЩЕСТВЕ <span aria-hidden="true">↗</span></a></div>
- <h1>УЧАСТНИКИ</h1>
- <p class="noya-member-subtitle">Люди, которые так же любят собак, учатся и делятся опытом. Ты можешь познакомиться и поддерживать друг друга.</p>
- <div class="noya-member-intro-links" aria-label="Информация о сообществе">
-  <a href="./community-rules.html"><span>◎</span><strong>Правила клуба</strong><small>Как общаемся</small></a>
-  <a href="./faq.html"><span>?</span><strong>Вопрос — ответ</strong><small>Всё о NOYA</small></a>
-  <a href="https://t.me/NoyaClubBrooksBot" target="_blank" rel="noopener noreferrer"><span>✉</span><strong>Поддержка</strong><small>Telegram-бот</small></a>
+ <div class="noya-member-titlebar">
+  <h1>УЧАСТНИКИ <span id="noya-members-count">—</span></h1>
+  <a class="noya-member-info-button" href="./about.html" aria-label="О сообществе NOYA CLUB"><span aria-hidden="true">ⓘ</span></a>
  </div>
- <div class="noya-member-heading"><h2>ЛЮДИ КЛУБА</h2><span><span id="noya-members-count">—</span> участников</span></div>
  <button type="button" id="noya-my-member-card" class="noya-my-member-card" hidden aria-label="Мой профиль участника"></button>
  <button id="noya-members-edit" type="button" class="noya-member-edit">+ Заполнить мой профиль</button>
- <label class="noya-member-search" for="noya-members-search"><span>⌕</span><input type="search" id="noya-members-search" placeholder="Поиск участников..." autocomplete="off"></label>
- <div class="noya-member-tabs" role="tablist" aria-label="Категории участников">
+ <div class="noya-member-tabs" role="tablist" aria-label="Участники и рейтинг">
   <button role="tab" data-members-tab="all" aria-selected="true">Все</button>
-  <button role="tab" data-members-tab="ranking" aria-selected="false">🏆 Рейтинг</button>
   <button role="tab" data-members-tab="favorites" aria-selected="false">♡ Избранное</button>
+  <button role="tab" data-members-tab="ranking" aria-selected="false">🏆 Рейтинг</button>
  </div>
- <div class="noya-member-points-info">Баллы: <strong>10</strong> за завершённый урок · <strong>20</strong> за практику · <strong>5</strong> за эфир · <strong>100</strong> за подтверждённое приглашение. В рейтинг входят только участники с открытым профилем.</div>
+ <label class="noya-member-search" for="noya-members-search"><span>⌕</span><input type="search" id="noya-members-search" placeholder="Поиск участников..." autocomplete="off"></label>
+ <div class="noya-member-points-info" id="noya-member-points-info" hidden>Баллы: <strong>10</strong> за завершённый урок · <strong>20</strong> за практику · <strong>5</strong> за эфир · <strong>100</strong> за подтверждённое приглашение. В рейтинге — только открытые профили.</div>
  <div id="noya-members-list" aria-live="polite"><div class="noya-member-empty">Загружаем участников…</div></div>
- <div class="noya-member-foot"><a href="./community-rules.html">Правила сообщества</a><span>·</span><a href="./faq.html">Вопросы и ответы</a></div>
 </section>
 <section id="library" class="screen" hidden>
  <h1>МОЯ БИБЛИОТЕКА</h1>
