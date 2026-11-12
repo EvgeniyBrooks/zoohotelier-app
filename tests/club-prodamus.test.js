@@ -140,7 +140,7 @@ test('Prodamus webhook validates signed nested submit payloads without leaking t
   const wrapper={submit:{...success}};
   const r=res();await webhook({method:'POST',body:wrapper,headers:{sign:lib.signedPayload(success,process.env.NOYA_PRODAMUS_SECRET)}},r);
   assert.equal(r.statusCode,200);assert.equal(calls,1);
-  const unrelated={...success,subscription:{id:''}};
+  const unrelated={...success,order_num:'course-existing-order',subscription:{id:''}};
   const ignored=res();await webhook({method:'POST',body:unrelated,headers:{sign:lib.signedPayload(unrelated,process.env.NOYA_PRODAMUS_SECRET)}},ignored);
   assert.equal(ignored.statusCode,200);assert.equal(calls,1);
  }finally{global.fetch=oldFetch;cleanup();}
@@ -334,8 +334,8 @@ test('accepts correctly signed Prodamus multipart/form-data with mixed-case boun
   'subscription[payment_num]':success.subscription.payment_num
  };
  const bytes=Object.entries(flat).map(([k,v])=>
-  '--'+boundary+'\\r\\nContent-Disposition: form-data; name="'+k+'"\\r\\n\\r\\n'+v+'\\r\\n'
- ).join('')+'--'+boundary+'--\\r\\n';
+  '--'+boundary+'\r\nContent-Disposition: form-data; name="'+k+'"\r\n\r\n'+v+'\r\n'
+ ).join('')+'--'+boundary+'--\r\n';
  try{
   const r=res();
   await webhook({method:'POST',body:Buffer.from(bytes),headers:{
