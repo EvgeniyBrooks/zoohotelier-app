@@ -96,6 +96,23 @@ async function live(req,res){
    if(!cf.ok||!data?.success||!data.result?.token){console.error('Cloudflare course video token failed',{status:cf.status,errors:(data?.errors||[]).map(e=>({code:e.code,message:e.message})),hasAccountId:!!process.env.CLOUDFLARE_ACCOUNT_ID,hasApiToken:!!process.env.CLOUDFLARE_API_TOKEN});throw fail(502,'Cloudflare HTTP '+cf.status+'; code '+String(data?.errors?.[0]?.code??'unknown'));}
    return res.status(200).json({ok:true,token:data.result.token});
   }
+  if(action==='folder_summary'){
+   // Folder counters are derived from currently published entries, never hardcoded.
+   const [liveStreams,liveViews,courseBlocks,courseLessons,courseDone]=await Promise.all([
+    db('course_live_streams?select=id&course_id=eq.'+courseId+'&is_published=eq.true&limit=1000'),
+    db('course_live_views?select=stream_id&student_id=eq.'+student+'&limit=1000'),
+    db('course_blocks?select=id&course_id=eq.'+courseId+'&limit=100'),
+    db('lessons?select=id,block_id,is_published&is_published=eq.true&limit=1000'),
+    db('course_lesson_completions?select=lesson_id&student_id=eq.'+student+'&limit=1000')
+   ]);
+   const liveIds=new Set(liveStreams.map(s=>s.id));
+   const blockIds=new Set(courseBlocks.map(b=>b.id));
+   const lessonIds=new Set(courseLessons.filter(l=>blockIds.has(l.block_id)).map(l=>l.id));
+   return res.status(200).json({ok:true,folders:{
+    live:{total:liveIds.size,watched:new Set(liveViews.map(v=>v.stream_id).filter(id=>liveIds.has(id))).size},
+    course:{total:lessonIds.size,watched:new Set(courseDone.map(v=>v.lesson_id).filter(id=>lessonIds.has(id))).size}
+   }});
+  }
   if(action==='live_list'){
    const [streams,favorites,views]=await Promise.all([
     db('course_live_streams?select=id,title,description,cover_url,cloudflare_video_id,sort_order&course_id=eq.'+courseId+'&is_published=eq.true&order=sort_order.asc&limit=1000'),
@@ -141,7 +158,7 @@ async function live(req,res){
  }catch(e){if(!e.status)console.error('Course live error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
 }
 export default async function handler(req, res) {
-  if(req.method==='POST'&&/^(live_|course_)/.test(String(req.body?.action||'')))return live(req,res);
+  if(req.method==='POST'&&/^(live_|course_|folder_)/.test(String(req.body?.action||'')))return live(req,res);
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Allow','POST');
   return res.status(405).json({error:'Use authenticated POST for video playback'});
