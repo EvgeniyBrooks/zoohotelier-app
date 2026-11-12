@@ -104,15 +104,26 @@ async function videoReady(uid){
  const result=await cloudflare(encodeURIComponent(uid));
  return result?.readyToStream===true ||result?.status?.state==='ready';
 }
+async function ensureReferralStudent(auth){
+ if(auth.student)return auth.student;
+ const created=await db('students?on_conflict=telegram_id','POST',{
+  telegram_id:Number(auth.user.id),first_name:auth.user.first_name,
+  last_name:auth.user.last_name,username:auth.user.username||null
+ },'resolution=merge-duplicates,return=representation');
+ if(!created[0]?.id)throw fail(502,'Could not create invited member');
+ auth.student=created[0].id;
+ return auth.student;
+}
 async function coinWallet(auth){
  if(!auth.student)throw fail(403,'Club account required');
  if(!(await hasClub(auth)))throw fail(403,'Active club or trial required');
  const rpc=await db('rpc/noya_coin_sync','POST',{p_student_id:auth.student});
  const wallet=rpc?.[0]||{balance:0,lifetime_earned:0,lifetime_spent:0};
- const [items,redemptions,history]=await Promise.all([
+ const [items,redemptions,history,referrals]=await Promise.all([
   db('noya_coin_store_items?select=code,title,description,cost,content,sort_order&enabled=eq.true&order=sort_order.asc&limit=50'),
   db('noya_coin_redemptions?select=item_code,paid_coins,created_at&student_id=eq.'+auth.student+'&limit=100'),
-  db('noya_coin_ledger?select=coins,reason,created_at&student_id=eq.'+auth.student+'&order=created_at.desc&limit=20')
+  db('noya_coin_ledger?select=coins,reason,created_at&student_id=eq.'+auth.student+'&order=created_at.desc&limit=20'),
+  db('rpc/noya_referral_ensure_code','POST',{p_student_id:auth.student})
  ]);
  const owned=new Set(redemptions.map(x=>x.item_code));
  return {
@@ -120,7 +131,14 @@ async function coinWallet(auth){
   earned:Number(wallet.lifetime_earned)||0,
   spent:Number(wallet.lifetime_spent)||0,
   currency:'НОИНКОИНЫ',
-  earningRules:[{event:'Первая активная подписка',coins:100},{event:'Подтверждённое прохождение урока',coins:25}],
+  referral:{
+   code:referrals[0]?.referral_code||'',
+   pending:Number(referrals[0]?.pending_count)||0,
+   rewarded:Number(referrals[0]?.rewarded_count)||0,
+   coinsPerFirstPayment:500
+  },
+  earningRules:[{event:'Первая активная подписка',coins:100},{event:'Подтверждённое прохождение урока',coins:25},
+   {event:'Друг впервые оплатил NOYA CLUB',coins:500}],
   // Never expose the digital bonus content until its redemption is recorded.
   items:items.map(x=>({code:x.code,title:x.title,description:x.description,cost:x.cost,
    owned:owned.has(x.code),...(owned.has(x.code)?{content:x.content}:{})})),
@@ -215,6 +233,19 @@ module.exports=async function handler(req,res){
    throw fail(400,'Unknown action');
   }
   if(!req.body||typeof req.body!=='object'||Array.isArray(req.body))throw fail(400,'Invalid request');
+  if(action==='referral_claim'){
+   const code=req.body.referralCode;
+   if(typeof code!=='string'||!/^[a-f0-9]{24}$/.test(code))throw fail(400,'Invalid referral code');
+   // Telegram initData is verified in identity(). The recipient cannot
+   // choose whose student account receives referral attribution.
+   const studentId=await ensureReferralStudent(auth);
+   const results=await db('rpc/noya_referral_claim','POST',{
+    p_referred_student_id:studentId,p_code:code
+   });
+   const claim=results?.[0];
+   if(!claim||typeof claim.applied!=='boolean')throw fail(502,'Referral claim unavailable');
+   return payload(res,200,{ok:true,applied:claim.applied,reason:claim.reason});
+  }
   if(action==='coin_redeem'){
    const result=await redeemCoins(auth,req.body.itemCode);
    return payload(res,200,{ok:true,...result});
