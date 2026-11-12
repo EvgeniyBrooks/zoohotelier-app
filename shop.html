@@ -49,12 +49,28 @@ hr{border:0;border-top:1px solid #424242;margin:19px 0}
 <p>Нужна помощь с упражнением? Отправь видео и получи персональный разбор. Это разовая услуга, а не новая подписка.</p>
 <div class="tabs" role="tablist" aria-label="Разделы магазина">
 <button type="button" data-tab="catalog" aria-selected="true">Услуги</button>
+<button type="button" data-tab="coins" aria-selected="false">🪙 НОИНКОИНЫ</button>
 <button type="button" data-tab="orders" aria-selected="false">Мои разборы</button>
 <button type="button" data-tab="queue" aria-selected="false" id="noya-shop-reviewer-tab" hidden>Специалист</button>
 </div>
 <div id="shop-message" class="status" role="status" aria-live="polite">Загружаем магазин…</div>
 <section id="shop-catalog" class="screen" aria-label="Каталог услуг"><div id="shop-services"></div>
 <div class="notice">Оплата разовых разборов пока не подключена. Новые платные заказы не принимаются; это не влияет на действующую подписку NOYA CLUB.</div>
+</section>
+<section id="shop-coins" class="screen" aria-label="НОИНКОИНЫ и бонусный магазин" hidden>
+<div class="card highlight">
+ <div class="kicker">ТВОЙ КОШЕЛЁК</div>
+ <h2 style="margin:10px 0 6px">НОИНКОИНЫ 🪙</h2>
+ <div style="font-size:42px;font-weight:900;color:var(--yellow)" id="shop-coins-balance">0</div>
+ <p>Собирай монеты за занятия и обменивай на бонусы NOYA CLUB.</p>
+ <p id="shop-coin-earning" class="small">+100 за первый доступ · +25 за каждый завершённый урок</p>
+ <button class="cta alt" id="shop-coins-reload" type="button">Обновить баланс</button>
+</div>
+<h2>БОНУСЫ ЗА МОНЕТЫ</h2>
+<div id="shop-coin-items"></div>
+<h2>ИСТОРИЯ МОНЕТ</h2>
+<div id="shop-coin-history"></div>
+<div class="notice">НОИНКОИНЫ — внутренние бонусные баллы клуба. Их нельзя обменять на деньги, перевести другому участнику или использовать вместо оплаты подписки. Для покупки бонусов нужен действующий платный доступ.</div>
 </section>
 <section id="shop-orders" class="screen" aria-label="Мои разборы" hidden><h2>МОИ РАЗБОРЫ</h2><div id="shop-orders-list"></div></section>
 <section id="shop-queue" class="screen" aria-label="Панель специалиста" hidden><h2>ПАНЕЛЬ СПЕЦИАЛИСТА</h2><p>Здесь появляются оплаченные заявки и тестовые заказы. Ответить может только назначенный специалист или администратор.</p>
