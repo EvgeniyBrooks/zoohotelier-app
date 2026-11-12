@@ -11,6 +11,26 @@
     {
       "source": "/api/club-reward-pdf",
       "destination": "/api/club-diagnostic?noyaPdf=1"
+    },
+    {
+      "source": "/api/admin-cohort-create",
+      "destination": "/api/admin-cohorts?noyaLegacyAdmin=cohort-create"
+    },
+    {
+      "source": "/api/admin-cohort-delete",
+      "destination": "/api/admin-cohorts?noyaLegacyAdmin=cohort-delete"
+    },
+    {
+      "source": "/api/admin-cohort",
+      "destination": "/api/admin-cohorts?noyaLegacyAdmin=cohort"
+    },
+    {
+      "source": "/api/admin-student-update",
+      "destination": "/api/admin-cohorts?noyaLegacyAdmin=student-update"
+    },
+    {
+      "source": "/api/admin-students",
+      "destination": "/api/admin-cohorts?noyaLegacyAdmin=students"
     }
   ]
 }
