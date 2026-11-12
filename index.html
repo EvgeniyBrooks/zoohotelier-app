@@ -683,10 +683,10 @@ async function loadCourse() {
 
       blocks.forEach(
         (block, index) => {
-          const weekLessons=courseProgress.lessons.filter(l=>l.block_id===block.id);
+          const weekLessons=courseProgress.lessons.filter(l=>l.block_id===block.id&&l.is_published===true);
           const weekDone=weekLessons.filter(l=>done.has(l.id)).length;
-          const weekTotal=weekLessons.length||(block.block_number===0?2:6);
-          const weekPct=Math.round(100*weekDone/weekTotal);
+          const weekTotal=weekLessons.length;
+          const weekPct=weekTotal?Math.round(100*weekDone/weekTotal):0;
 
           html += `
 
@@ -1002,7 +1002,7 @@ async function loadLessons(
     const finished=lessons.filter(l=>doneIds.has(l.id)).length;
     const blockMeta=courseProgress.blocks.find(b=>b.id===blockId);
     const blockTotal=lessons.length;
-    const percent=Math.round(100*finished/blockTotal);
+    const percent=blockTotal?Math.round(100*finished/blockTotal):0;
 
 
     let html = `
