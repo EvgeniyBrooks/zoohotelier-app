@@ -197,7 +197,7 @@ test('NOINCOINS wallet verifies user identity and never discloses locked paid bo
   assert.equal(wallet.body.balance,100);
   assert.equal(wallet.body.items[0].cost,80);
   assert.equal(wallet.body.items[0].owned,false);
-  assert.equal(wallet.body.referral.coinsPerFirstPayment,500);
+  assert.equal(wallet.body.referral.coinsPerConfirmedPayment,500);
   assert.equal(wallet.body.referral.pending,2);
   assert.equal(wallet.body.referral.rewarded,1);
   assert.equal(wallet.body.referral.code,'a'.repeat(24));
@@ -260,7 +260,9 @@ test('referral section is above redeemable goods with copy/share controls',()=>{
  const shop=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
  const club=fs.readFileSync(path.join(root,'club.html'),'utf8');
  assert.ok(html.indexOf('id="shop-referral-card"')<html.indexOf('id="shop-coin-items"'));
- assert.match(html,/500 🪙 ЗА ДРУГА/);
+ assert.match(html,/500 🪙 ЗА КАЖДЫЙ ПЛАТЁЖ/);
+ assert.match(html,/включая продления/);
+ assert.match(html,/Повторные уведомления об одном платеже/);
  assert.match(html,/id="shop-referral-copy"/);
  assert.match(html,/id="shop-referral-share"/);
  assert.match(shop,/NoyaClubBrooksBot\?startapp=ref_/);
