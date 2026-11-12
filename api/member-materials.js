@@ -74,7 +74,7 @@ export default async function handler(req,res){
    });
    return res.status(200).json({ok:true,items,counts:{history:items.filter(i=>i.lastViewedAt).length,favorites:items.filter(i=>i.favorited).length,completed:items.filter(i=>i.completed).length}});
   }
-  if(!['touch','favorite','complete'].includes(action))throw fail(400,'Неизвестная команда');
+  if(!['touch','favorite','complete','get'].includes(action))throw fail(400,'Неизвестная команда');
   const type=req.body?.type,id=req.body?.id;
   if(!types.has(type)||typeof id!=='string'||!uuid.test(id))throw fail(400,'Неверный материал');
   if(!allowed[type])throw fail(403,'Нет доступа к материалу');
@@ -93,6 +93,7 @@ export default async function handler(req,res){
   }
   const rows=await db('noya_material_state?select=favorited,completed,last_viewed_at&student_id=eq.'+student+'&material_type=eq.'+type+'&material_id=eq.'+id+'&limit=1');
   const state=rows[0]||{favorited:false,completed:false,last_viewed_at:null};
+  if(action==='get')return res.status(200).json({ok:true,state:{favorited:state.favorited===true,completed:state.completed===true,lastViewedAt:state.last_viewed_at||null}});
   if(action==='touch')state.last_viewed_at=new Date().toISOString();
   if(action==='favorite'){
    if(typeof req.body?.value!=='boolean')throw fail(400,'Неверная отметка');
