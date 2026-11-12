@@ -240,6 +240,11 @@ document.querySelectorAll('.tile[data-screen]').forEach(n=>n.addEventListener('c
 showScreen(location.hash.slice(1)||'home');
 // New guests go directly to Prodamus, without an intermediate in-app checkout.
 async function setupNoyaBilling(){
+ const billingFetch=(url,options={})=>{
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),12000);
+  return fetch(url,{...options,signal:controller.signal}).finally(()=>clearTimeout(timeout));
+ };
  const curtain=document.getElementById('noya-payment-redirect');
  const state=document.getElementById('noya-payment-state');
  const retry=document.getElementById('noya-payment-retry');
@@ -286,7 +291,7 @@ async function setupNoyaBilling(){
     // only attributes a referral; NOINCOINS are earned after verified payment.
     // The recipient identity comes from Telegram's signed initData.
     try{
-     await fetch('/api/club-shop',{
+     await billingFetch('/api/club-shop',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'referral_claim',initData,referralCode}),
       cache:'no-store'
@@ -294,17 +299,17 @@ async function setupNoyaBilling(){
     }catch(error){console.warn('NOYA referral claim unavailable');}
    }
    if(code){
-    const redeem=await fetch('/api/club-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem',initData,code}),cache:'no-store'});
+    const redeem=await billingFetch('/api/club-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'redeem',initData,code}),cache:'no-store'});
     if(redeem.ok){lockTrialCourse();history.replaceState(null,'',location.pathname+location.hash);hide();return;}
     const reason=await redeem.json().catch(()=>({}));
     if(reason.reason==='already_redeemed'){
-     const check=await fetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
+     const check=await billingFetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
      const state=await check.json().catch(()=>({}));
      if(state.trialActive){lockTrialCourse();hide();return;}
     }
     // Invalid or expired promotions never unlock the club.
    }
-   const trialStatus=await fetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
+   const trialStatus=await billingFetch('/api/club-trial',{headers:{'x-telegram-init-data':initData},cache:'no-store'});
    if(trialStatus.ok){
     const t=await trialStatus.json();
     // Owner/admin gets a permanent preview of the club without a fake payment.
@@ -313,19 +318,19 @@ async function setupNoyaBilling(){
     if(t.paidActive){hide();return;}
     if(t.trialActive){lockTrialCourse();hide();return;}
    }
-   const status=await fetch('/api/club-checkout?status=1',{
+   const status=await billingFetch('/api/club-checkout?status=1',{
     headers:{'x-telegram-init-data':initData},cache:'no-store'
    });
    if(!status.ok)throw Error('Не удалось проверить оплату');
    const config=await status.json();
    if(!config.enabled){hide();return;} // Test mode: only club administrators can pay.
-   const account=await fetch('/api/club-diagnostic?account=1',{
+   const account=await billingFetch('/api/club-diagnostic?account=1',{
     headers:{'x-telegram-init-data':initData},cache:'no-store'
    });
    if(!account.ok)throw Error('Не удалось проверить подписку');
    const profile=await account.json();
    if(profile?.subscription?.status==='active'){hide();return;}
-   const response=await fetch('/api/club-checkout',{
+   const response=await billingFetch('/api/club-checkout',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({initData}),cache:'no-store'
    });
@@ -348,7 +353,10 @@ async function setupNoyaBilling(){
     }
    },1800);
   }catch(error){
-   wait.hidden=true;state.textContent=error.message||'Не удалось открыть Prodamus';
+   wait.hidden=true;
+   state.textContent=error?.name==='AbortError'
+     ? 'Сервер не ответил. Нажми «Попробовать ещё раз».'
+     : (error.message||'Не удалось открыть Prodamus');
    retry.hidden=false;
   }
  };
