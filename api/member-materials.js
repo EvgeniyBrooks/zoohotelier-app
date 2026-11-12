@@ -67,6 +67,12 @@ export default async function handler(req,res){
   const canLive=canCourse,canClub=admin||clubPaid||trial;
   const allowed={course:canCourse,live:canLive,club:canClub};
   const action=req.body?.action||'list';
+  if(action==='states'){
+   const permitted=Object.entries(allowed).filter(([,yes])=>yes).map(([name])=>name);
+   if(!permitted.length)return res.status(200).json({ok:true,states:[]});
+   const states=await db('noya_material_state?select=material_type,material_id,favorited,completed,last_viewed_at&student_id=eq.'+student+'&material_type=in.('+permitted.join(',')+')&limit=5000');
+   return res.status(200).json({ok:true,states:states.map(x=>({type:x.material_type,id:x.material_id,favorited:x.favorited===true,completed:x.completed===true,lastViewedAt:x.last_viewed_at||null}))});
+  }
   if(action==='list'){
    const query=[];
    if(canCourse){
