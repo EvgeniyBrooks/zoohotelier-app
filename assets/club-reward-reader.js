@@ -7,7 +7,7 @@
     panel.className = 'reward-reader';
     panel.hidden = true;
     panel.setAttribute('aria-labelledby', 'reward-reader-title');
-    panel.innerHTML = `<button class="reward-back" type="button">← Все подарки</button>
+    panel.innerHTML = `<button class="reward-back noya-legacy-return" type="button">← Все подарки</button>
       <div class="reward-reader-cover"><img alt="" width="300" height="300"><div><p class="account-kicker" data-reward-month></p><h2 id="reward-reader-title" tabindex="-1"></h2><p class="reward-reader-format"></p></div></div>
       <p class="reward-reader-description"></p>
       <p class="reward-reader-access" role="status" aria-live="polite"></p>
