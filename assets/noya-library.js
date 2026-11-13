@@ -29,15 +29,15 @@ function row(item){
  const stamp=mode==='history'&&item.lastViewedAt?item.lastViewedAt:mode==='completed'?item.updatedAt:null;
  if(stamp){
   const date=new Date(stamp);
-  if(!Number.isNaN(date.getTime()))content.append(node('div','noya-library-date',date.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' · '+date.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})));
+  if(!Number.isNaN(date.getTime()))content.append(node('div','noya-library-date',date.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})));
  }
  const controls=node('div','noya-library-row-controls');
  const favorite=node('button','noya-library-heart',item.favorited?'♥':'♡');
  favorite.type='button';favorite.title=item.favorited?'Убрать из избранного':'Добавить в избранное';
  favorite.setAttribute('aria-label',favorite.title);favorite.setAttribute('aria-pressed',String(item.favorited));
  favorite.onclick=()=>change(item,'favorite',!item.favorited);
- const done=node('button','noya-library-completed',item.completed?'✓ Пройдено':'✓ Отметить пройденным');
- done.type='button';done.setAttribute('aria-pressed',String(item.completed));
+ const done=node('button','noya-library-completed',item.completed?'✓ Пройдено':'Отметить');
+ done.type='button';done.setAttribute('aria-pressed',String(item.completed));done.setAttribute('aria-label',item.completed?'Убрать отметку о прохождении':'Отметить пройденным');
  done.onclick=()=>change(item,'complete',!item.completed);
  controls.append(favorite,done);content.append(controls);
  box.append(thumb,content);return box;
@@ -56,8 +56,8 @@ function render(){
  if(!visible.length){
   const empty=node('div','noya-library-empty');
   empty.append(node('div','noya-library-empty-icon','▤'));
-  empty.append(node('strong','',mode==='history'?'Ты ещё не открывал материалы':mode==='favorites'?'В избранном пока ничего нет':'Нет пройденных материалов'));
-  empty.append(node('p','',mode==='history'?'Открой урок или эфир — он появится здесь.':mode==='favorites'?'Нажми на ♡ у любого видео, чтобы сохранить его.':'Отмечай просмотренные уроки и эфиры — они появятся здесь.'));
+  empty.append(node('strong','',filter!=='all'?'Здесь пока пусто':mode==='history'?'История пуста':mode==='favorites'?'Избранное пусто':'Нет пройденных материалов'));
+  empty.append(node('p','',filter!=='all'?'Выбери другой раздел или фильтр «Все».':mode==='history'?'Просмотренные материалы появятся здесь.':mode==='favorites'?'Сохраняй понравившиеся видео кнопкой ♡.':'Завершённые уроки и эфиры появятся здесь.'));
   root.append(empty);return;
  }
  const fragment=document.createDocumentFragment();

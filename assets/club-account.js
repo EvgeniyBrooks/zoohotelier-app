@@ -29,7 +29,7 @@
   <div class="account-dialog-content"><div id="account-overview">
     <h2 id="account-dialog-title" class="account-visually-hidden">Профиль и подарки NOYA CLUB</h2>
     <button class="button secondary" id="account-edit-profile" type="button">Редактировать профиль</button>
-    <details class="account-membership-details" id="account-membership-details"><summary><span>Моя подписка</span><span>Срок и доступ +</span></summary>
+    <details class="account-membership-details" id="account-membership-details"><summary><span>Моя подписка</span><span aria-hidden="true">+</span></summary>
     <section class="account-membership" aria-label="Подписка NOYA CLUB" aria-live="polite">
       <div class="account-membership-top"><span class="account-membership-brand">NOYA CLUB</span><span class="account-membership-status" id="account-subscription-status">Проверяем…</span></div>
       <p class="account-membership-message" id="account-membership-message">Загружаем подписку…</p>
@@ -39,17 +39,17 @@
       <button class="account-action" id="account-retry" type="button" hidden>Повторить загрузку</button>
     </section></details>
     <section class="account-rewards" aria-labelledby="account-rewards-title">
-      <p class="account-kicker">Твой год в клубе</p><h2 id="account-rewards-title">Подарки за продление</h2>
-      <p class="account-rewards-intro">Игры, практикумы и личные проекты для вашей команды. Подарок «101 трюк» — после оплаты второго месяца.</p>
+      <h2 id="account-rewards-title">Твои подарки</h2>
+      <p class="account-rewards-intro">За каждый месяц участия в клубе.</p>
       <div class="account-progress-heading"><span>Прогресс по месяцам</span><span class="account-progress-count" id="account-progress-count">… / 12</span></div>
       <div class="account-progress" id="account-progress" role="progressbar" aria-label="Уровни участия в клубе" aria-valuemin="0" aria-valuemax="12"><div class="account-progress-fill" id="account-progress-fill"></div></div>
-      <div class="account-rail-toolbar"><span class="account-rail-hint">Листай, чтобы увидеть все 12 месяцев</span><div class="account-rail-controls"><button class="account-icon-button" id="account-months-prev" type="button" aria-label="Предыдущие месяцы">${chevron.replace('<svg ', '<svg style="transform:rotate(180deg)" ')}</button><button class="account-icon-button" id="account-months-next" type="button" aria-label="Следующие месяцы">${chevron}</button></div></div>
+      <div class="account-rail-toolbar"><span class="account-rail-hint">12 месяцев вместе</span><div class="account-rail-controls"><button class="account-icon-button" id="account-months-prev" type="button" aria-label="Предыдущие месяцы">${chevron.replace('<svg ', '<svg style="transform:rotate(180deg)" ')}</button><button class="account-icon-button" id="account-months-next" type="button" aria-label="Следующие месяцы">${chevron}</button></div></div>
       <div class="account-reward-rail" id="account-reward-rail" role="list" aria-label="12 месяцев участия" tabindex="0"></div>
       <p class="account-next-level" id="account-next-level">Первый подарок открывается после подтверждённой оплаты второго месяца.</p>
       <a class="account-route-link" id="account-route-link" href="./club.html#route" hidden>Продолжить свой маршрут →</a>
       <details class="account-reward-rules"><summary>Как открываются подарки</summary><p>Уровни начисляются за полные календарные месяцы непрерывной подписки. При вступлении — 0 из 12. Оплата за год не открывает все подарки сразу.</p><p>Читать подарки в клубе можно при активной подписке. После перерыва отсчёт начинается заново. Полученные материалы можно скачать и оставить себе.</p><p>Все подарки цифровые. Предметы на картинках — иллюстрации. «Кинолог» и «Суперкинолог» — названия клубных уровней, а не профессиональная квалификация.</p></details>
     </section>
-    <p class="account-footer">NOYA CLUB · BY BROOKS</p>
+    
   </div></div>`;
   document.body.append(dialog);
 
@@ -62,7 +62,7 @@
     card.className = 'account-reward-card';
     card.setAttribute('role', 'listitem');
     card.setAttribute('aria-label', secret ? `${month}-й месяц: ${reward.level}. Секретный подарок` : `${month}-й месяц: ${reward.level}. ${reward.title}`);
-    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Что внутри ↗</button>`;
+    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Подробнее</button>`;
     card.querySelector('h3').textContent = reward.level;
     card.querySelector('.account-reward-title').textContent = secret ? 'Пока в секрете' : (reward.cardLabel || reward.title);
     if (secret) {
@@ -162,7 +162,7 @@
       const end = dateLabel(subscription?.endDate);
       const start = dateLabel(subscription?.startDate);
       if (active) {
-        label = 'Активна';summary = end ? `до ${end}` : 'Подписка активна';message = 'Ты в NOYA CLUB';note = 'Подписка привязана к твоему аккаунту Telegram.';
+        label = 'Активна';summary = end ? `до ${end}` : 'Подписка активна';message = 'Ты в NOYA CLUB';note = '';
       } else if (subscription?.status === 'expired') {
         label = 'Завершилась';summary = 'Подписка завершилась';message = 'Срок подписки закончился';note = 'После продления здесь появится новый срок доступа к клубу.';
       } else if (subscription?.status === 'cancelled') {
@@ -184,6 +184,7 @@
     byId('account-subscription-status').dataset.active = String(active);
     byId('account-membership-message').textContent = message;
     byId('account-membership-note').textContent = note;
+    byId('account-membership-note').hidden = !note;
     renderDates(subscription);
     byId('account-telegram-link').hidden = !['telegram','auth'].includes(phase);
     byId('account-retry').hidden = phase !== 'error';
@@ -215,7 +216,8 @@
       button.querySelector('svg').style.display = ready && !unlocked ? '' : 'none';
       button.disabled = !reader || !unlocked || !active;
       card.querySelector('.account-reward-preview').disabled = !reader || (index >= 6 && !revealed);
-      card.querySelector('.account-reward-preview').hidden = index >= 6 && !revealed;
+      card.querySelector('.account-reward-preview').hidden = (unlocked && active) || (index >= 6 && !revealed);
+      button.hidden = index < 6 && !(unlocked && active);
       button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : index === 0 ? 'Методичка откроется после подтверждённой оплаты второго месяца' : `Подарок откроется после ${index + 1} полных месяцев участия`) : stateLabel);
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
@@ -308,6 +310,8 @@
   byId('account-open').addEventListener('click', openAccount);
   document.querySelectorAll('[data-open-account]').forEach(button => button.addEventListener('click', openAccount));
   byId('account-close').addEventListener('click', closeAccount);
+  byId('account-edit-profile').hidden = !document.getElementById('members');
+  document.addEventListener('noya-profile-updated',event=>{if(typeof event.detail?.name==='string')setText('[data-account-name]',event.detail.name);});
   byId('account-edit-profile').addEventListener('click',()=>{
     window.NOYAMembers?.edit();
   });

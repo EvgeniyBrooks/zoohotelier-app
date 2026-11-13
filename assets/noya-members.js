@@ -8,6 +8,18 @@ const myBox=document.getElementById('noya-my-member-card');
 const tabs=[...section.querySelectorAll('[data-members-tab]')];
 const query=document.getElementById('noya-members-search');
 const city=document.getElementById('noya-members-city');
+const searchToggle=document.getElementById('noya-member-search-toggle');
+const filterToggle=document.getElementById('noya-member-filter-toggle');
+function togglePanel(button,panel,input){
+ button.addEventListener('click',()=>{
+  const open=button.getAttribute('aria-expanded')!=='true';
+  button.setAttribute('aria-expanded',String(open));panel.hidden=!open;
+  if(open)input?.focus();
+ });
+}
+if(searchToggle)togglePanel(searchToggle,document.getElementById('noya-member-search-panel'),query);
+if(filterToggle)togglePanel(filterToggle,document.getElementById('noya-member-filter-panel'),city);
+document.getElementById('noya-member-filter-reset')?.addEventListener('click',()=>{city.value='';paint();});
 const normalize=value=>String(value||'').trim().toLocaleLowerCase('ru');
 let view='all',people=[],leaders=[],me=null,busy=false;
 const api=async(action,params={})=>{
@@ -49,6 +61,8 @@ function card(person){
  box.append(heart);return box;
 }
 function paint(){
+ if(searchToggle)searchToggle.dataset.active=String(Boolean(query.value.trim()));
+ if(filterToggle)filterToggle.dataset.active=String(Boolean(city?.value));
  tabs.forEach(tab=>tab.setAttribute('aria-selected',String(tab.dataset.membersTab===view)));
  const rankingInfo=document.getElementById('noya-member-points-info');
  if(rankingInfo)rankingInfo.hidden=view!=='ranking';
@@ -65,7 +79,7 @@ function paint(){
   (!match||normalize([person.name,person.about,person.city,person.dogName,person.profession,person.hobbies].filter(Boolean).join(' ')).includes(match)));
 
  root.replaceChildren();
- if(!visible.length)root.append(el('div','noya-member-empty',view==='favorites'?'В избранном пока нет участников.':(match||city?.value)?'Ничего не найдено.':'Пока никто не открыл публичный профиль.'));
+ if(!visible.length)root.append(el('div','noya-member-empty',(match||city?.value)?'Ничего не найдено.':view==='favorites'?'В избранном пока никого нет.':'Открытых профилей пока нет.'));
  else{const fragment=document.createDocumentFragment();visible.forEach(person=>fragment.append(card(person)));root.append(fragment);}
 }
 function textField(label,initial,max,textarea=false){
@@ -73,8 +87,9 @@ function textField(label,initial,max,textarea=false){
  const ctrl=document.createElement(textarea?'textarea':'input');ctrl.maxLength=max;ctrl.value=initial||'';
  if(textarea)ctrl.rows=5;wrap.append(ctrl);return {wrap,input:ctrl};
 }
+let dialogSequence=0;
 function createDialog(title){
- const d=el('dialog','noya-member-dialog');const h=el('h2','',title);d.append(h);document.body.append(d);
+ const d=el('dialog','noya-member-dialog');const h=el('h2','',title);h.id='noya-member-title-'+(++dialogSequence);d.setAttribute('aria-labelledby',h.id);d.append(h);document.body.append(d);
  d.addEventListener('close',()=>d.remove(),{once:true});return d;
 }
 function closeButton(dialog){
@@ -104,7 +119,6 @@ function openPerson(person){
  d.append(el('p','noya-person-score','🏆 '+person.points+' баллов'+(person.rank?' · место '+person.rank:'')));
  if(person.city)d.append(el('p','noya-person-city','⌖ '+person.city));
  if(person.about)d.append(el('p','noya-person-about',person.about));
- else d.append(el('p','noya-person-about','Участник пока не заполнил описание.'));
  const info=[person.dogName,person.dogInfo].filter(Boolean).join(' · ');
  detail(d,'МОЯ СОБАКА',info);
  detail(d,'ЧЕМ ЗАНИМАЮСЬ',person.profession);
@@ -125,27 +139,34 @@ function openPerson(person){
   const a=el('a','noya-member-primary','Написать в Telegram');
   a.href='https://t.me/'+encodeURIComponent(person.username);a.target='_blank';a.rel='noopener noreferrer';
   foot.append(a);
- }else foot.append(el('p','noya-member-contact-off','Участник не открыл личные сообщения.'));
+ }
  foot.append(closeButton(d));d.append(foot);d.showModal();
 }
 async function edit(){
  if(!me){try{me=(await api('list')).me;}catch(error){alert(error.message);return;}}
  if(!me)return;
  const d=createDialog('РЕДАКТИРОВАТЬ ПРОФИЛЬ');
- d.append(el('p','noya-person-hint','Эти данные другие участники увидят только после включения публичности.'));
+ const identity=el('div','noya-member-self');identity.append(avatar(me));
+ const identityCopy=el('div');identityCopy.append(el('strong','',me.name));
+ if(me.username)identityCopy.append(el('small','','@'+me.username));
+ identity.append(identityCopy);d.append(identity);
  const fields={};
  function group(title,entries){
-  d.append(el('h3','noya-person-form-section',title));
+  const container=title==='ОСНОВНОЕ'?d:el('details','noya-member-form-group');
+  if(container===d)container.append(el('h3','noya-person-form-section',title));
+  else {container.append(el('summary','',title));d.append(container);}
   for(const [key,label,max,textarea] of entries){
    const v=textField(label,me[key],max,!!textarea);
-   fields[key]=v.input;d.append(v.wrap);
+   if(key==='name'){v.input.required=true;v.input.autocomplete='name';}
+   if(key==='city')v.input.autocomplete='address-level2';
+   fields[key]=v.input;container.append(v.wrap);
   }
  }
  group('ОСНОВНОЕ',[
   ['name','Имя и фамилия',64,false],
   ['city','Город',100,false],
   ['about','О себе',600,true],
-  ['profession','Чем занимаюсь / специализация',120,false]
+  ['profession','Чем занимаюсь',120,false]
  ]);
  group('МОЯ СОБАКА',[
   ['dogName','Кличка собаки',80,false],
@@ -170,15 +191,16 @@ async function edit(){
  d.append(msg);
  checkbox.addEventListener('change',()=>{contact.disabled=!me.username||!checkbox.checked;if(contact.disabled)contact.checked=false;});
  const status=el('p','noya-person-status','');status.setAttribute('role','status');d.append(status);
- const actions=el('div','noya-member-actions');const save=el('button','noya-member-primary','Сохранить');save.type='button';
+ const actions=el('div','noya-member-actions noya-member-edit-actions');const save=el('button','noya-member-primary','Сохранить');save.type='button';
  save.onclick=async()=>{
+  if(!fields.name.value.trim()){status.textContent='Укажи имя';fields.name.focus();return;}
   save.disabled=true;status.textContent='Сохраняем…';
   const profile={};
   for(const [name,input] of Object.entries(fields)){
    profile[name==='name'?'displayName':name]=input.value;
   }
   profile.publicEnabled=checkbox.checked;profile.messagesEnabled=contact.checked;
-  try{await api('save',{profile});d.close();await refresh();}
+  try{await api('save',{profile});document.dispatchEvent(new CustomEvent('noya-profile-updated',{detail:{name:profile.displayName.trim()}}));d.close();await refresh();}
   catch(e){status.textContent=e.message;save.disabled=false;}
  };
  actions.append(closeButton(d),save);d.append(actions);d.showModal();
@@ -189,7 +211,7 @@ function paintMine(){
  const a=avatar(me);myBox.append(a);
  const body=el('div','noya-my-member-info');
  body.append(el('strong','',me.name));
- body.append(el('span','',me.publicEnabled?'Профиль виден участникам':'Профиль скрыт · изменить'));
+ body.append(el('span','','Редактировать профиль'));
  body.append(el('small','',me.points+' баллов'+(me.rank?' · место '+me.rank:'')));
  myBox.append(body);
  const arrow=el('span','noya-my-member-arrow','→');myBox.append(arrow);

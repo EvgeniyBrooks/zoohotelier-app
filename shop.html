@@ -40,13 +40,13 @@ hr{border:0;border-top:1px solid #424242;margin:19px 0}
 .footer{font-size:12px;color:#aaa;margin-top:26px;text-align:center}
 :focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
 </style>
-<script src="./assets/club-shop.js?v=1" defer></script>
+<script src="./assets/club-shop.js?v=2" defer></script>
 </head><body><main>
-<div class="brand">NOYA CLUB · BY BROOKS</div>
+
 <a class="return noya-legacy-return" href="./club.html#home">← Вернуться в клуб</a>
-<div class="kicker" style="margin-top:15px">ПЕРСОНАЛЬНАЯ ПОМОЩЬ</div>
+
 <h1>МАГАЗИН</h1>
-<p>Нужна помощь с упражнением? Отправь видео и получи персональный разбор. Это разовая услуга, а не новая подписка.</p>
+<p>Бонусы клуба и персональные разборы.</p>
 <div class="tabs" role="tablist" aria-label="Разделы магазина">
 <button type="button" data-tab="catalog" aria-selected="true">Услуги</button>
 <button type="button" data-tab="coins" aria-selected="false">🪙 НОИНКОИНЫ</button>
@@ -55,7 +55,7 @@ hr{border:0;border-top:1px solid #424242;margin:19px 0}
 </div>
 <div id="shop-message" class="status" role="status" aria-live="polite">Загружаем магазин…</div>
 <section id="shop-catalog" class="screen" aria-label="Каталог услуг"><div id="shop-services"></div>
-<div class="notice">Оплата разовых разборов пока не подключена. Новые платные заказы не принимаются; это не влияет на действующую подписку NOYA CLUB.</div>
+<div class="notice">Приём новых платных разборов временно закрыт.</div>
 </section>
 <section id="shop-coins" class="screen" aria-label="НОИНКОИНЫ и бонусный магазин" hidden>
 <div class="card highlight">
@@ -100,4 +100,4 @@ hr{border:0;border-top:1px solid #424242;margin:19px 0}
 <div id="shop-staff-list"></div>
 </div></section>
 <div class="footer">NOYA CLUB · 2 900 ₽ / 30 дней · Индивидуальные разборы оплачиваются отдельно</div>
-</main><script src="./assets/noya-navigation.js?v=1"></script></body></html>
+</main><script src="./assets/noya-navigation.js?v=1"></script><script>window.NOYABack.set(()=>location.assign("./club.html#bonuses"));</script></body></html>

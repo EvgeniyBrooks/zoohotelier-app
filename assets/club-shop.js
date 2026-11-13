@@ -298,7 +298,7 @@
   try{
    await loadCatalog();setMessage('');
    const tab=location.hash.slice(1);
-   if(tab==='orders'||tab==='queue'&&isReviewer)switchTab(tab);
+   if(tab==='coins'||tab==='orders'||tab==='queue'&&isReviewer)switchTab(tab);
   }catch(e){
    setMessage(e.message);document.getElementById('shop-catalog').hidden=true;
   }
