@@ -309,7 +309,6 @@
   document.querySelectorAll('[data-open-account]').forEach(button => button.addEventListener('click', openAccount));
   byId('account-close').addEventListener('click', closeAccount);
   byId('account-edit-profile').addEventListener('click',()=>{
-    closeAccount();
     window.NOYAMembers?.edit();
   });
   byId('account-retry').addEventListener('click', loadAccount);
