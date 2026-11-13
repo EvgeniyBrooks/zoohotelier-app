@@ -55,7 +55,7 @@ dialog iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:
 </head>
 <body>
 <main>
- <a class="back" href="./club.html#home">← Главная клуба</a>
+ <a class="back noya-legacy-return" href="./club.html#home">← Главная клуба</a>
  <div class="heading"><h1>ПРЯМЫЕ ЭФИРЫ</h1><div class="count" id="live-count" aria-live="polite"><span class="count-check">✓</span><span id="live-numbers">— ИЗ —</span></div></div>
  <label class="searchbar" for="search">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.5" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.3"/><path d="m16.3 16.3 5 5"/></svg>
@@ -66,7 +66,7 @@ dialog iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:
  <p class="muted">Просмотренные эфиры сохраняются в профиле Telegram. Прогресс считается отдельно от уроков курса.</p>
 </main>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="./assets/noya-video-actions.js?v=2"></script>
+<script src="./assets/noya-navigation.js?v=1"></script><script src="./assets/noya-video-actions.js?v=2"></script>
 <script>
 "use strict";
 let streams=[],favorites=new Set(),watched=new Set(),loading=false,activeDialog=null,playerSdkPromise=null;
@@ -197,7 +197,7 @@ async function watch(s){
    }});
    dialog.append(dialogWidget.element);
   }
-  const close=document.createElement('button');close.className='dialog-close';close.type='button';close.textContent='Закрыть';close.onclick=()=>dialog.close();
+  const close=document.createElement('button');close.className='dialog-close noya-legacy-return';close.type='button';close.textContent='Закрыть';close.onclick=()=>dialog.close();
   actions.append(close);dialog.append(actions);
   dialog.addEventListener('close',()=>{iframe.src='about:blank';dialog.remove();activeDialog=null;},{once:true});
   document.body.append(dialog);dialog.showModal();
