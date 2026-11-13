@@ -314,7 +314,34 @@ async function setupNoyaBilling(){
     const t=await trialStatus.json();
     // Owner/admin gets a permanent preview of the club without a fake payment.
     // Paid-course permissions and gift accrual remain enforced independently.
-    if(t.adminPreview===true){hide();return;}
+    if(t.adminPreview===true){
+     hide();
+     const headers={'x-telegram-init-data':initData};
+     const status=await billingFetch('/api/club-checkout?status=1',{headers,cache:'no-store'});
+     if(!status.ok)return;
+     const config=await status.json();
+     if(!config.enabled||!config.demo||document.getElementById('noya-demo-checkout'))return;
+     const button=document.createElement('button');
+     button.id='noya-demo-checkout';
+     button.type='button';
+     button.textContent='Проверить демооплату';
+     button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{
+       const response=await billingFetch('/api/club-checkout',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({initData,demoOnly:true}),cache:'no-store'
+       });
+       const data=await response.json();
+       if(!response.ok||!data.checkoutUrl)throw Error('Не удалось создать демоссылку');
+       if(typeof window.Telegram?.WebApp?.openLink==='function')window.Telegram.WebApp.openLink(data.checkoutUrl);
+       else window.location.assign(data.checkoutUrl);
+      }catch(error){alert(error.message||'Демооплата недоступна');}
+      finally{button.disabled=false;}
+     });
+     curtain.before(button);
+     return;
+    }
     if(t.paidActive){hide();return;}
     if(t.trialActive){lockTrialCourse();hide();return;}
    }
