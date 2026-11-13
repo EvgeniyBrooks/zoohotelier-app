@@ -66,7 +66,7 @@ function render(){
   empty.append(node('div','noya-library-empty-icon','▤'));
   empty.append(node('strong','',filter!=='all'?'Здесь пока пусто':mode==='history'?'История пуста':mode==='favorites'?'Избранное пусто':'Нет пройденных материалов'));
   empty.append(node('p','',filter!=='all'?'Выбери другой раздел или фильтр «Все».':mode==='history'?'Просмотренные материалы появятся здесь.':mode==='favorites'?'Сохраняй понравившиеся видео кнопкой ♡.':'Завершённые уроки и эфиры появятся здесь.'));
-  const browse=node('a','button secondary','Выбрать материал');browse.href='./club.html#home';empty.append(browse);
+  const browse=node('button','button secondary','Выбрать материал');browse.type='button';browse.onclick=()=>document.querySelector('[data-screen="home"]')?.click();empty.append(browse);
   root.append(empty);return;
  }
  const fragment=document.createDocumentFragment();

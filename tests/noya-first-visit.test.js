@@ -56,9 +56,11 @@ test('switching dogs clears the previous conversation and invalidates pending an
 test('library network error survives tab changes and can be retried',async()=>{
  const document=dom(),tabs=[new Element(),new Element()];tabs[0].dataset.library='history';tabs[1].dataset.library='favorites';
  document.querySelectorAll=selector=>selector==='[data-library]'?tabs:[];
+ let homeClicks=0;document.querySelector=selector=>selector==='[data-screen="home"]'?{click(){homeClicks++}}:null;
  let failed=true;const window={Telegram:{WebApp:{initData:'fixture'}},addEventListener(){}};
  const context=vm.createContext({document,window,location:{hash:''},fetch:async()=>{if(failed)throw Error('Связь потеряна');return {ok:true,json:async()=>({items:[]})}}});
  vm.runInContext(read('assets/noya-library.js'),context);await window.NOYALibrary.refresh();
  tabs[1].listeners.click();const box=document.getElementById('library-content').children[0];assert.equal(box.children[0].textContent,'Связь потеряна');assert.equal(box.children[1].textContent,'Попробовать ещё раз');
  failed=false;await box.children[1].onclick();assert.equal(document.getElementById('library-content').children[0].children[1].textContent,'Избранное пусто');
+ document.getElementById('library-content').children[0].children[3].onclick();assert.equal(homeClicks,1);
 });
