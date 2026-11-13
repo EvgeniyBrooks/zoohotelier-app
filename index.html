@@ -316,7 +316,7 @@
 
   <div class="app">
 
-    <a class="course-club-return" href="./club.html#home" aria-label="Вернуться на главную NOYA CLUB">← На главную NOYA CLUB</a>
+    <a class="course-club-return noya-legacy-return" href="./club.html#home" aria-label="Вернуться на главную NOYA CLUB">← На главную NOYA CLUB</a>
 
     <div class="header">
 
@@ -330,7 +330,7 @@
 
     </div>
 
-    <nav id="course-back-nav" class="course-back-nav" hidden><button id="course-back-button" type="button" onclick="courseGoBack()">← Назад</button><span id="course-nav-title"></span></nav>
+    <nav id="course-back-nav" class="course-back-nav noya-legacy-return" hidden><button id="course-back-button" type="button" onclick="courseGoBack()">← Назад</button><span id="course-nav-title"></span></nav>
 
     <div id="app">
 
@@ -343,7 +343,7 @@
   </div>
 
 
-<script src="./assets/noya-video-actions.js?v=2"></script>
+<script src="./assets/noya-navigation.js?v=1"></script><script src="./assets/noya-video-actions.js?v=2"></script>
 <script>
 
 
@@ -360,6 +360,7 @@ const CLOUDFLARE_CUSTOMER =
 
 
 let courseBackAction=null;
+window.NOYABack.set(()=>typeof courseBackAction==='function'?courseBackAction():location.assign('./club.html#home'));
 function setCourseBack(action,title=''){
  courseBackAction=action;
  const nav=document.getElementById('course-back-nav');
