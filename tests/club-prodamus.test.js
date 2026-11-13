@@ -83,7 +83,7 @@ test('club checkout uses its own plan ID, pending intent and signed link',async(
   assert.equal(calls.length,3);
  }finally{global.fetch=oldFetch;cleanup();}
 });
-const success={date:'2026-11-11T08:00:00+03:00',domain:'merchant.payform.ru',order_id:'1001',order_num:'noya-12341234-1234-4234-8234-123412341234',sum:'2900.00',currency:'rub',payment_status:'success',subscription:{id:'50001',payment_num:'1'}};
+const success={date:'2026-11-11T08:00:00+03:00',domain:'merchant.payform.ru',order_id:'1001',order_num:'noya-12341234-1234-4234-8234-123412341234',sum:'2900.00',currency:'rub',payment_status:'success',subscription:{id:'12345',profile_id:'50001',payment_num:'1'}};
 async function callback(body,signOverride){
  const r=res(),signature=signOverride||lib.signedPayload(body,process.env.NOYA_PRODAMUS_SECRET);
  await webhook({method:'POST',body,headers:{sign:signature}},r);
@@ -111,7 +111,7 @@ test('verified auto-payment event without status is accepted, failed events are 
  const oldFetch=global.fetch;let count=0;
  global.fetch=async()=>{count++;return {ok:true,json:async()=>[{applied:true,member_id:student,paid_payments:2}]};};
  try{
-  const recurring={...success,order_num:'',order_id:'1002',payment_status:'',subscription:{id:'50001',type:'action',action_code:'auto_payment',autopayment:'1',payment_num:'2'}};
+  const recurring={...success,order_num:'',order_id:'1002',payment_status:'',subscription:{id:'12345',profile_id:'50001',type:'action',action_code:'auto_payment',autopayment:'1',payment_num:'2'}};
   const a=await callback(recurring);assert.equal(a.statusCode,200);assert.equal(count,1);
   const b=await callback({...success,payment_status:'order_denied'});assert.equal(b.statusCode,200);assert.equal(count,1);
  }finally{global.fetch=oldFetch;cleanup();}
@@ -331,7 +331,7 @@ test('accepts correctly signed Prodamus multipart/form-data with mixed-case boun
   date:success.date,domain:success.domain,order_id:success.order_id,
   order_num:success.order_num,sum:success.sum,currency:success.currency,
   payment_status:success.payment_status,'subscription[id]':success.subscription.id,
-  'subscription[payment_num]':success.subscription.payment_num
+  'subscription[payment_num]':success.subscription.payment_num,'subscription[profile_id]':success.subscription.profile_id
  };
  const bytes=Object.entries(flat).map(([k,v])=>
   '--'+boundary+'\r\nContent-Disposition: form-data; name="'+k+'"\r\n\r\n'+v+'\r\n'
@@ -352,7 +352,7 @@ test('signed initial payment without a unique provider subscription ID is retrie
  const prev=global.fetch;let called=false;global.fetch=async()=>{called=true;throw Error('Unexpected RPC');};
  try{
   const initial={date:success.date,domain:success.domain,order_id:success.order_id,
-   order_num:success.order_num,sum:success.sum,currency:success.currency,payment_status:'success'};
+   order_num:success.order_num,sum:success.sum,currency:success.currency,payment_status:'success',subscription:{id:'12345'}};
   const r=await callback(initial);
   assert.equal(r.statusCode,503);
   assert.equal(called,false);
@@ -381,7 +381,8 @@ test('Prodamus signed settings test notification with no subscription does not c
    ...sample,order_num:'noya-12341234-1234-4234-8234-123412341234'
   };
   const missing=await callback(noSubscriptionOrder);
-  assert.equal(missing.statusCode,503);
+  assert.equal(missing.statusCode,200);
   assert.equal(calls,0);
  }finally{global.fetch=oldFetch;cleanup();}
 });
+

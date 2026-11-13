@@ -6,7 +6,8 @@ const tabs=[...document.querySelectorAll('[data-library]')];
 const filters=document.getElementById('noya-library-filters');
 const labels={history:'История',favorites:'Избранное',completed:'Пройденное'};
 const types={course:'Управление вниманием',live:'Прямые эфиры',club:'Клубные уроки'};
-let items=[],mode='history',filter='all',pending=false;
+let items=[],mode='history',filter='all',pending=false,loadError='';
+const changing=new Set();
 const init=()=>window.Telegram?.WebApp?.initData||'';
 async function request(action,more={}){
  if(!init())throw Error('Открой NOYA CLUB в Telegram');
@@ -39,6 +40,7 @@ function row(item){
  const done=node('button','noya-library-completed',item.completed?'✓ Пройдено':'Отметить');
  done.type='button';done.setAttribute('aria-pressed',String(item.completed));done.setAttribute('aria-label',item.completed?'Убрать отметку о прохождении':'Отметить пройденным');
  done.onclick=()=>change(item,'complete',!item.completed);
+ favorite.disabled=done.disabled=changing.has(item.type+':'+item.id);
  controls.append(favorite,done);content.append(controls);
  box.append(thumb,content);return box;
 }
@@ -53,11 +55,18 @@ function render(){
  const visible=items.filter(x=>(filter==='all'||x.type===filter)&&(mode==='history'?!!x.lastViewedAt:mode==='favorites'?x.favorited:x.completed));
  visible.sort((a,b)=>new Date(mode==='history'?b.lastViewedAt:b.updatedAt||0)-new Date(mode==='history'?a.lastViewedAt:a.updatedAt||0));
  root.replaceChildren();root.className='noya-library-content';
+ if(loadError){
+  const box=node('div','noya-library-empty');
+  box.append(node('p','',loadError));
+  const retry=node('button','button','Попробовать ещё раз');retry.type='button';retry.onclick=refresh;box.append(retry);
+  root.append(box);return;
+ }
  if(!visible.length){
   const empty=node('div','noya-library-empty');
   empty.append(node('div','noya-library-empty-icon','▤'));
   empty.append(node('strong','',filter!=='all'?'Здесь пока пусто':mode==='history'?'История пуста':mode==='favorites'?'Избранное пусто':'Нет пройденных материалов'));
   empty.append(node('p','',filter!=='all'?'Выбери другой раздел или фильтр «Все».':mode==='history'?'Просмотренные материалы появятся здесь.':mode==='favorites'?'Сохраняй понравившиеся видео кнопкой ♡.':'Завершённые уроки и эфиры появятся здесь.'));
+  const browse=node('a','button secondary','Выбрать материал');browse.href='./club.html#home';empty.append(browse);
   root.append(empty);return;
  }
  const fragment=document.createDocumentFragment();
@@ -67,11 +76,13 @@ function render(){
 async function refresh(){
  if(pending)return;
  pending=true;
- try{const data=await request('list');items=data.items||[];render();}
- catch(error){root.className='noya-library-empty';root.textContent=error.message;}
+ try{const data=await request('list');items=data.items||[];loadError='';render();}
+ catch(error){loadError=error.message;render();}
  finally{pending=false;}
 }
 async function change(item,action,value){
+ const key=item.type+':'+item.id;if(changing.has(key))return;
+ changing.add(key);render();
  try{
   const data=await request(action,{type:item.type,id:item.id,value});
   if(action==='favorite')item.favorited=data.state.favorited;
@@ -80,6 +91,7 @@ async function change(item,action,value){
   render();
   if(typeof window.loadAttentionCourseProgress==='function')window.loadAttentionCourseProgress();
  }catch(error){alert(error.message);}
+ finally{changing.delete(key);render();}
 }
 function openMaterial(item){
  if(item.type==='course'){location.href='./index.html?lesson='+encodeURIComponent(item.id);return;}

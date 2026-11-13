@@ -56,7 +56,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-library-extra summary{cursor:pointer;color:#f5fa45;font-size:13px;font-weight:800;margin-bottom:15px}
 .noya-library-extra[open]{padding-bottom:15px}
 @media(max-width:380px){.noya-library-thumb{width:90px;flex-basis:90px;height:68px}.noya-library-tabs .tab{font-size:11px}.noya-library-completed{padding:7px;font-size:9px}}
-</style><script src="./assets/noya-library.js?v=3" defer></script><style>
+</style><script src="./assets/noya-library.js?v=4" defer></script><style>
 /* Member discovery and opt-in profiles */
 .noya-member-top{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:8px}
 .noya-member-top .eyebrow{font-size:10px;letter-spacing:.8px}
@@ -149,7 +149,8 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 </style></head><body>
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
- <span id="noya-payment-state">Открываем оплату…</span>
+ <span id="noya-payment-state">Проверяем доступ…</span>
+ <a id="noya-telegram-open" class="button" href="https://t.me/NoyaClubBrooksBot?startapp" hidden>Открыть в Telegram</a>
  <button type="button" id="noya-payment-open" hidden>Открыть оплату в браузере</button>
  <button type="button" id="noya-payment-retry" hidden>Попробовать ещё раз</button>
 </div><main><div id="noya-account-slot"></div>
@@ -328,7 +329,7 @@ async function setupNoyaBilling(){
  const referralStart=startParam||new URLSearchParams(location.search).get('tgWebAppStartParam')||'';
  const referralCode=/^[a-f0-9]{24}$/.test(queryReferral||'')?queryReferral:
    /^ref_[a-f0-9]{24}$/.test(referralStart)?referralStart.slice(4):null;
- if(!initData){hide();return;}
+ if(!initData){wait.hidden=true;state.textContent='Войди через Telegram, чтобы открыть свой клуб.';document.getElementById('noya-telegram-open').hidden=false;return;}
  const begin=async()=>{
   retry.hidden=true;paymentButton.hidden=true;paymentUrl='';
   wait.hidden=false;state.textContent='Проверяем доступ…';
@@ -582,7 +583,7 @@ async function loadDogProgress(){
 function updateProgressSummary(){
  const el=document.getElementById('progress-summary');
  if(!document.getElementById('progress-dog').value){el.textContent='Добавь собаку через диагностику, чтобы отмечать уроки';return}
- el.textContent='Пройдено '+clubLessonCache.filter(l=>dogProgress.has(l.id)).length+' из '+clubLessonCache.length+' опубликованных уроков';
+ el.textContent=clubLessonCache.length?'Пройдено '+clubLessonCache.filter(l=>dogProgress.has(l.id)).length+' из '+clubLessonCache.length+' опубликованных уроков':'Уроки клуба готовятся. Начни с НОИ или курса «Управление вниманием».';
 }
 async function setLessonProgress(lessonId,completed,selectedDogId){
  const dogId=selectedDogId||document.getElementById('progress-dog').value,initData=window.Telegram?.WebApp?.initData;
@@ -629,10 +630,10 @@ function updateRouteCard(dog,lessons){
  meter.max=lessons.length||1;
  meter.value=done;
  progress.textContent=dog?(lessons.length?dog.name+' · '+done+' из '+lessons.length+' уроков':dog.name):'';
- title.textContent=next?next.title:lessons.length?'Маршрут пройден':dog?'Персональный план занятий':'Добавь собаку, чтобы получить план занятий';
+ title.textContent=next?next.title:lessons.length?'Маршрут пройден':dog?'Начни с НОИ':'Добавь собаку, чтобы получить план занятий';
  button.hidden=false;
- button.textContent=next?'Продолжить':dog?'Открыть маршрут':'Начать';
- button.onclick=next?()=>openClubLesson(next.id,next.title):dog?()=>showScreen('route'):()=>location.assign('./club-demo.html');
+ button.textContent=next?'Продолжить':lessons.length?'Открыть маршрут':dog?'Спросить НОЮ':'Начать';
+ button.onclick=next?()=>openClubLesson(next.id,next.title):lessons.length?()=>showScreen('route'):dog?()=>showScreen('ai'):()=>location.assign('./club-demo.html');
 }
 function renderRoute(){
  const dogId=document.getElementById('route-dog').value;
@@ -644,7 +645,11 @@ function renderRoute(){
  const lessons=keys.flatMap(key=>clubLessonCache.filter(l=>l.topic===key).sort((a,b)=>a.sort_order-b.sort_order));
  updateRouteCard(clubDogs.find(d=>d.id===dogId),lessons);
  const done=lessons.filter(l=>routeProgress.has(l.id)).length;
- status.textContent=done+' из '+lessons.length+' уроков пройдено';
+ status.textContent=lessons.length?done+' из '+lessons.length+' уроков пройдено':'Направления определены. Уроки по ним готовятся — НОЯ поможет выбрать первое упражнение.';
+ if(!lessons.length){
+  const ask=document.createElement('button');ask.className='button';ask.textContent='Выбрать упражнение с НОЕЙ';
+  ask.onclick=()=>{document.getElementById('ai-dog').value=dogId;resetAiConversation();showScreen('ai');document.getElementById('ai-input').value='С какого простого упражнения начать по нашей диагностике?';};el.append(ask);
+ }
  keys.forEach((key,i)=>{
   const block=document.createElement('div');block.className='route-topic';
   const rank=document.createElement('div');rank.className='route-count';rank.textContent='НАПРАВЛЕНИЕ '+(i+1);
@@ -711,7 +716,17 @@ function showAiNextStep(){
  const p=document.createElement('p');p.textContent=next?'Рекомендуем начать с урока: '+next.title:'Подходящие опубликованные уроки пока не найдены. Спроси НОЮ, как безопасно начать работу по диагностике.';el.append(p);
  if(next){const b=document.createElement('button');b.className='button secondary';b.textContent='Смотреть урок';b.onclick=()=>openClubLesson(next.id,next.title);el.append(b)}
 }
-document.getElementById('ai-dog').addEventListener('change',showAiNextStep);
+function resetAiConversation(){
+ aiConversationVersion++;
+ aiHistory.length=0;
+ const greeting=document.getElementById('ai-greeting');
+ document.getElementById('ai-messages').replaceChildren(greeting);
+ document.getElementById('ai-input').value='';
+ document.getElementById('ai-status').textContent='';
+ document.querySelector('.ai-suggestions').hidden=document.getElementById('ai-form').hidden;
+ showAiNextStep();
+}
+document.getElementById('ai-dog').addEventListener('change',resetAiConversation);
 async function loadAiMemory(){
  const initData=window.Telegram?.WebApp?.initData;if(!initData)return;
  try{
@@ -736,6 +751,7 @@ document.getElementById('ai-memory-optin').addEventListener('change',async e=>{
 });
 loadAiMemory();
 const aiHistory=[];
+let aiConversationVersion=0;
 document.querySelectorAll('[data-ai-suggestion]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('ai-input').value=b.dataset.aiSuggestion;document.getElementById('ai-input').focus()}));
 document.getElementById('ai-form').addEventListener('submit',async e=>{
  e.preventDefault();
@@ -743,12 +759,14 @@ document.getElementById('ai-form').addEventListener('submit',async e=>{
  const question=input.value.trim(),initData=window.Telegram?.WebApp?.initData;
  if(!question||button.disabled)return;
  if(!initData){status.textContent='Открой NOYA CLUB через Telegram.';return}
- button.disabled=true;status.textContent='НОЯ думает…';
+ button.disabled=true;document.getElementById('ai-dog').disabled=true;status.textContent='НОЯ думает…';
+ const version=aiConversationVersion;
  const messages=[...aiHistory,{role:'user',content:question}].slice(-8);
  try{
   const r=await fetch('/api/club-lessons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'noya_chat',initData,messages,dogId:document.getElementById('ai-dog').value||undefined})});
   const data=await r.json();
   if(!r.ok)throw Error(data.error||'Ошибка соединения');
+  if(version!==aiConversationVersion)return;
   const container=document.getElementById('ai-messages');
   for(const [role,content] of [['user',question],['assistant',data.answer]]){const el=document.createElement('div');el.className='ai-message '+role;el.textContent=content;container.append(el);aiHistory.push({role,content})}
   if(aiHistory.length>8)aiHistory.splice(0,aiHistory.length-8);
@@ -764,8 +782,8 @@ document.getElementById('ai-form').addEventListener('submit',async e=>{
   input.value='';status.textContent='';
   document.querySelector('.ai-suggestions').hidden=true;
   container.lastElementChild?.scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
- }catch(err){status.textContent=err.message}
- finally{button.disabled=false}
+ }catch(err){if(version===aiConversationVersion)status.textContent=err.message}
+ finally{button.disabled=false;document.getElementById('ai-dog').disabled=false}
 });
 async function checkNoyaTelegram(){
  const el=document.getElementById('telegram-auth-state');
@@ -863,3 +881,4 @@ loadClubAdmin();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadLiveFolderCover,{once:true});else loadLiveFolderCover();
 })();
 </script></body></html>
+

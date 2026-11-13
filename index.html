@@ -601,7 +601,14 @@ async function authenticateTelegram() {
 // ГЛАВНЫЙ ЭКРАН КУРСА
 // ==================================================
 
-async function loadCourse() {
+async function loadCourseState() {
+  try { courseProgress=await courseProgressRequest('course_progress'); }
+  catch(error) {
+    const catalog=await courseProgressRequest('course_catalog');
+    courseProgress={blocks:catalog.blocks||[],lessons:catalog.lessons||[],completed:[],error:error.message};
+  }
+}
+async function loadCourse(stateReady=false) {
   setCourseBack(null);
 
   const app =
@@ -624,10 +631,8 @@ async function loadCourse() {
     // БЛОКИ
     // ----------------------------------------------
 
-    const catalog=await courseProgressRequest('course_catalog');
-    const blocks=catalog.blocks||[];
-    try{courseProgress=await courseProgressRequest('course_progress')}
-    catch(e){console.warn('Course progress not available:',e.message);courseProgress={blocks:[],lessons:[],completed:[],error:e.message}}
+    if(!stateReady)await loadCourseState();
+    const blocks=courseProgress.blocks||[];
 
 
 
@@ -648,7 +653,7 @@ async function loadCourse() {
       <div class="course-profile">
         <div class="course-avatar">${profilePhoto?'<img src="'+escapeHtml(profilePhoto)+'" alt="">':'🐕'}</div>
         <div class="course-profile-copy"><strong>${escapeHtml(profileName)}</strong><span>УЧАСТНИК КУРСА</span></div>
-        <span class="course-profile-arrow">›</span>
+
       </div>
       <section class="course-hero">
         <div class="course-hero-title">УПРАВЛЕНИЕ<br>ВНИМАНИЕМ</div>
@@ -659,10 +664,7 @@ async function loadCourse() {
         </div>
       </section>
       `;
-    // ----------------------------------------------
-    // НОВОСТИ
-    // ----------------------------------------------
-
+    if(courseProgress.error)html+='<div class="status">Прогресс временно недоступен. Уроки можно смотреть — отметки обновятся при следующем входе.</div>';
     // ----------------------------------------------
     // БЛОКИ
     // ----------------------------------------------
@@ -2319,7 +2321,10 @@ async function startApp() {
   }
 
 
-  await loadCourse();
+  const directLesson=new URLSearchParams(location.search).get('lesson');
+  if(!directLesson&&window.location.hash!=='#first-video'){await loadCourse();return;}
+  try { await loadCourseState(); }
+  catch(error){await loadCourse();return;}
 
   // Open a video selected from NOYA's unified library.
   const selectedLesson=new URLSearchParams(location.search).get('lesson');
@@ -2342,9 +2347,11 @@ async function startApp() {
     if(first){
       const block=blocks.find(b=>b.id===first.block_id);
       await loadLesson(first.id,first.block_id,block?.title||'Предобучение');
+      return;
     }
   }
 
+  await loadCourse(true);
 }
 
 
@@ -2360,3 +2367,4 @@ startApp();
 </body>
 
 </html>
+

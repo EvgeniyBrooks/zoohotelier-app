@@ -116,7 +116,7 @@ module.exports=async function handler(req,res){
    const memoryPref=await db('noya_memory_preferences?select=enabled&student_id=eq.'+student+'&limit=1');
    const memoryEnabled=memoryPref[0]?.enabled===true;
    const messages=req.body?.messages;
-   if(!Array.isArray(messages)||messages.length<1||messages.length>8||!messages.every(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim().length>0&&m.content.length<=1200)||messages[messages.length-1].role!=='user')throw fail(400,'Invalid chat messages');
+   if(!Array.isArray(messages)||messages.length<1||messages.length>8||!messages.every(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim().length>0&&m.content.length<=(m.role==='assistant'?4000:1200))||messages[messages.length-1].role!=='user')throw fail(400,'Invalid chat messages');
    const dogId=req.body?.dogId;
    let dogContext='',recommendedLessons=[],hasDiagnostic=false;
    if(typeof dogId==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(dogId)){
@@ -137,7 +137,7 @@ module.exports=async function handler(req,res){
     recommendedLessons=[...retry,...ranked.filter(l=>!done.has(l.id)&&!retry.some(x=>x.id===l.id))].slice(0,3).map(l=>({id:l.id,title:l.title,topic:l.topic,description:l.description}));
     const completedCount=ranked.filter(l=>done.has(l.id)).length;
     const nextLesson=recommendedLessons[0]||null;
-    dogContext='Проверенный профиль собаки: '+JSON.stringify({name:dogs[0].name,diagnosticAnswers:latest?.answers||null,priorityTopics:topics,recentPracticeFeedback:feedback.slice(0,8).map(f=>({lessonId:f.lesson_id,outcome:f.outcome,note:f.note.slice(0,200)})),completedLessonCount:completedCount,availableLessonCount:ranked.length,nextLesson:nextLesson?{title:nextLesson.title,description:nextLesson.description,topic:nextLesson.topic}:null,recommendedLessons:recommendedLessons.map(l=>({title:l.title,topic:l.topic,description:l.description}))})+'. Это ответы владельца, а не диагноз. Названия уроков взяты из реально опубликованной библиотеки. Не придумывай названия, видео или ссылки. Если подходящих уроков нет, скажи, что они ещё готовятся. Учитывай, что отметка о прохождении урока не доказывает освоение навыка.';
+    dogContext='Проверенный профиль собаки: '+JSON.stringify({name:dogs[0].name,diagnosticAnswers:latest?.answers||null,priorityTopics:topics,recentPracticeFeedback:feedback.slice(0,8).map(f=>({lessonId:f.lesson_id,outcome:f.outcome,note:String(f.note||'').slice(0,200)})),completedLessonCount:completedCount,availableLessonCount:ranked.length,nextLesson:nextLesson?{title:nextLesson.title,description:nextLesson.description,topic:nextLesson.topic}:null,recommendedLessons:recommendedLessons.map(l=>({title:l.title,topic:l.topic,description:l.description}))})+'. Это ответы владельца, а не диагноз. Названия уроков взяты из реально опубликованной библиотеки. Не придумывай названия, видео или ссылки. Если подходящих уроков нет, скажи, что они ещё готовятся. Учитывай, что отметка о прохождении урока не доказывает освоение навыка.';
    }else if(dogId!=null)throw fail(400,'Некорректный профиль собаки');
 
    // Atomic per-user quota, enforced before every paid AI request.
@@ -195,3 +195,4 @@ module.exports=async function handler(req,res){
   return res.status(200).json({ok:true,lessons,aiAvailable:process.env.NOYA_AI_ENABLED==='true'&&Boolean(process.env.OPENAI_API_KEY)});
  }catch(e){if(!e.status)console.error('Club lessons error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
 };
+

@@ -180,9 +180,9 @@ test('app has a shop navigation and never pretends shop purchases are enabled',(
  const shop=fs.readFileSync(path.join(root,'shop.html'),'utf8');
  const ui=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
  const api=fs.readFileSync(path.join(root,'api','club-shop.js'),'utf8');
- assert.match(html,/href="\.\/shop\.html"/);
+ assert.match(html,/href="\.\/shop\.html#coins"/);
  assert.match(shop,/noya-shop-reviewer-tab/);
- assert.match(shop,/club-shop\.js\?v=1/);
+ assert.match(shop,/club-shop\.js\?v=2/);
  assert.match(ui,/Оплата разборов скоро появится/);
  assert.match(api,/purchaseEnabled:false/);
  assert.doesNotMatch(api,/action==='purchase'/);
@@ -270,3 +270,4 @@ test('referral section is above redeemable goods with copy/share controls',()=>{
  assert.match(club,/action:'referral_claim',initData,referralCode/);
  assert.ok(club.indexOf("action:'referral_claim'")<club.indexOf("const status=await billingFetch('/api/club-checkout?status=1'"));
 });
+

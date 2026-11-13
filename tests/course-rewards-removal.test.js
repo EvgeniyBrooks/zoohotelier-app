@@ -61,12 +61,12 @@ test('NOYA club has one bottom navigation, without a duplicated sticky header me
  assert.doesNotMatch(page,/club-quick-nav|Быстрый переход по разделам/);
  assert.match(page,/<nav class="bottom" aria-label="Основная навигация">/);
  assert.equal((page.match(/<nav class="bottom"/g)||[]).length,1);
- for(const name of ['Главная','Участники','Библиотека','Магазин','Бонусы']){
+ for(const name of ['Главная','Участники','Библиотека','Бонусы']){
   assert.match(page,new RegExp('>'+name+'<\\/span>'));
  }
  assert.match(page,/href="\.\/club-demo\.html"/);
- assert.match(page,/data-screen="route"/);
- assert.match(page,/data-screen="ai"/);
+ assert.match(page,/id="route"/);
+ assert.match(page,/id="ai"/);
  assert.match(page,/id="attention-course-progress"[^>]*>— из —<\/span>/);
 });
 
@@ -95,14 +95,15 @@ test('NOYA home places recordings into a standalone folder below Attention Manag
  assert.match(home,/ПРЯМЫЕ ЭФИРЫ/);
  assert.match(home,/class="noya-media-folder-title">ПРЯМЫЕ ЭФИРЫ<\/strong>/);
  assert.doesNotMatch(course,/href="\.\/course-live\.html"|ПРЯМЫЕ ЭФИРЫ С ЕВГЕНИЕМ/);
- assert.match(live,/class="back" href="\.\/club\.html#home"/);
+ assert.match(live,/class="back noya-legacy-return" href="\.\/club\.html#home"/);
 });
 
 test('Attention Management course always has a direct return link to club home',()=>{
  const course=read('index.html');
- const nav=course.indexOf('class="course-club-return" href="./club.html#home"');
+ const nav=course.indexOf('class="course-club-return noya-legacy-return" href="./club.html#home"');
  const header=course.indexOf('<div class="header">');
  assert.ok(nav>0&&header>nav);
  assert.match(course,/На главную NOYA CLUB/);
  assert.match(course,/course-club-return:focus-visible/);
 });
+

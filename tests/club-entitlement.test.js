@@ -119,7 +119,7 @@ test('ordinary user cannot bypass payment through NOYA admin preview',async()=>{
 
 test('NOYA home hides payment redirect only after server confirms admin preview',()=>{
  const source=read('club.html');
- assert.match(source,/if\(t\.adminPreview===true\)\{hide\(\);return;\}/);
+ assert.match(source,/if\(t\.adminPreview===true\)\{[\s\S]*?hide\(\);return;\}/);
  assert.match(source,/if\(t\.paidActive\)\{hide\(\);return;\}/);
  assert.match(source,/if\(!response\.ok\|\|!data\.checkoutUrl\)/);
  assert.match(TRIAL,/admins\?select=id&telegram_id=eq\./);
@@ -139,3 +139,4 @@ test('new and saved diagnostics recommend the real first video of Attention Mana
  const deepLink=course.indexOf("window.location.hash==='#first-video'");
  assert.ok(gate>=0&&deepLink>gate,'Direct video link must run after paid-course authentication gate');
 });
+
