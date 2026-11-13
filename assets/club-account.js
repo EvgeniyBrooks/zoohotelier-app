@@ -28,6 +28,7 @@
   </header>
   <div class="account-dialog-content"><div id="account-overview">
     <h2 id="account-dialog-title" class="account-visually-hidden">Профиль и подарки NOYA CLUB</h2>
+    <button class="button secondary" id="account-edit-profile" type="button">Редактировать профиль</button>
     <details class="account-membership-details" id="account-membership-details"><summary><span>Моя подписка</span><span>Срок и доступ +</span></summary>
     <section class="account-membership" aria-label="Подписка NOYA CLUB" aria-live="polite">
       <div class="account-membership-top"><span class="account-membership-brand">NOYA CLUB</span><span class="account-membership-status" id="account-subscription-status">Проверяем…</span></div>
@@ -278,7 +279,7 @@
       try {backButton.offClick(backAccount);if (!wasBackVisible) backButton.hide();} catch (_) {}
       backButton = null;
     }
-    if (opener?.isConnected) opener.focus({preventScroll:true});
+    if (!document.querySelector('.noya-member-dialog[open]') && opener?.isConnected) opener.focus({preventScroll:true});
   }
   function closeAccount() {
     if (!isOpen) return;
@@ -314,6 +315,10 @@
   byId('account-open').addEventListener('click', openAccount);
   document.querySelectorAll('[data-open-account]').forEach(button => button.addEventListener('click', openAccount));
   byId('account-close').addEventListener('click', closeAccount);
+  byId('account-edit-profile').addEventListener('click',()=>{
+    closeAccount();
+    window.NOYAMembers?.edit();
+  });
   byId('account-retry').addEventListener('click', loadAccount);
   byId('account-route-link').addEventListener('click', event => {
     if (document.getElementById('route') && typeof window.showScreen === 'function') {
