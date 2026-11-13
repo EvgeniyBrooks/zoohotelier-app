@@ -21,7 +21,7 @@ if(searchToggle)togglePanel(searchToggle,document.getElementById('noya-member-se
 if(filterToggle)togglePanel(filterToggle,document.getElementById('noya-member-filter-panel'),city);
 document.getElementById('noya-member-filter-reset')?.addEventListener('click',()=>{city.value='';paint();});
 const normalize=value=>String(value||'').trim().toLocaleLowerCase('ru');
-let view='all',people=[],leaders=[],me=null,busy=false;
+let view='all',people=[],leaders=[],me=null,busy=false,loadError='';
 const api=async(action,params={})=>{
  const initData=window.Telegram?.WebApp?.initData;
  if(!initData)throw Error('Открой клуб из Telegram');
@@ -79,6 +79,7 @@ function paint(){
   (!match||normalize([person.name,person.about,person.city,person.dogName,person.profession,person.hobbies].filter(Boolean).join(' ')).includes(match)));
 
  root.replaceChildren();
+ if(loadError){root.append(el('div','noya-member-empty',loadError));return;}
  if(!visible.length)root.append(el('div','noya-member-empty',(match||city?.value)?'Ничего не найдено.':view==='favorites'?'В избранном пока никого нет.':'Открытых профилей пока нет.'));
  else{const fragment=document.createDocumentFragment();visible.forEach(person=>fragment.append(card(person)));root.append(fragment);}
 }
@@ -223,13 +224,13 @@ async function refresh(){
  busy=true;
  try{
   const data=await api('list');
-  people=data.users||[];leaders=data.leaders||[];
+  loadError='';people=data.users||[];leaders=data.leaders||[];
   const ranks=new Map(leaders.map(p=>[p.id,p.rank]));
   people.forEach(p=>p.rank=ranks.get(p.id)||null);
   me=data.me;
   total.textContent=Number.isFinite(Number(data.memberCount))?Number(data.memberCount):people.length;
   paintMine();paint();
- }catch(e){root.replaceChildren(el('div','noya-member-empty',e.message));}
+ }catch(e){loadError=e.message;root.replaceChildren(el('div','noya-member-empty',e.message));}
  finally{busy=false;}
 }
 tabs.forEach(tab=>tab.addEventListener('click',()=>{view=tab.dataset.membersTab;paint();}));

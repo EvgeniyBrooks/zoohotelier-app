@@ -192,6 +192,6 @@ module.exports=async function handler(req,res){
    return res.status(200).json({ok:true,answer:answer.slice(0,4000),recommendedLessons,memoryEnabled});
   }
   const lessons=await db('club_lessons?select=id,slug,title,description,topic,sort_order,duration_seconds&is_published=eq.true&order=topic.asc,sort_order.asc&limit=500');
-  return res.status(200).json({ok:true,lessons});
+  return res.status(200).json({ok:true,lessons,aiAvailable:process.env.NOYA_AI_ENABLED==='true'&&Boolean(process.env.OPENAI_API_KEY)});
  }catch(e){if(!e.status)console.error('Club lessons error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
 };

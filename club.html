@@ -112,7 +112,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
 .noya-member-primary,.noya-member-secondary{flex:1;min-width:130px;text-align:center;text-decoration:none;font-size:13px;font-weight:850;border-radius:12px;padding:12px;border:0;cursor:pointer}
 .noya-member-primary{background:#f5fa45;color:#111}.noya-member-secondary{background:#343434;color:#fff}
-</style><script src="./assets/noya-members.js?v=5" defer></script><style>
+</style><script src="./assets/noya-members.js?v=6" defer></script><style>
 .noya-member-titlebar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:10px 0 20px}
 .noya-member-titlebar h1{margin:0;min-width:0;font:700 clamp(27px,7.1vw,42px)/1 Oswald,Impact,sans-serif;letter-spacing:-.7px}
 .noya-member-titlebar h1 span{color:#f5fa45}
@@ -204,9 +204,9 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
  <label class="noya-field-label" for="ai-dog">Моя собака</label>
  <select id="ai-dog" class="route-select"><option value="">Без профиля</option></select>
  <div id="ai-recommendations" class="notice" aria-live="polite" hidden></div>
- <div id="ai-messages" aria-live="polite"><div class="ai-message assistant">Привет! Что хочешь узнать о своей собаке?</div></div>
- <div class="ai-suggestions"><button type="button" data-ai-suggestion="Как научить собаку обращать на меня внимание на прогулке?">Внимание на улице</button><button type="button" data-ai-suggestion="Почему собака лает на других собак?">Лай на собак</button><button type="button" data-ai-suggestion="Как помочь собаке спокойнее оставаться одной?">Одиночество</button></div>
- <form id="ai-form" class="ai-composer"><textarea id="ai-input" maxlength="1200" placeholder="Спроси НОЮ…" aria-label="Вопрос для Нои"></textarea><button id="ai-send" type="submit" aria-label="Отправить вопрос">↑</button></form>
+ <div id="ai-messages" aria-live="polite"><div class="ai-message assistant" id="ai-greeting">Подключаемся к НОЕ…</div></div>
+ <div class="ai-suggestions" hidden><button type="button" data-ai-suggestion="Как научить собаку обращать на меня внимание на прогулке?">Внимание на улице</button><button type="button" data-ai-suggestion="Почему собака лает на других собак?">Лай на собак</button><button type="button" data-ai-suggestion="Как помочь собаке спокойнее оставаться одной?">Одиночество</button></div>
+ <form id="ai-form" class="ai-composer" hidden><textarea id="ai-input" maxlength="1200" placeholder="Спроси НОЮ…" aria-label="Вопрос для Нои"></textarea><button id="ai-send" type="submit" aria-label="Отправить вопрос" disabled>↑</button></form>
  <p id="ai-status" class="noya-ai-status" role="status"></p>
  <details class="noya-disclosure"><summary>Память диалога</summary><label class="noya-memory-toggle"><input id="ai-memory-optin" type="checkbox"><span>Запоминать мои вопросы и ответы</span></label><p id="ai-memory-status">История не сохраняется без согласия.</p><p>При отключении сохранённые диалоги удаляются.</p></details>
  <p class="noya-ai-note">НОЯ может ошибаться. По вопросам здоровья и безопасности обратись к специалисту.</p>
@@ -529,14 +529,23 @@ window.addEventListener('pageshow',loadAttentionCourseProgress);
 window.addEventListener('focus',loadAttentionCourseProgress);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadAttentionCourseProgress()});
 setInterval(()=>{if(!document.hidden)loadAttentionCourseProgress()},60000);
+function setAiAvailability(available,message='НОЯ сейчас недоступна. Попробуй позже.'){
+ const form=document.getElementById('ai-form');
+ form.hidden=!available;
+ document.getElementById('ai-send').disabled=!available;
+ document.querySelector('.ai-suggestions').hidden=!available;
+ document.querySelector('.noya-ai-limit').hidden=!available;
+ document.getElementById('ai-greeting').textContent=available?'Привет! Что хочешь узнать о своей собаке?':message;
+}
 async function loadClubLessons(){
  const el=document.getElementById('club-lessons'),initData=window.Telegram?.WebApp?.initData;
- if(!initData){el.textContent='Открой клуб через Telegram, чтобы увидеть свои уроки.';return}
+ if(!initData){el.textContent='Открой клуб через Telegram, чтобы увидеть свои уроки.';setAiAvailability(false,'Открой NOYA CLUB в Telegram, чтобы общаться с НОЕЙ.');return}
  try{
   const r=await fetch('/api/club-lessons',{headers:{'x-telegram-init-data':initData}});
-  if(r.status===403){el.textContent='Для просмотра уроков нужна активная подписка NOYA CLUB.';return}
+  if(r.status===403){el.textContent='Для просмотра уроков нужна активная подписка NOYA CLUB.';setAiAvailability(false,'НОЯ доступна участникам клуба с активным доступом.');return}
   if(!r.ok)throw Error('Не удалось загрузить каталог');
   const data=await r.json();
+  setAiAvailability(data.aiAvailable===true);
   clubLessonCache=data.lessons||[];
   renderRoute();
   showAiNextStep();
@@ -554,7 +563,7 @@ async function loadClubLessons(){
    el.append(card);
   }
   updateProgressSummary();
- }catch(e){el.textContent='Каталог временно недоступен. Попробуй позже.'}
+ }catch(e){el.textContent='Каталог временно недоступен. Попробуй позже.';setAiAvailability(false,'Не удалось подключиться к НОЕ. Открой клуб заново.')}
 }
 document.getElementById('progress-dog').addEventListener('change',loadDogProgress);
 async function loadDogProgress(){
