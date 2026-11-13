@@ -142,7 +142,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-edit-actions{position:sticky;bottom:-24px;z-index:3;background:#090909;padding:14px 0 max(14px,env(safe-area-inset-bottom));margin:18px 0 0}
 .noya-member-self{display:flex;align-items:center;gap:13px;margin-bottom:20px}.noya-member-self strong{font-size:16px}.noya-member-self small{display:block;margin-top:4px;color:#999}
 .noya-ai-heading{display:flex;align-items:center;gap:13px;margin:10px 0 25px}.noya-ai-heading h1{font-size:34px;margin:0}.noya-ai-heading p{margin:4px 0 0;font-size:13px}.noya-ai-limit{margin-left:auto;font-size:11px;color:#aaa;text-align:right}.noya-field-label{font-size:12px;color:#aaa}
-#ai .route-select{margin:6px 0 12px}#ai-messages{min-height:80px}.ai-message.assistant{margin-right:4%;border:0}.ai-message.user{margin-left:10%;background:#242719}.ai-composer{position:sticky;bottom:105px;background:#050505;padding:8px 0;z-index:5;align-items:flex-end}.ai-composer textarea{resize:none;min-height:48px;max-height:144px}.ai-composer button{width:48px;height:48px;font-size:23px}.ai-suggestions button{font-size:12px;border-color:#414141}
+#ai .route-select{margin:6px 0 12px}#ai-messages{min-height:80px}.ai-message.assistant{margin-right:4%;border:0}.ai-message.user{margin-left:10%;background:#242719}.ai-composer{position:relative;bottom:auto;background:#050505;padding:8px 0;z-index:5;align-items:flex-end}.ai-composer textarea{resize:none;min-height:48px;max-height:144px}.ai-composer button{width:48px;height:48px;font-size:23px}.ai-suggestions button{font-size:12px;border-color:#414141}
 .noya-ai-status{font-size:13px;margin:0 0 12px}.noya-ai-status:empty{display:none}.noya-ai-note{font-size:11px;color:#858585;margin:18px 0 0;line-height:1.5}
 .noya-disclosure{border-top:1px solid #303030;padding:14px 0;color:#999;font-size:12px}.noya-disclosure summary{cursor:pointer;color:#bbb;font-size:13px}.noya-disclosure p{font-size:12px;margin:10px 0 0}.noya-memory-toggle{display:flex;gap:10px;align-items:center;margin:14px 0}.noya-memory-toggle input{width:19px;height:19px;accent-color:#f5fa45}
 @media(max-width:360px){.noya-member-tabs{padding-right:76px}.noya-member-tools{gap:0}.noya-member-tabs button{font-size:11px}.noya-ai-limit{font-size:10px}.noya-ai-heading h1{font-size:28px}.noya-ai-heading img{width:48px;height:48px}}
@@ -613,13 +613,14 @@ function updateRouteCard(dog,lessons){
  const title=document.getElementById('noya-next-lesson');
  const button=document.getElementById('noya-next-button');
  const next=lessons.find(lesson=>!routeProgress.has(lesson.id));
+ document.getElementById('noya-route-open').hidden=!next;
  const done=lessons.filter(lesson=>routeProgress.has(lesson.id)).length;
  card.hidden=false;
  meter.hidden=!lessons.length;
  meter.max=lessons.length||1;
  meter.value=done;
  progress.textContent=dog?(lessons.length?dog.name+' · '+done+' из '+lessons.length+' уроков':dog.name):'';
- title.textContent=next?next.title:lessons.length?'Маршрут пройден':dog?'Уроки по твоей диагностике':'Добавь собаку, чтобы получить план занятий';
+ title.textContent=next?next.title:lessons.length?'Маршрут пройден':dog?'Персональный план занятий':'Добавь собаку, чтобы получить план занятий';
  button.hidden=false;
  button.textContent=next?'Продолжить':dog?'Открыть маршрут':'Начать';
  button.onclick=next?()=>openClubLesson(next.id,next.title):dog?()=>showScreen('route'):()=>location.assign('./club-demo.html');
