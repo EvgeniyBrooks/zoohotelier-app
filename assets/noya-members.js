@@ -78,7 +78,7 @@ function createDialog(title){
  d.addEventListener('close',()=>d.remove(),{once:true});return d;
 }
 function closeButton(dialog){
- const b=el('button','noya-member-secondary','Закрыть');b.type='button';b.onclick=()=>dialog.close();return b;
+ const b=el('button','noya-member-secondary noya-legacy-return','Закрыть');b.type='button';b.onclick=()=>dialog.close();return b;
 }
 function safeSocial(kind,value){
  const v=String(value||'').trim();
