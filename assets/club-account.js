@@ -24,7 +24,7 @@
   dialog.innerHTML = `<header class="account-dialog-header">
     <div class="account-avatar" data-account-avatar aria-hidden="true"><span>N</span></div>
     <div class="account-identity"><span class="account-name" data-account-name>Твой профиль</span><div class="account-meta"><span class="account-level" data-account-level>Аккаунт</span><span class="account-summary" data-account-summary>Загружаем подписку…</span></div></div>
-    <button class="account-icon-button" id="account-close" type="button" aria-label="Закрыть профиль"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    <button class="account-icon-button noya-legacy-return" id="account-close" type="button" aria-label="Закрыть профиль"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
   </header>
   <div class="account-dialog-content"><div id="account-overview">
     <h2 id="account-dialog-title" class="account-visually-hidden">Профиль и подарки NOYA CLUB</h2>
@@ -81,8 +81,6 @@
   let lastLoadedAt = 0;
   let opener = null;
   let previousOverflow = '';
-  let wasBackVisible = false;
-  let backButton = null;
   let isOpen = false;
   let fallbackBackdrop = null;
   let backgroundState = [];
@@ -275,10 +273,7 @@
       element.classList.remove('account-background-inert');
     });
     backgroundState = [];
-    if (backButton) {
-      try {backButton.offClick(backAccount);if (!wasBackVisible) backButton.hide();} catch (_) {}
-      backButton = null;
-    }
+    window.NOYABack?.sync();
     if (!document.querySelector('.noya-member-dialog[open]') && opener?.isConnected) opener.focus({preventScroll:true});
   }
   function closeAccount() {
@@ -287,6 +282,7 @@
     else {dialog.removeAttribute('open');finishClose();}
   }
   function backAccount() { if (!reader?.close()) closeAccount(); }
+  dialog.noyaGoBack = backAccount;
   function openAccount(event) {
     if (isOpen) return;
     opener = event?.currentTarget || document.activeElement;
@@ -301,10 +297,7 @@
     }
     dialog.scrollTop = 0;
     byId('account-close').focus({preventScroll:true});
-    const tg = window.Telegram?.WebApp;
-    if (tg?.BackButton && (!tg.isVersionAtLeast || tg.isVersionAtLeast('6.1'))) {
-      try {backButton = tg.BackButton;wasBackVisible = Boolean(backButton.isVisible);backButton.onClick(backAccount);backButton.show();} catch (_) {backButton = null;}
-    }
+    window.NOYABack?.sync();
     if (phase !== 'loading' && (phase !== 'ready' || Date.now() - lastLoadedAt > 60000)) loadAccount();
     requestAnimationFrame(() => {
       const months = phase === 'ready' ? account.loyalty?.unlockedMonths || 0 : 0;
