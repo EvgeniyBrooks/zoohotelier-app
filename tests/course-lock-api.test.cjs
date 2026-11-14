@@ -43,7 +43,9 @@ async function run(action,lessonId,opts={}){
   const u=new URL(url),resource=u.pathname.split('/').pop(),method=req.method||'GET';
   visited.push({resource,method,host:u.hostname});
   if(u.hostname==='api.cloudflare.com'){
-   return new Response(JSON.stringify({success:true,result:{token:'test-signed-stream-token'}}),{status:200});
+   return new Response(JSON.stringify({success:true,result:method==='GET'
+    ? {duration:opts.actualDuration||100}
+    : {token:'test-signed-stream-token'}}),{status:200});
   }
   let rows=[];
   if(resource==='students')rows=[{id:student}];
@@ -103,5 +105,18 @@ test('a participant cannot self-complete unopened or unwatched lessons',async()=
  assert.equal(noReceipt.code,403);
  const falseProgress=await run('course_complete',p1,{completed:[],mark:false});
  assert.equal(falseProgress.code,403);
+});
+test('Cloudflare actual duration is required before any lesson completion',async()=>{
+ const good=await run('course_complete',p1,{
+  completed:[],mark:true,watchedSeconds:91,durationSeconds:100,hasReceipt:true,actualDuration:100
+ });
+ assert.equal(good.code,200);
+ assert.equal(good.body.completed,true);
+ assert.equal(good.visited.some(x=>x.host==='api.cloudflare.com'&&x.method==='GET'),true);
+ const spoofed=await run('course_complete',p1,{
+  completed:[],mark:true,watchedSeconds:91,durationSeconds:100,hasReceipt:true,actualDuration:1200
+ });
+ assert.equal(spoofed.code,403);
+ assert.equal(spoofed.visited.some(x=>x.resource==='noya_material_state'&&x.method==='POST'),false);
 });
 test.after(()=>{for(const k of ['NOYA_TELEGRAM_BOT_TOKEN','NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLOUDFLARE_ACCOUNT_ID','CLOUDFLARE_API_TOKEN']){if(Object.hasOwn(base,k))process.env[k]=base[k];else delete process.env[k];}});
