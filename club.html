@@ -276,11 +276,10 @@ body.noya-guided-home #noya-next-route{display:none!important}
  <div class="bonus-stats"><article><strong id="bonus-pending">—</strong><span>Ожидают оплаты</span></article><article><strong id="bonus-paid">—</strong><span>Подтверждённых оплат</span></article></div>
  <div class="bonus-tabs" role="tablist" aria-label="Бонусная программа">
  <button type="button" role="tab" id="bonus-tab-store" data-bonus-tab="store" aria-controls="bonus-panel-store" aria-selected="true">Магазин</button>
- <button type="button" role="tab" id="bonus-tab-history" data-bonus-tab="history" aria-controls="bonus-panel-history" aria-selected="false" tabindex="-1">История</button>
  <button type="button" role="tab" id="bonus-tab-invitations" data-bonus-tab="invitations" aria-controls="bonus-panel-invitations" aria-selected="false" tabindex="-1">Приглашения</button>
  <button type="button" role="tab" id="bonus-tab-ranking" data-bonus-tab="ranking" aria-controls="bonus-panel-ranking" aria-selected="false" tabindex="-1">Рейтинг</button></div>
  <section role="tabpanel" id="bonus-panel-store" aria-labelledby="bonus-tab-store"><h2>Магазин бонусов</h2><div id="bonus-store" class="bonus-grid"></div></section>
- <section role="tabpanel" id="bonus-panel-history" aria-labelledby="bonus-tab-history" hidden><h2>История баллов</h2><p>Последние 20 операций</p><div id="bonus-history"></div></section>
+ <div id="bonus-panel-history" hidden><div id="bonus-history"></div></div>
  <section role="tabpanel" id="bonus-panel-invitations" aria-labelledby="bonus-tab-invitations" hidden><h2>Твои приглашения</h2><p>Личные контакты приглашённых здесь не отображаются.</p><div id="bonus-invitations"></div><button id="bonus-invitations-more" type="button" class="button secondary" hidden>Показать ещё</button></section>
  <section role="tabpanel" id="bonus-panel-ranking" aria-labelledby="bonus-tab-ranking" hidden><h2>Рейтинг участников</h2><p>По числу приглашённых друзей с подтверждённой первой оплатой. Продления не увеличивают число друзей. При равенстве — одинаковое место.</p><label for="bonus-period">Период</label><select id="bonus-period"><option value="month">Этот месяц · Москва</option><option value="all">За всё время</option></select><div id="bonus-ranking"></div></section>
  <button class="noya-bonus-card" type="button" data-open-account><span class="noya-bonus-icon" aria-hidden="true">☆</span><span><strong>Твои подарки</strong><small>За каждый месяц участия</small></span><span aria-hidden="true">→</span></button>
