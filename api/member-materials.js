@@ -107,6 +107,7 @@ export default async function handler(req,res){
   const type=req.body?.type,id=req.body?.id;
   if(!types.has(type)||typeof id!=='string'||!uuid.test(id))throw fail(400,'Неверный материал');
   if(!allowed[type])throw fail(403,'Нет доступа к материалу');
+  if(type==='course'&&action==='complete')throw fail(403,'Урок курса отмечается пройденным автоматически после просмотра 90% видео');
   let found=[];
   if(type==='course'){
    const blockRows=await db('course_blocks?select=id&course_id=eq.'+courseId+'&limit=100');
@@ -123,7 +124,14 @@ export default async function handler(req,res){
   const rows=await db('noya_material_state?select=favorited,completed,last_viewed_at&student_id=eq.'+student+'&material_type=eq.'+type+'&material_id=eq.'+id+'&limit=1');
   const state=rows[0]||{favorited:false,completed:false,last_viewed_at:null};
   if(action==='get')return res.status(200).json({ok:true,state:{favorited:state.favorited===true,completed:state.completed===true,lastViewedAt:state.last_viewed_at||null}});
-  if(action==='touch')state.last_viewed_at=new Date().toISOString();
+  if(action==='touch'){
+    if(type==='course'){
+      const schedule=(await import('../lib/course-drip.cjs')).default;
+      const gating=await schedule.buildCourseGate({db,student,courseId,admin,begin:false});
+      if(!gating.ensureLesson(id)?.available)throw fail(423,'Сначала просмотри предыдущий урок или дождись открытия следующего дня');
+    }
+    state.last_viewed_at=new Date().toISOString();
+  }
   if(action==='favorite'){
    if(typeof req.body?.value!=='boolean')throw fail(400,'Неверная отметка');
    state.favorited=req.body.value;
