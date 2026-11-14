@@ -15,6 +15,18 @@ async function load(){
    headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'overview',initData})});
   if(!r.ok)return;
   const d=await r.json();
+  // Guide a brand-new paid member through one goal on the first visit.
+  // Never interrupt admins, payment checks or returning members.
+  const home=!location.hash||location.hash==='#home';
+  if(home&&!d.isAdmin&&!d.journeys?.length){
+   try{
+    if(sessionStorage.getItem('noya-first-month-onboarding-v1')!=='seen'){
+      sessionStorage.setItem('noya-first-month-onboarding-v1','seen');
+      location.assign('./journey.html?tab=profile');
+      return;
+    }
+   }catch(_){/* Private browsing may disallow storage; keep the home CTA. */}
+  }
   const dog=d.journeys?.length?d.dogs?.find(x=>x.id===d.journeys[0].dog_id):null;
   const journey=d.journeys?.[0];
   const entries=(d.diary||[]).filter(x=>x.dog_id===journey?.dog_id);
