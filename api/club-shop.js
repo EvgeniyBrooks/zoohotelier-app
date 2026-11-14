@@ -203,6 +203,36 @@ module.exports=async function handler(req,res){
     const wallet=await coinWallet(auth);
     return payload(res,200,{ok:true,...wallet});
    }
+
+   if(action==='bonus_invitations'||action==='bonus_ranking'){
+    if(!auth.student||!(await hasClub(auth)))throw fail(403,'Active club required');
+    if(action==='bonus_invitations'){
+     const offset=Number(req.query?.offset||0);
+     if(!Number.isSafeInteger(offset)||offset<0||offset>100000)throw fail(400,'Invalid offset');
+     const rows=await db('noya_referral_attributions?select=created_at,credited_at&inviter_student_id=eq.'+auth.student+
+      '&order=created_at.desc,referred_student_id.asc&limit=21&offset='+offset);
+     return payload(res,200,{ok:true,invitations:rows.slice(0,20).map(x=>({
+      createdAt:x.created_at,paidAt:x.credited_at||null
+     })),nextOffset:rows.length>20?offset+20:null});
+    }
+    const period=req.query?.period||'month';
+    if(!['month','all'].includes(period))throw fail(400,'Invalid period');
+    const {monthStart,ranking}=require('../lib/noya-bonus-stats');
+    const since=period==='month'?monthStart():null;
+    const rows=[];
+    // Never return a misleading partial leaderboard. Fail closed at the scan
+    // bound; migrate aggregation to a DB function before exceeding this size.
+    for(let offset=0;offset<=20000;offset+=1000){
+     const page=await db('noya_referral_attributions?select=inviter_student_id,credited_at&credited_at=not.is.null'+
+      (since?'&credited_at=gte.'+encodeURIComponent(since):'')+
+      '&order=referred_student_id.asc&limit=1000&offset='+offset);
+     rows.push(...page);
+     if(rows.length>20000)throw fail(503,'Рейтинг временно недоступен');
+     if(page.length<1000)return payload(res,200,{ok:true,period,since,...ranking(rows,auth.student)});
+    }
+    throw fail(503,'Рейтинг временно недоступен');
+   }
+
    if(action==='orders'){
     if(!auth.student)throw fail(403,'Account not found');
     const rows=await db('noya_review_orders?select=*&student_id=eq.'+auth.student+'&order=created_at.desc&limit=100');
@@ -350,3 +380,4 @@ module.exports=async function handler(req,res){
   return payload(res,error.status||500,{error:error.status&&error.status<500?error.message:'Shop temporarily unavailable'});
  }
 };
+ 
