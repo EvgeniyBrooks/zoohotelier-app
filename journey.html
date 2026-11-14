@@ -1,0 +1,142 @@
+<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505"><title>Мой путь — NOYA CLUB</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--y:#f5fa45;--text:#f5f5f5;--muted:#aaa}
+*{box-sizing:border-box}body{margin:0;background:#050505;color:var(--text);font:15px/1.5 system-ui,-apple-system,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+main{max-width:650px;margin:auto;padding:18px 17px calc(100px + env(safe-area-inset-bottom))}
+a{color:inherit;text-decoration:none}.back{display:inline-flex;align-items:center;min-height:42px;color:#ddd;font-size:13px;font-weight:800;margin-bottom:22px}
+h1,h2,h3{font-family:Oswald,Impact,sans-serif;text-transform:uppercase;line-height:1.1}h1{font-size:clamp(38px,9vw,58px);margin:7px 0 14px}h2{font-size:29px;margin:0 0 12px}h3{font-size:21px}
+.kicker{font-size:11px;letter-spacing:1.3px;font-weight:800;color:var(--y)}.muted{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:5px;border-bottom:1px solid #363636;margin:20px 0}
+.tabs button{flex:1;min-width:0;background:transparent;border:0;border-bottom:3px solid transparent;color:#aaa;padding:12px 4px;font-size:12px;font-weight:750}
+.tabs button[aria-selected=true]{border-color:var(--y);color:var(--y)}
+.panel{border:1px solid #353535;border-radius:17px;background:#181818;padding:18px;margin:14px 0}
+.notice{border-left:3px solid var(--y);padding:11px 13px;background:#171717;color:#ddd;font-size:13px;margin:15px 0}
+.notice[hidden],section[hidden],.hide[hidden]{display:none}
+.field{display:flex;flex-direction:column;gap:6px;margin:14px 0;color:#e4e4e4;font-size:13px;font-weight:650}
+.field input,.field textarea,.field select{background:#272727;color:#fff;border:1px solid #565656;border-radius:11px;padding:13px;width:100%;min-height:45px;outline:none}
+.field textarea{min-height:100px;resize:vertical}
+.field input:focus-visible,.field textarea:focus-visible,.field select:focus-visible{border-color:var(--y)}
+.field small{color:#999;font-size:11px;font-weight:400}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{display:inline-flex;justify-content:center;align-items:center;text-align:center;gap:7px;background:var(--y);border:0;border-radius:12px;padding:13px 18px;color:#111;font-weight:850;min-height:46px}
+.btn:disabled{opacity:.55;cursor:wait}.btn.secondary{background:#292929;border:1px solid #565656;color:#fff}.btn.full{width:100%}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.choice{position:relative}.choice input{position:absolute;opacity:0;inset:0;cursor:pointer;width:100%;height:100%}
+.choice span{display:block;border:1px solid #4b4b4b;border-radius:13px;background:#242424;padding:13px 11px;font-size:12px;font-weight:700;min-height:70px}
+.choice input:checked+span{color:#111;background:var(--y);border-color:var(--y)}
+.choice input:focus-visible+span{outline:2px solid #fff;outline-offset:2px}
+.timeline{display:grid;gap:9px}.entry{border-left:2px solid #696e28;background:#1d1d1d;padding:13px;border-radius:0 12px 12px 0}
+.entry .date{font-size:11px;color:var(--y)}.entry h3{font-size:16px;margin:5px 0}
+.entry p{font-size:13px;color:#ddd;white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0}.entry .meta{font-size:11px;color:#aaa}
+.status{font-size:13px;color:#bbb;margin:10px 0;min-height:22px}
+.status[data-error=true]{color:#f3aaa3}
+.progress{height:7px;border-radius:8px;overflow:hidden;background:#363636;margin:12px 0}
+.progress>div{width:0;height:100%;background:var(--y);transition:width .2s}
+.foot{margin-top:25px;font-size:12px;color:#8b8b8b}
+@media(max-width:360px){.choices{grid-template-columns:1fr}.tabs button{font-size:11px}}
+</style>
+<script src="./assets/noya-journey.js?v=1" defer></script>
+</head><body><main>
+<a class="back" href="./club.html#home">← На главную NOYA CLUB</a>
+<div class="kicker">NOYA / ПРАКТИКА</div><h1>МОЙ ПУТЬ С СОБАКОЙ</h1>
+<p class="muted">Одна цель, посильное действие и заметный прогресс. Не нужно выполнять весь каталог сразу.</p>
+<div id="journey-status" class="notice" role="status">Проверяем доступ через Telegram…</div>
+<div class="tabs" role="tablist" aria-label="Этапы практики">
+<button type="button" data-journey-tab="profile" aria-selected="true">Моя собака</button>
+<button type="button" data-journey-tab="diary" aria-selected="false">Дневник</button>
+<button type="button" data-journey-tab="report" aria-selected="false">Задание</button>
+</div>
+
+<section id="journey-profile" aria-labelledby="journey-profile-title">
+ <h2 id="journey-profile-title">ВЫБЕРИ ОДНУ ЦЕЛЬ</h2>
+ <p class="muted">Начни с того, что сейчас больше всего мешает жить вместе. Цель можно изменить позже.</p>
+ <form id="journey-profile-form">
+  <label class="field">Собака в клубе
+   <select id="journey-existing"><option value="">Добавить новую собаку</option></select>
+  </label>
+  <label class="field" id="journey-name-wrap">Кличка собаки
+   <input id="journey-name" autocomplete="off" maxlength="80" placeholder="Как зовут собаку?" required>
+  </label>
+  <div class="choices" role="group" aria-label="С чего начинаешь">
+   <label class="choice"><input type="radio" name="entryMode" value="starting" checked><span>Начинаю с основ</span></label>
+   <label class="choice"><input type="radio" name="entryMode" value="after_course"><span>Продолжаю после курса</span></label>
+  </div>
+  <label class="field">Порода (необязательно)
+   <input id="journey-breed" maxlength="100" placeholder="Можно написать «метис»">
+  </label>
+  <label class="field">Возраст (необязательно)
+   <input id="journey-age" maxlength="60" placeholder="Например, 1 год 6 месяцев">
+  </label>
+  <div class="field"><span>Главная задача на ближайший месяц</span></div>
+  <div class="choices" role="group" aria-label="Выбери одну задачу">
+   <label class="choice"><input type="radio" name="goal" value="attention" required><span>Контакт и внимание</span></label>
+   <label class="choice"><input type="radio" name="goal" value="walks"><span>Спокойная прогулка</span></label>
+   <label class="choice"><input type="radio" name="goal" value="home"><span>Правила дома</span></label>
+   <label class="choice"><input type="radio" name="goal" value="calm"><span>Спокойствие и отдых</span></label>
+   <label class="choice"><input type="radio" name="goal" value="social"><span>Другие собаки и люди</span></label>
+   <label class="choice"><input type="radio" name="goal" value="fear"><span>Страхи и сложные ситуации</span></label>
+  </div>
+  <label class="field">Что происходит сейчас (необязательно)
+   <textarea id="journey-baseline" maxlength="1000" placeholder="Опиши одну обычную ситуацию. Не провоцируй реакцию собаки ради отчёта."></textarea>
+  </label>
+  <div class="notice">Если собаке страшно или трудно, увеличь дистанцию и упрости задачу. Отчёт не должен вызывать стресс намеренно.</div>
+  <button type="submit" class="btn full" id="journey-save">Сохранить и перейти к дневнику →</button>
+  <div class="status" id="journey-profile-message" aria-live="polite"></div>
+ </form>
+</section>
+
+<section id="journey-diary" aria-labelledby="journey-diary-title" hidden>
+ <h2 id="journey-diary-title">ДНЕВНИК ПРОГРЕССА</h2>
+ <p class="muted">Фиксируй наблюдения в сопоставимых условиях. Можно писать без видео. Просмотр урока и выполненное действие — разные вещи.</p>
+ <form id="journey-diary-form" class="panel">
+  <label class="field">Собака<select id="journey-diary-dog" required><option value="">Выбери собаку</option></select></label>
+  <label class="field">В каких условиях вы занимались?
+   <input id="journey-conditions" maxlength="600" required placeholder="Например: дома, в тихой комнате">
+  </label>
+  <label class="field">Что наблюдалось?
+   <textarea id="journey-observation" maxlength="1200" required placeholder="Что сделала собака? Что изменилось? Что получилось?"></textarea>
+  </label>
+  <label class="field">Состояние собаки
+   <select id="journey-stress" required><option value="calm">Спокойна</option><option value="uncertain">Было немного трудно</option><option value="difficult">Слишком сложно — остановились</option></select>
+  </label>
+  <button type="submit" class="btn full">Записать наблюдение</button>
+  <div id="journey-diary-message" class="status" aria-live="polite"></div>
+ </form>
+ <h3>ПОСЛЕДНИЕ ЗАПИСИ</h3><div id="journey-timeline" class="timeline"><p class="muted">Пока записей нет.</p></div>
+</section>
+
+<section id="journey-report" aria-labelledby="journey-report-title" hidden>
+ <h2 id="journey-report-title">ОТЧЁТ ПО ЗАДАНИЮ</h2>
+ <p class="muted">Один короткий пример действия и вопрос кинологу. Не снимай опасную ситуацию и не провоцируй страх. Доступность проверки зависит от условий твоего участия.</p>
+ <div id="journey-review-availability" class="notice">Проверяем доступность отправки…</div>
+ <form id="journey-report-form" class="panel">
+  <label class="field">Собака<select id="journey-report-dog" required><option value="">Выбери собаку</option></select></label>
+  <label class="field">Урок курса «Управление вниманием»
+   <select id="journey-lesson" required><option value="">Выбери опубликованный урок</option></select>
+  </label>
+  <label class="field">Условия практики
+   <input id="journey-report-conditions" maxlength="600" required placeholder="Где и при каких отвлечениях?">
+  </label>
+  <label class="field">Что получилось, а что пока нет?
+   <textarea id="journey-report-note" maxlength="1200" required placeholder="Кратко опиши поведение собаки и своё действие"></textarea>
+  </label>
+  <label class="field">Вопрос кинологу (необязательно)
+   <textarea id="journey-report-question" maxlength="600" placeholder="Что именно хочется разобрать?"></textarea>
+  </label>
+  <label class="field">Видео (необязательно)
+   <input type="file" id="journey-report-video" accept="video/mp4,video/quicktime,video/webm,video/x-m4v">
+   <small>Максимум 200 МБ и 3 минуты. Видео загружается непосредственно в Cloudflare Stream. Можно отправить текстовый отчёт без видео.</small>
+  </label>
+  <div class="progress" aria-hidden="true"><div id="journey-upload-progress"></div></div>
+  <button type="submit" class="btn full" id="journey-report-submit">Отправить задание на проверку</button>
+  <div class="status" id="journey-report-message" role="status" aria-live="polite"></div>
+ </form>
+ <h3>МОИ ОТЧЁТЫ</h3><div id="journey-report-list" class="timeline"></div>
+</section>
+<div class="foot">12 декабря 2026 — плановое открытие продаж. Оформление подписки и проверка заданий регулируются действующими условиями клуба.</div>
+</main></body></html>
