@@ -58,7 +58,7 @@ function mock(opts={}){
    if(method==='POST')value=[{id:sub,status:'uploading',created_at:new Date().toISOString()}];
    else if(method==='PATCH')value=[{id:sub,status:'approved',coach_feedback:'Хорошее начало',reviewed_at:new Date().toISOString()}];
    else if(url.searchParams.has('id'))value=[{id:sub,student_id:student,dog_id:dog,lesson_id:lesson,status:opts.status||'submitted',video_uid:uid,student_note:'Спокойно'}];
-   else if(opts.queue)value=[{id:sub,student_id:student,dog_id:dog,lesson_id:lesson,status:'submitted',video_uid:uid,submitted_at:new Date().toISOString()}];
+   else if(opts.queue&&url.searchParams.get('status')==='eq.submitted')value=[{id:sub,student_id:student,dog_id:dog,lesson_id:lesson,status:'submitted',video_uid:uid,submitted_at:new Date().toISOString()}];
    else value=[];
   }
   return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
