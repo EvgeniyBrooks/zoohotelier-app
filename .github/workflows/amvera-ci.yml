@@ -25,8 +25,11 @@ jobs:
       - name: Validate server and handler syntax
         run: |
           node --check server.cjs
+          node --check lib/course-drip.cjs
           for f in api/*.js lib/*.js; do node --check "$f"; done
       - name: Test Amvera HTTP adapter
         run: node --test tests/amvera-server.test.cjs
+      - name: Test course daily scheduling and sequential release
+        run: node --test tests/course-daily-unlock.test.cjs
       - name: Run existing NOYA regression tests
         run: node --test tests/*.test.js
