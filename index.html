@@ -1181,6 +1181,11 @@ async function loadLesson(
         <div class="homework">${escapeHtml(lesson.homework || "")}</div>
       </div>
       ${completeHtml}
+      <div class="card">
+        <div class="label">🐾 ПРАКТИКА С СОБАКОЙ</div>
+        <p style="color:#444;font-size:13px;line-height:1.5">Запиши наблюдение в дневник или отправь видеоотчёт на проверку, если сопровождение доступно по твоему тарифу. Не создавай стрессовую ситуацию ради записи.</p>
+        <a class="button" style="display:block;text-decoration:none;text-align:center" href="./journey.html?tab=report&lesson=${encodeURIComponent(lesson.id)}">Дневник и сдача задания →</a>
+      </div>
     `;
     // Every lesson has the same favorite/completed actions as the NOYA library.
     if(window.NOYAMaterials){
