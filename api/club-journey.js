@@ -40,7 +40,16 @@ const period=(s,now)=>(!s.start_date||Number.isFinite(Date.parse(s.start_date))&
 async function session(raw) {
  const telegramId=authenticate(raw);
  const students=await db('students?select=id&telegram_id=eq.'+encodeURIComponent(telegramId)+'&limit=1');
- if(!students.length)throw fail(403,'Сначала войди в NOYA CLUB');
+ // Assigned coaches may review reports before they create their own learner profile.
+ // Their access is verified against the same private staff/admin allowlists.
+ if(!students.length){
+  const [admins,staff]=await Promise.all([
+   db('admins?select=id&telegram_id=eq.'+encodeURIComponent(telegramId)+'&limit=1'),
+   db('noya_review_staff?select=role,enabled&telegram_id=eq.'+encodeURIComponent(telegramId)+'&enabled=eq.true&limit=10')
+  ]);
+  if(!admins.length&&!staff.some(x=>x.enabled===true))throw fail(403,'Сначала войди в NOYA CLUB');
+  return {telegramId,studentId:null,admin:admins.length>0,coach:true,clubAccess:false,courseAccess:false,courseId:null};
+ }
  const studentId=students[0].id,now=Date.now();
  const [admins,staff,subs,trials,enrollments,courses]=await Promise.all([
   db('admins?select=id&telegram_id=eq.'+encodeURIComponent(telegramId)+'&limit=1'),
