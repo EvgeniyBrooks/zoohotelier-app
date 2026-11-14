@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import courseDrip from '../lib/course-drip.cjs';
 const types=new Set(['course','live','club']);
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8a-f][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const fail=(status,message)=>Object.assign(new Error(message),{status});
@@ -126,7 +127,7 @@ export default async function handler(req,res){
   if(action==='get')return res.status(200).json({ok:true,state:{favorited:state.favorited===true,completed:state.completed===true,lastViewedAt:state.last_viewed_at||null}});
   if(action==='touch'){
     if(type==='course'){
-      const schedule=(await import('../lib/course-drip.cjs')).default;
+      const schedule=courseDrip;
       const gating=await schedule.buildCourseGate({db,student,courseId,admin,begin:false});
       if(!gating.ensureLesson(id)?.available)throw fail(423,'Сначала просмотри предыдущий урок или дождись открытия следующего дня');
     }
