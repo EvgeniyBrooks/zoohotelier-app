@@ -1,5 +1,6 @@
 
 import crypto from 'node:crypto';
+import courseDrip from '../lib/course-drip.cjs';
 async function live(req,res){
  res.setHeader('Cache-Control','private, no-store');
  const fail=(s,m)=>Object.assign(new Error(m),{status:s});
@@ -38,6 +39,22 @@ async function live(req,res){
    (!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
   if(!admins.length&&!paidClub&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   const action=req.body.action;
+  // Signed video tokens and completions use the same server-side gate.
+  let scheduled=null;
+  async function gate(){
+   if(!scheduled)scheduled=await courseDrip.buildCourseGate({
+    db,student,courseId,admin:admins.length>0,begin:true,now:Date.now()
+   });
+   return scheduled;
+  }
+  function mustOpen(state){
+   if(!state)throw fail(404,'Урок не найден');
+   if(!state.available){
+    const when=state.unlockAt&&state.lockReason==='time'?' Новый урок откроется '+new Date(state.unlockAt).toLocaleString('ru-RU',{timeZone:'Europe/Moscow'})+' (МСК).':'';
+    const prerequisite=state.lockReason==='previous'?' Сначала досмотри предыдущий урок: '+state.previousTitle+'.':'';
+    throw fail(423,'Урок пока закрыт.'+prerequisite+when);
+   }
+  }
   // Share course/live completion with the unified personal library.
   async function mirrorState(type,id,field,value){
     const filter='noya_material_state?select=favorited,completed,last_viewed_at&student_id=eq.'+student+'&material_type=eq.'+type+'&material_id=eq.'+id+'&limit=1';
@@ -49,62 +66,75 @@ async function live(req,res){
     await db('noya_material_state?on_conflict=student_id,material_type,material_id','POST',row);
   }
   if(action==='course_catalog'){
-   const blocks=await db('course_blocks?select=id,title,block_number&course_id=eq.'+courseId+'&order=block_number.asc&limit=30');
-   const allowed=new Set(blocks.map(b=>b.id));
-   const lessons=await db('lessons?select=id,block_id,day_number,title,is_published&is_published=eq.true&order=day_number.asc&limit=500');
-   return res.status(200).json({ok:true,blocks,lessons:lessons.filter(l=>allowed.has(l.block_id))});
+   const state=await gate();
+   return res.status(200).json({ok:true,blocks:state.blocks,lessons:state.lessons.map(l=>({...l,...state.ensureLesson(l.id)})),unlockHourMsk:state.unlockHourMsk,startedAt:state.startedAt});
   }
   if(action==='course_block_lessons'){
    const blockId=req.body.blockId;
    if(typeof blockId!=='string'||!/^[a-f0-9-]{36}$/i.test(blockId))throw fail(400,'Invalid block');
-   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(blockId)+'&limit=1');
-   if(!blocks.length)throw fail(404,'Block not found');
-   const lessons=await db('lessons?select=id,title,day_number,is_published,block_id&block_id=eq.'+encodeURIComponent(blockId)+'&is_published=eq.true&order=day_number.asc&limit=150');
-   return res.status(200).json({ok:true,lessons});
+   const state=await gate();
+   if(!state.blocks.some(b=>b.id===blockId))throw fail(404,'Block not found');
+   const lessons=state.lessons.filter(l=>l.block_id===blockId).map(l=>({...l,...state.ensureLesson(l.id)}));
+   return res.status(200).json({ok:true,lessons,unlockHourMsk:state.unlockHourMsk});
   }
   if(action==='course_lesson_details'){
    const lessonId=req.body.lessonId;
    if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId))throw fail(400,'Invalid lesson');
    const lessons=await db('lessons?select=id,title,description,homework,is_published,video_url,block_id&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
    if(!lessons.length)throw fail(404,'Lesson unavailable');
-   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
-   if(!blocks.length)throw fail(404,'Lesson unavailable');
+   const state=await gate();
+   mustOpen(state.ensureLesson(lessonId));
    return res.status(200).json({ok:true,lessons});
   }
   if(action==='course_progress'){
-   const [blocks,lessons,completed]=await Promise.all([
-    db('course_blocks?select=id,block_number,title&course_id=eq.'+courseId+'&order=block_number.asc&limit=20'),
-    db('lessons?select=id,block_id,day_number,title,is_published&order=day_number.asc&limit=300'),
-    db('course_lesson_completions?select=lesson_id&student_id=eq.'+student+'&limit=300')
-   ]);
-   const ids=new Set(blocks.map(b=>b.id));
-   return res.status(200).json({ok:true,blocks,lessons:lessons.filter(l=>ids.has(l.block_id)),completed:completed.map(x=>x.lesson_id)});
+   const state=await gate();
+   return res.status(200).json({ok:true,blocks:state.blocks,
+    lessons:state.lessons.map(l=>({...l,...state.ensureLesson(l.id)})),
+    completed:[...state.completed],unlockHourMsk:state.unlockHourMsk,startedAt:state.startedAt});
   }
   if(action==='course_complete'){
    const lessonId=req.body.lessonId,completed=req.body.completed;
    if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId)||typeof completed!=='boolean')throw fail(400,'Invalid progress update');
-   const lessons=await db('lessons?select=id,block_id,is_published&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
-   if(!lessons.length)throw fail(404,'Lesson unavailable');
-   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
-   if(!blocks.length)throw fail(404,'Lesson unavailable');
-   if(completed)await db('course_lesson_completions?on_conflict=student_id,lesson_id','POST',{student_id:student,lesson_id:lessonId});
-   else await db('course_lesson_completions?student_id=eq.'+student+'&lesson_id=eq.'+lessonId,'DELETE');
-   await mirrorState('course',lessonId,'completed',completed);
-   return res.status(200).json({ok:true,completed});
+   const state=await gate(),entry=state.ensureLesson(lessonId);
+   if(!entry)throw fail(404,'Урок не найден');
+   // A completed lesson may always be revisited; a second SDK callback is idempotent.
+   if(completed&&entry.completed)return res.status(200).json({ok:true,completed:true});
+   mustOpen(entry);
+   if(!completed){
+    if(!admins.length)throw fail(403,'Пройденный урок нельзя сбросить вручную');
+    await db('course_lesson_completions?student_id=eq.'+student+'&lesson_id=eq.'+lessonId,'DELETE');
+    await mirrorState('course',lessonId,'completed',false);
+    return res.status(200).json({ok:true,completed:false});
+   }
+   if(!admins.length){
+    const watched=Number(req.body.watchedSeconds),duration=Number(req.body.durationSeconds);
+    if(!Number.isFinite(watched)||!Number.isFinite(duration)||duration<5||watched<duration*.9||watched>duration*1.05)
+     throw fail(403,'Просмотри не менее 90% видео, чтобы открыть следующий урок');
+    const receipt=await db('noya_course_watch_sessions?select=opened_at&student_id=eq.'+student+'&lesson_id=eq.'+lessonId+'&limit=1');
+    if(!receipt.length)throw fail(403,'Сначала открой видеоурок');
+    const elapsed=(Date.now()-Date.parse(receipt[0].opened_at))/1000;
+    // Playback-time proof is backed by a signed token session and elapsed wall-clock time.
+    if(!Number.isFinite(elapsed)||elapsed+5<watched)
+     throw fail(403,'Досмотри урок в плеере перед завершением');
+   }
+   await db('course_lesson_completions?on_conflict=student_id,lesson_id','POST',{student_id:student,lesson_id:lessonId});
+   await mirrorState('course',lessonId,'completed',true);
+   return res.status(200).json({ok:true,completed:true});
   }
   if(action==='course_watch'){
    const lessonId=req.body.lessonId;
    if(typeof lessonId!=='string'||!/^[a-f0-9-]{36}$/i.test(lessonId))throw fail(400,'Invalid lesson');
    const lessons=await db('lessons?select=id,block_id,video_url,is_published&id=eq.'+encodeURIComponent(lessonId)+'&is_published=eq.true&limit=1');
    if(!lessons.length||!lessons[0].video_url)throw fail(404,'Lesson video unavailable');
-   const blocks=await db('course_blocks?select=id&course_id=eq.'+courseId+'&id=eq.'+encodeURIComponent(lessons[0].block_id)+'&limit=1');
-   if(!blocks.length)throw fail(404,'Lesson unavailable');
+   const state=await gate();
+   mustOpen(state.ensureLesson(lessonId));
    const videoId=lessons[0].video_url;
    if(!/^[a-f0-9]{32}$/i.test(videoId))throw fail(503,'Invalid video ID');
    if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Cloudflare preview is not configured');
    const cf=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+videoId+'/token',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),signal:AbortSignal.timeout(10000)});
    const data=await cf.json().catch(()=>null);
    if(!cf.ok||!data?.success||!data.result?.token){console.error('Cloudflare course video token failed',{status:cf.status,errors:(data?.errors||[]).map(e=>({code:e.code,message:e.message})),hasAccountId:!!process.env.CLOUDFLARE_ACCOUNT_ID,hasApiToken:!!process.env.CLOUDFLARE_API_TOKEN});throw fail(502,'Cloudflare HTTP '+cf.status+'; code '+String(data?.errors?.[0]?.code??'unknown'));}
+   if(!admins.length)await db('rpc/noya_course_watch_begin','POST',{p_student_id:student,p_lesson_id:lessonId});
    return res.status(200).json({ok:true,token:data.result.token});
   }
   if(action==='folder_summary'){
