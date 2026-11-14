@@ -37,7 +37,7 @@
    const card=node('article',undefined,'card');
    card.append(node('h3',item.title),node('p',item.description),node('div',fmt(item.cost)+' ◈','bonus-price'));
    if(item.owned){
-    const details=node('details');details.append(node('summary','Открыть материал'),node('pre',item.content||'Материал пока недоступен'));card.append(details);
+    const details=node('details');details.append(node('summary','Как получить подарок'),node('pre',item.content||'Инструкция по получению пока недоступна'));card.append(details);
    }else{
     const buy=node('button',data.balance<item.cost?'Недостаточно баллов':'Получить за '+fmt(item.cost),'button');
     buy.type='button';buy.disabled=data.balance<item.cost;
@@ -45,7 +45,7 @@
      if(redeeming||loading)return;
      if(!window.confirm('Обменять '+item.cost+' ноинкоинов на «'+item.title+'»?'))return;
      redeeming=true;buy.disabled=true;
-     try{const result=await api('coin_redeem',{itemCode:item.code},true);render(result.wallet);status(result.applied?'Бонус получен!':'Этот бонус уже у тебя.');}
+     try{const result=await api('coin_redeem',{itemCode:item.code},true);render(result.wallet);status(result.applied?'Подарок оформлен! Открой инструкцию по получению.':'Этот подарок уже оформлен.');}
      catch(e){status(e.message);buy.disabled=false;}finally{redeeming=false;}
     });card.append(buy);
    }
