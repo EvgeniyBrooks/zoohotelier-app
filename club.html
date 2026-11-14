@@ -146,7 +146,16 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-ai-status{font-size:13px;margin:0 0 12px}.noya-ai-status:empty{display:none}.noya-ai-note{font-size:11px;color:#858585;margin:18px 0 0;line-height:1.5}
 .noya-disclosure{border-top:1px solid #303030;padding:14px 0;color:#999;font-size:12px}.noya-disclosure summary{cursor:pointer;color:#bbb;font-size:13px}.noya-disclosure p{font-size:12px;margin:10px 0 0}.noya-memory-toggle{display:flex;gap:10px;align-items:center;margin:14px 0}.noya-memory-toggle input{width:19px;height:19px;accent-color:#f5fa45}
 @media(max-width:360px){.noya-member-tabs{padding-right:76px}.noya-member-tools{gap:0}.noya-member-tabs button{font-size:11px}.noya-ai-limit{font-size:10px}.noya-ai-heading h1{font-size:28px}.noya-ai-heading img{width:48px;height:48px}}
-</style></head><body>
+</style><style>
+.noya-first-step{margin:0 0 18px;border:1px solid #a3ae3e;background:linear-gradient(145deg,#222519,#10110e);border-radius:21px;padding:21px 19px}
+.noya-first-step[hidden]{display:none!important}
+.noya-first-kicker{font-size:10px;color:#f5fa45;font-weight:850;letter-spacing:1.2px}
+.noya-first-step h2{font-size:clamp(26px,7vw,37px);margin:9px 0}
+.noya-first-step p{font-size:13px;line-height:1.5;margin:8px 0 12px;color:#e2e2e2}
+.noya-first-detail{font-size:11px;color:#acb18f;margin:0 0 16px}
+.noya-first-action{display:inline-flex;min-height:44px;align-items:center;justify-content:center;border-radius:13px;padding:11px 17px;background:#f5fa45;color:#111;font-size:13px;font-weight:850}
+body.noya-guided-home #noya-next-route{display:none!important}
+</style><script src="./assets/noya-next-step.js?v=1" defer></script></head><body>
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
  <span id="noya-payment-state">Проверяем доступ…</span>
@@ -155,7 +164,13 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
  <button type="button" id="noya-payment-retry" hidden>Попробовать ещё раз</button>
 </div><main><div id="noya-account-slot"></div>
 
-<section id="home" class="screen" aria-label="Главная NOYA CLUB"><section class="card" aria-labelledby="noya-next-title" id="noya-next-route" hidden>
+<section id="home" class="screen" aria-label="Главная NOYA CLUB"><section id="noya-first-step" class="noya-first-step" aria-labelledby="noya-first-step-title" hidden>
+ <div data-next-status class="noya-first-kicker">NOYA / ЛИЧНЫЙ ПЛАН</div>
+ <h2 id="noya-first-step-title" data-next-title>МОЙ СЛЕДУЮЩИЙ ШАГ</h2>
+ <p data-next-text>Выбери одну задачу и начни с простого наблюдения.</p>
+ <div data-next-detail class="noya-first-detail"></div>
+ <a class="noya-first-action" data-next-action href="./journey.html?tab=profile">Начать →</a>
+</section><section class="card" aria-labelledby="noya-next-title" id="noya-next-route" hidden>
  <div class="noya-next-heading"><h2 id="noya-next-title">Твой маршрут</h2><button type="button" class="noya-icon-button" id="noya-route-open" aria-label="Открыть маршрут">↗</button></div>
  <p id="noya-next-progress"></p>
  <progress id="noya-next-meter" aria-label="Прогресс маршрута" style="width:100%;accent-color:var(--accent)" hidden></progress>
@@ -163,7 +178,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
  <button class="button" type="button" id="noya-next-button">Продолжить</button>
  </section><div id="telegram-auth-state" class="notice" role="status" hidden style="margin-bottom:20px">Проверяем подключение Telegram…</div>
 <div class="section home-start"><div class="tiles">
-<a class="tile" href="./club-demo.html"><span class="glyph">◇</span><strong>МОЯ СОБАКА</strong><small>Профиль и диагностика</small></a>
+<a class="tile" href="./journey.html?tab=profile"><span class="glyph">◇</span><strong>МОЯ СОБАКА</strong><small>Карточка, цель и дневник</small></a>
 <button class="tile" type="button" data-screen="ai" style="color:inherit;text-align:left;cursor:pointer"><img class="noya-avatar-small" src="data:image/webp;base64,UklGRpwDAABXRUJQVlA4IJADAADQFgCdASpgAGAAPqVGnUkmJCMqrjgMAVAUiWcAzYr1/lLEjHeICG6Vk6LFEvBAenHl/V2ocWfqBDwDMoWJmuekeaojmzf7rr1hazhgHH0YAJp2asQbV5StpZ5EHVPa+/EqKlq8KlMl7jz57ujSc1Xav61yOWcFPFMSbzy79d1Hu/qbshWtLkJkpZ1cxx/eTnjaXXjq3s8hr+++fPgNuRjpXHiW1NiYOrSmhAYo4r6HDPn23GIvpdUUoD5/fhiCcAD++qgI3WS/9BrWmA3mKv9ELuYmvV/y2pYomGA9SuA5xCoJ8sPYILjFaSDvHdd9HunPzosEcnj4uK63pX3VqjAJlcnERnxXifcrQqdLqoVp2HcuRBs9kmBL7ckb/Dl7XMWRh+DZqkDMHVNZNi3ZcnXpMfOE9GlxcRSVFUHbV58C+1qumm8OpJjGnjUFxpjeRmX7Yvouas+lVPySLp3YomWzu9sQqacMN3OXAppxaJwHchz2IGUKoFOr5VcRHt78FXAHI8WGl60kUCQw2OEvWKF8ZGA//CKCqaY1I0Wwj3T3wLRBRLyF8m9eyKSI1rr2Mc0qWkgwObYPt0FM+eEisSy/u7FBC4emk0wI6qxhDM8ig8wFKXrF+yzEmVToToNh6OA/S6E5CP0mCSVlQruJK2N1fvCxNqe9LDOWrsY99uhFrntQlsdf8KToLzHvd386L4URDUho86CGgMaIyTfToZnvrT/tBOykAYV1m6mFXYJMhQqMTjDVbwuPds47vUns4tRrrZe7AetdRl8VOmI5Rn4qmKftepxLmz85LLoTaWIgghU8Ol+qvWv6QWNcDJPgJ2uh3Y/+TiTIISBL6dyXtkxg5EFrA8EMQsWJLQqNMxwo5Big7YO9MYcLHG9+5XLneJnK3v2dGOkNNVRoQpSgnwsMccKbIqGmCXOtR4u1w20cGsZmn62DmU1oQOXiG16t/FQLKrojakH6MRGhMm0Ms80PiP/GFq3lytuAZhfHnTwXi+PRsgLSs2Hg2V+V5RIyZSUgmGBftP+o0NEjT0LAMv5MyvkaNMLrHNvr27flmFMEuG/IFNU1R+zhoCXTx1nKzT79XI2EhPcGtnDX64SfFBzfKouAVQ6zIZwZiX68vR/1eh5M2NUu4Yk6wih7a+1D08rZ83X1rHFPDXg2g00giOU7eGh4x9WMeJnqfKKzupZiK3+uD4fhf71tj31wp6zRoAA=" alt="Ноя — собака клуба"><strong>ИИ НОЯ</strong><small>Помощник по воспитанию собак</small></button></div></div>
 <div class="section" aria-label="Курс Управление вниманием"><div class="attention-course-card">
   <h2>КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ</h2>
