@@ -77,16 +77,16 @@
      el('div','price',new Intl.NumberFormat('ru-RU').format(item.cost)+' 🪙'));
     if(item.owned){
      const details=el('details');
-     const summary=el('summary','', 'Открыть купленный материал');
+     const summary=el('summary','', 'Как получить подарок');
      const content=el('pre');
      content.style.cssText='white-space:pre-wrap;overflow-wrap:break-word;font:13px/1.65 system-ui,sans-serif;color:#e6e6e6;margin-top:14px';
-     content.textContent=item.content||'Материал пока недоступен';
+     content.textContent=item.content||'Инструкция по получению пока недоступна';
      details.append(summary,content);card.append(details);
     }else{
      const buy=button('Купить за '+item.cost+' НОИНКОИНОВ',async()=>{
       if(!window.confirm('Обменять '+item.cost+' НОИНКОИНОВ на «'+item.title+'»?'))return;
       const result=await request('coin_redeem',{itemCode:item.code},'POST');
-      setMessage(result.applied?'Бонус куплен! Он появился в кошельке.':'Этот бонус уже куплен.');
+      setMessage(result.applied?'Подарок оформлен! Открой инструкцию по получению.':'Этот бонус уже куплен.');
       await loadCoins();
      });
      buy.disabled=data.balance<item.cost;
