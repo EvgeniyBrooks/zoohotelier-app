@@ -71,7 +71,7 @@ test('all blocks require previous lessons even after calendar days have elapsed'
  const {result}=await fixture({done:['pre1','pre2','day1','day3'],now:'2027-01-01T10:00:00Z'});
  assert.equal(result.ensureLesson('day2').available,true);
  assert.equal(result.ensureLesson('day4').lockReason,'previous');
- assert.equal(result.ensureLesson('day4').previousTitle,'Неделя 1 — День 3');
+ assert.equal(result.ensureLesson('day4').previousTitle,'Неделя 1 — День 2');
 });
 test('admins can inspect or repair course without blocking learners',async()=>{
  const {result,calls}=await fixture({admin:true,begin:true});
