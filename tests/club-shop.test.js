@@ -327,3 +327,21 @@ test('ranking ties and Moscow month boundary are deterministic',()=>{
  assert.equal(r.leaders[0].place,1);assert.equal(r.leaders[1].place,1);assert.equal(r.me.count,1);
 });
 
+
+test('new member has zero coins and only referral earning rules',async()=>{
+ const mock=network({member:true});
+ const previous=global.fetch;
+ global.fetch=async(url,options)=>{
+  if(new URL(url).pathname.endsWith('/noya_coin_sync'))return new Response(JSON.stringify([{balance:0,lifetime_earned:0,lifetime_spent:0}]));
+  return previous(url,options);
+ };
+ try{
+  const r=await invoke('GET','coins');
+  assert.equal(r.statusCode,200);
+  assert.equal(r.body.balance,0);
+  assert.equal(r.body.earned,0);
+  assert.equal(r.body.earningRules.length,1);
+  assert.equal(r.body.earningRules[0].coins,500);
+  assert.match(r.body.earningRules[0].event,/приглашённого друга/);
+ }finally{mock.restore();}
+});
