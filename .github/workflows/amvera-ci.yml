@@ -30,6 +30,6 @@ jobs:
       - name: Test Amvera HTTP adapter
         run: node --test tests/amvera-server.test.cjs
       - name: Test course daily scheduling and sequential release
-        run: node --test tests/course-daily-unlock.test.cjs
+        run: node --test tests/course-daily-unlock.test.cjs tests/course-lock-api.test.cjs
       - name: Run existing NOYA regression tests
         run: node --test tests/*.test.js
