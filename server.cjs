@@ -16,7 +16,8 @@ const MAX_WEBHOOK_BYTES = 120000;
 const PUBLIC_PAGES = new Set([
   'index.html','club.html','club-demo.html','club-admin.html',
   'course-live.html','shop.html','club-terms.html','about.html',
-  'community-rules.html','faq.html','policies.html','privacy.html'
+  'community-rules.html','faq.html','policies.html','privacy.html',
+  'journey.html','coach.html'
 ]);
 
 const REWRITES = Object.freeze({
@@ -33,7 +34,7 @@ const REWRITES = Object.freeze({
 const ENDPOINTS = new Set([
   'admin-cohorts','club-diagnostic','club-lessons','club-members',
   'club-progress','club-shop','club-trial','club-video-token',
-  'member-materials','stream-token','telegram-auth'
+  'member-materials','stream-token','telegram-auth','club-journey'
 ]);
 
 const MIME = Object.freeze({
