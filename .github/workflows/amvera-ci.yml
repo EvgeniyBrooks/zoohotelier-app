@@ -10,9 +10,26 @@ on:
       - api/**
       - lib/**
       - tests/amvera-server.test.cjs
+      - tests/club-renewal-reward.sql
+      - supabase/migrations/**
 permissions:
   contents: read
 jobs:
+  renewal-rewards:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verify payment and wallet transactions
+        run: psql postgresql://postgres:postgres@localhost/postgres -f tests/club-renewal-reward.sql
   smoke:
     runs-on: ubuntu-latest
     steps:

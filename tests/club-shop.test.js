@@ -340,8 +340,9 @@ test('new member has zero coins and only referral earning rules',async()=>{
   assert.equal(r.statusCode,200);
   assert.equal(r.body.balance,0);
   assert.equal(r.body.earned,0);
-  assert.equal(r.body.earningRules.length,1);
-  assert.equal(r.body.earningRules[0].coins,500);
-  assert.match(r.body.earningRules[0].event,/приглашённого друга/);
+  assert.deepEqual(r.body.earningRules,[
+   {event:'Каждое подтверждённое продление своей подписки',coins:500},
+   {event:'Каждая подтверждённая оплата приглашённого друга (2 900 ₽)',coins:500}
+  ]);
  }finally{mock.restore();}
 });

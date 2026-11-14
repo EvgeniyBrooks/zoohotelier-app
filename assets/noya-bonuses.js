@@ -30,7 +30,7 @@
   $('link').value=link;$('copy').disabled=!link;$('share').disabled=!link;
   $('pending').textContent=fmt(ref.pending||0);$('paid').textContent=fmt(ref.rewarded||0);
   $('invite-rule').textContent='За каждую подтверждённую оплату приглашённого друга — '+fmt(ref.coinsPerConfirmedPayment||0)+' ноинкоинов.';
-  $('rules-list').replaceChildren(node('p','Начальный баланс — 0. За вход, собственную подписку и уроки ноинкоины не начисляются.'),...(data.earningRules||[]).map(r=>node('p','+'+fmt(r.coins)+' · '+r.event)));
+  $('rules-list').replaceChildren(node('p','Начальный баланс — 0.'),...(data.earningRules||[]).map(r=>node('p','+'+fmt(r.coins)+' · '+r.event)));
   const items=Array.isArray(data.items)?data.items:[];
   $('store').replaceChildren();
   for(const item of items){
