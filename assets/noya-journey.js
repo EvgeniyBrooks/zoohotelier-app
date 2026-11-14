@@ -23,15 +23,15 @@ async function load(){
  byId('journey-review-availability').textContent=d.reviewEnabled
   ? 'Можно отправить до трёх коротких отчётов в сутки. Проверка проводится в рамках доступного сопровождения.'
   : 'Личная проверка видео пока не открыта. Веди дневник и отмечай прогресс самостоятельно; обещать ответ кинолога до запуска проверки мы не будем.';
- if(d.courseAccess&&d.reviewEnabled)await loadLessons();
+ // Assignment tab is retired; keep existing reports in storage.
  const desired=params.get('tab');
  const noJourney=!d.journeys.length;
- const tab=noJourney?'profile':(['profile','diary','report'].includes(desired)?desired:'diary');
+ const tab=noJourney?'profile':(['profile','diary'].includes(desired)?desired:'diary');
  showTab(tab);
  msg('journey-status',noJourney?'Добавь собаку или выбери имеющуюся, затем одну главную цель.':'Карточка и дневник сохранены в твоём аккаунте Telegram.');
 }
 function showTab(name){
- if(!['profile','diary','report'].includes(name))name='profile';
+ if(!['profile','diary'].includes(name))name='diary';
  for(const section of ['profile','diary','report'])byId('journey-'+section).hidden=section!==name;
  for(const button of root.querySelectorAll('[data-journey-tab]'))button.setAttribute('aria-selected',String(button.dataset.journeyTab===name));
  const newUrl=new URL(location.href);newUrl.searchParams.set('tab',name);history.replaceState(null,'',newUrl.pathname+newUrl.search+newUrl.hash);
