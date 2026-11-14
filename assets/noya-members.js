@@ -213,7 +213,7 @@ function paintMine(){
  const body=el('div','noya-my-member-info');
  body.append(el('strong','',me.name));
  body.append(el('span','','Редактировать профиль'));
- body.append(el('small','',me.points+' баллов'+(me.rank?' · место '+me.rank:'')));
+ if(me.rank)body.append(el('small','','Место '+me.rank));
  myBox.append(body);
  const arrow=el('span','noya-my-member-arrow','→');myBox.append(arrow);
  myBox.onclick=edit;myBox.hidden=false;
