@@ -1,12 +1,8 @@
 BEGIN;
 
-SELECT set_config('noya.previous_renewal_cutoff', coalesce((
-  SELECT split_part(setting, '=', 2)
-  FROM pg_proc p, unnest(p.proconfig) AS setting
-  WHERE p.oid=to_regprocedure('public.noya_club_record_confirmed_payment(text,text,text,numeric,timestamptz,timestamptz)')
-    AND setting LIKE 'noya.renewal_rewards_from=%'
-), ''), true);
-
+DO $migration$
+BEGIN
+ EXECUTE replace($definition$
 CREATE OR REPLACE FUNCTION public.noya_club_record_confirmed_payment(p_order_num text, p_provider_subscription_id text, p_payment_id text, p_amount numeric, p_paid_at timestamp with time zone, p_next_payment_at timestamp with time zone DEFAULT NULL::timestamp with time zone)
  RETURNS TABLE(applied boolean, member_id uuid, paid_payments integer)
  LANGUAGE plpgsql
@@ -76,7 +72,7 @@ BEGIN
 
  -- A trial or manually granted subscription has no earlier verified paid period.
  SELECT v_subscription IS NOT NULL
-   AND p_paid_at >= current_setting('noya.renewal_rewards_from')::timestamptz
+   AND p_paid_at >= '__RENEWAL_CUTOFF__'::timestamptz
    AND p_payment_id ~ '^[0-9]{1,40}$'
    AND EXISTS (
      SELECT 1
@@ -176,15 +172,9 @@ BEGIN
    (SELECT count(*)::integer FROM public.payments p WHERE p.student_id=v_student AND p.product_type='club' AND p.status='paid');
 END;
 $function$;
-
--- Use the database rollout time so even a newly delivered historical receipt
--- cannot grant coins. A repeated installation preserves the first cutoff.
-DO $migration$
-BEGIN
-  EXECUTE format(
-    'ALTER FUNCTION public.noya_club_record_confirmed_payment(text,text,text,numeric,timestamptz,timestamptz) SET noya.renewal_rewards_from TO %L',
-    coalesce(nullif(current_setting('noya.previous_renewal_cutoff'), ''), statement_timestamp()::text)
-  );
+$definition$, '__RENEWAL_CUTOFF__',
+   -- The cutoff comes from the database clock at deployment.
+   statement_timestamp()::text);
 END;
 $migration$;
 
