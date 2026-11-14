@@ -39,6 +39,8 @@ function row(item){
  favorite.onclick=()=>change(item,'favorite',!item.favorited);
  const done=node('button','noya-library-completed',item.completed?'✓ Пройдено':'Отметить');
  done.type='button';done.setAttribute('aria-pressed',String(item.completed));done.setAttribute('aria-label',item.completed?'Убрать отметку о прохождении':'Отметить пройденным');
+ // Course lessons are completed only by 90% video playback, not by a library tap.
+ if(item.type==='course')done.hidden=true;
  done.onclick=()=>change(item,'complete',!item.completed);
  favorite.disabled=done.disabled=changing.has(item.type+':'+item.id);
  controls.append(favorite,done);content.append(controls);
