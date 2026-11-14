@@ -155,7 +155,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-first-detail{font-size:11px;color:#acb18f;margin:0 0 16px}
 .noya-first-action{display:inline-flex;min-height:44px;align-items:center;justify-content:center;border-radius:13px;padding:11px 17px;background:#f5fa45;color:#111;font-size:13px;font-weight:850}
 body.noya-guided-home #noya-next-route{display:none!important}
-</style><script src="./assets/noya-next-step.js?v=1" defer></script></head><body>
+</style><script src="./assets/noya-next-step.js?v=1" defer></script><link rel="stylesheet" href="./assets/noya-bonuses.css?v=1"><script src="./assets/noya-bonuses.js?v=1" defer></script></head><body>
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
  <span id="noya-payment-state">Проверяем доступ…</span>
@@ -266,9 +266,24 @@ body.noya-guided-home #noya-next-route{display:none!important}
   <div id="club-lessons" class="empty">Загружаем уроки клуба…</div>
  </details>
 </section>
-<section id="bonuses" class="screen" hidden><h1>БОНУСЫ</h1>
+<section id="bonuses" class="screen" hidden aria-labelledby="bonus-title">
+ <div class="bonus-heading"><h1 id="bonus-title">БОНУСЫ</h1><button type="button" id="bonus-reload" class="bonus-link">Обновить</button></div>
+ <p>Приглашай друзей, собирай ноинкоины и выбирай подарки для себя и собаки.</p>
+ <div id="bonus-status" role="status" aria-live="polite"></div>
+ <div class="bonus-wallet"><span>Мои ноинкоины</span><strong id="bonus-balance">—</strong><span>Внутренние баллы NOYA CLUB</span></div>
+ <details class="bonus-rules"><summary>Как работает программа</summary><div id="bonus-rules-list"></div><p>Баллы начисляются после подтверждения оплаты. Переход по ссылке сам по себе не приносит баллы. Самоприглашения не учитываются.</p><p>Ноинкоины нельзя вывести или перевести. Обмен на материалы доступен при действующей платной подписке.</p></details>
+ <article class="card bonus-invite"><h2>Пригласить друга</h2><p id="bonus-invite-rule">Поделись личной ссылкой на клуб.</p><label for="bonus-link">Твоя реферальная ссылка</label><input id="bonus-link" readonly placeholder="Ссылка появится после загрузки"><div class="bonus-actions"><button type="button" id="bonus-copy" disabled>Копировать</button><button type="button" id="bonus-share" disabled>Пригласить</button></div></article>
+ <div class="bonus-stats"><article><strong id="bonus-pending">—</strong><span>Ожидают оплаты</span></article><article><strong id="bonus-paid">—</strong><span>Подтверждённых оплат</span></article></div>
+ <div class="bonus-tabs" role="tablist" aria-label="Бонусная программа">
+ <button type="button" role="tab" id="bonus-tab-store" data-bonus-tab="store" aria-controls="bonus-panel-store" aria-selected="true">Магазин</button>
+ <button type="button" role="tab" id="bonus-tab-invitations" data-bonus-tab="invitations" aria-controls="bonus-panel-invitations" aria-selected="false" tabindex="-1">Приглашения</button>
+ <button type="button" role="tab" id="bonus-tab-ranking" data-bonus-tab="ranking" aria-controls="bonus-panel-ranking" aria-selected="false" tabindex="-1">Рейтинг</button></div>
+ <section role="tabpanel" id="bonus-panel-store" aria-labelledby="bonus-tab-store"><h2>Магазин бонусов</h2><div id="bonus-store" class="bonus-grid"></div></section>
+ <div id="bonus-panel-history" hidden><div id="bonus-history"></div></div>
+ <section role="tabpanel" id="bonus-panel-invitations" aria-labelledby="bonus-tab-invitations" hidden><h2>Твои приглашения</h2><p>Личные контакты приглашённых здесь не отображаются.</p><div id="bonus-invitations"></div><button id="bonus-invitations-more" type="button" class="button secondary" hidden>Показать ещё</button></section>
+ <section role="tabpanel" id="bonus-panel-ranking" aria-labelledby="bonus-tab-ranking" hidden><h2>Рейтинг участников</h2><p>По числу приглашённых друзей с подтверждённой первой оплатой. Продления не увеличивают число друзей. При равенстве — одинаковое место.</p><label for="bonus-period">Период</label><select id="bonus-period"><option value="month">Этот месяц · Москва</option><option value="all">За всё время</option></select><div id="bonus-ranking"></div></section>
  <button class="noya-bonus-card" type="button" data-open-account><span class="noya-bonus-icon" aria-hidden="true">☆</span><span><strong>Твои подарки</strong><small>За каждый месяц участия</small></span><span aria-hidden="true">→</span></button>
- <a class="noya-bonus-card" href="./shop.html#coins"><span class="noya-bonus-icon" aria-hidden="true">◈</span><span><strong>Бонусный магазин</strong><small>НОИНКОИНЫ и разборы</small></span><span aria-hidden="true">→</span></a>
+ <a class="bonus-link" href="./shop.html">Персональные разборы →</a>
 </section>
 <section id="admin" class="screen" hidden style="background:#171717;color:#fff;border:1px solid #555;border-radius:16px;padding:18px;margin:16px 0"><h2 style="color:#f5fa45">NOYA CLUB · АДМИН</h2><a href="./index.html" class="button" style="margin:12px 0">Открыть курс «Управление вниманием» →</a><button id="admin-refresh" class="button secondary" type="button">Обновить статистику</button><p id="admin-state">Загрузка…</p><div id="admin-summary"></div><h3>Приоритеты диагностик</h3><div id="admin-topics"></div><h3>Результаты упражнений</h3><div id="admin-outcomes"></div><h3>УПРАВЛЕНИЕ УРОКАМИ</h3>
 <p>Добавляй уроки в библиотеку. Новые уроки сохраняются как черновики и не видны участникам.</p>
@@ -896,4 +911,5 @@ loadClubAdmin();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadLiveFolderCover,{once:true});else loadLiveFolderCover();
 })();
 </script></body></html>
+
 

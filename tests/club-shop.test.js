@@ -180,7 +180,8 @@ test('app has a shop navigation and never pretends shop purchases are enabled',(
  const shop=fs.readFileSync(path.join(root,'shop.html'),'utf8');
  const ui=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
  const api=fs.readFileSync(path.join(root,'api','club-shop.js'),'utf8');
- assert.match(html,/href="\.\/shop\.html#coins"/);
+ assert.match(html,/id="bonus-panel-store"/);
+ assert.match(html,/href="\.\/shop\.html"/);
  assert.match(shop,/noya-shop-reviewer-tab/);
  assert.match(shop,/club-shop\.js\?v=2/);
  assert.match(ui,/Оплата разборов скоро появится/);
@@ -271,3 +272,76 @@ test('referral section is above redeemable goods with copy/share controls',()=>{
  assert.ok(club.indexOf("action:'referral_claim'")<club.indexOf("const status=await billingFetch('/api/club-checkout?status=1'"));
 });
 
+
+
+
+test('bonus statistics require signed membership and scope invitations to the current student',async()=>{
+ let mock=network({});
+ try{
+  for(const action of ['bonus_invitations','bonus_ranking']){
+   assert.equal((await invoke('GET',action,{}, {initData:''})).statusCode,401);
+   assert.equal((await invoke('GET',action)).statusCode,403);
+  }
+ }finally{mock.restore();}
+ mock=network({member:true});
+ const previous=global.fetch;
+ global.fetch=async(url,options)=>{
+  const u=new URL(url);
+  if(u.pathname.endsWith('/noya_referral_attributions')){
+   assert.equal(u.searchParams.get('inviter_student_id'),'eq.'+STUDENT);
+   assert.equal(u.searchParams.get('select'),'created_at,credited_at');
+   return new Response(JSON.stringify(Array.from({length:21},()=>({created_at:'2026-11-01',credited_at:null}))));
+  }
+  return previous(url,options);
+ };
+ try{
+  const r=await invoke('GET','bonus_invitations',{}, {query:{offset:'0',studentId:'forged'}});
+  assert.equal(r.statusCode,200);assert.equal(r.body.invitations.length,20);assert.equal(r.body.nextOffset,20);
+  assert.deepEqual(Object.keys(r.body.invitations[0]),['createdAt','paidAt']);
+  assert.equal((await invoke('GET','bonus_invitations',{}, {query:{offset:'-1'}})).statusCode,400);
+ }finally{mock.restore();}
+});
+test('ranking aggregates all pages, excludes personal identities, and rejects unknown periods',async()=>{
+ const mock=network({member:true});const previous=global.fetch;const offsets=[];
+ global.fetch=async(url,options)=>{
+  const u=new URL(url);
+  if(u.pathname.endsWith('/noya_referral_attributions')){
+   const offset=Number(u.searchParams.get('offset'));offsets.push(offset);
+   return new Response(JSON.stringify(offset===0?Array.from({length:1000},()=>({inviter_student_id:STUDENT,credited_at:'2026-11-01'})):
+    [{inviter_student_id:ORDER,credited_at:'2026-11-02'}]));
+  }
+  return previous(url,options);
+ };
+ try{
+  const r=await invoke('GET','bonus_ranking',{}, {query:{period:'all'}});
+  assert.equal(r.statusCode,200);assert.deepEqual(offsets,[0,1000]);
+  assert.equal(r.body.me.count,1000);assert.equal(r.body.leaders[1].count,1);
+  assert.ok(!JSON.stringify(r.body).includes(STUDENT));assert.ok(!JSON.stringify(r.body).includes(ORDER));
+  assert.equal((await invoke('GET','bonus_ranking',{}, {query:{period:'unknown'}})).statusCode,400);
+ }finally{mock.restore();}
+});
+test('ranking ties and Moscow month boundary are deterministic',()=>{
+ const {ranking,monthStart}=require('../lib/noya-bonus-stats');
+ assert.equal(monthStart(new Date('2026-11-30T21:30:00Z')),'2026-11-30T21:00:00.000Z');
+ const r=ranking([{inviter_student_id:'a',credited_at:'yes'},{inviter_student_id:'b',credited_at:'yes'},{inviter_student_id:'a',credited_at:null}],'a');
+ assert.equal(r.leaders[0].place,1);assert.equal(r.leaders[1].place,1);assert.equal(r.me.count,1);
+});
+
+
+test('new member has zero coins and only referral earning rules',async()=>{
+ const mock=network({member:true});
+ const previous=global.fetch;
+ global.fetch=async(url,options)=>{
+  if(new URL(url).pathname.endsWith('/noya_coin_sync'))return new Response(JSON.stringify([{balance:0,lifetime_earned:0,lifetime_spent:0}]));
+  return previous(url,options);
+ };
+ try{
+  const r=await invoke('GET','coins');
+  assert.equal(r.statusCode,200);
+  assert.equal(r.body.balance,0);
+  assert.equal(r.body.earned,0);
+  assert.equal(r.body.earningRules.length,1);
+  assert.equal(r.body.earningRules[0].coins,500);
+  assert.match(r.body.earningRules[0].event,/приглашённого друга/);
+ }finally{mock.restore();}
+});

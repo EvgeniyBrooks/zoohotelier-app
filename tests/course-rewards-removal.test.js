@@ -27,7 +27,8 @@ test('completed lessons can still track progress but no longer advertise NOINCOI
  const course=read('index.html');
  assert.doesNotMatch(shop,/\+25 за каждый завершённый урок/);
  assert.doesNotMatch(api,/Подтверждённое прохождение урока|Завершённый урок',coins:25/);
- assert.match(shop,/500 за каждую полную оплату друга/);
+ assert.match(shop,/Начальный баланс — 0 · \+500 за каждую подтверждённую оплату приглашённого друга/);
+ assert.doesNotMatch(shop,/за первый оплаченный доступ|за участие и приглашения/);
  assert.match(api,/Каждая подтверждённая оплата приглашённого друга/);
  assert.match(course,/course_complete/);
  assert.match(course,/Посмотри не менее 90% видео/);
