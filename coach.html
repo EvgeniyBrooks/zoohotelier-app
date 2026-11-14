@@ -1,0 +1,45 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050505">
+<title>Проверка заданий — NOYA CLUB</title><script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--y:#f5fa45}*{box-sizing:border-box}
+body{margin:0;background:#050505;color:#fff;font:14px/1.5 system-ui,-apple-system,sans-serif}
+main{max-width:720px;margin:auto;padding:22px 17px 85px}
+a{color:#ddd;text-decoration:none}.back{display:inline-block;margin-bottom:23px;font-size:13px;font-weight:800}
+h1,h2{font:700 clamp(34px,8vw,54px)/1.1 Oswald,Impact,sans-serif;text-transform:uppercase}
+h1{margin:10px 0 15px}.kicker{color:var(--y);font-size:12px;font-weight:850}
+.muted{color:#aaa}.tabs{display:flex;border-bottom:1px solid #404040;gap:7px;margin:18px 0}
+.tabs button{flex:1;padding:13px 3px;border:0;border-bottom:2px solid transparent;background:transparent;color:#aaa;font-weight:750;font-size:12px}
+.tabs button[aria-pressed=true]{border-color:var(--y);color:var(--y)}
+#coach-count{color:var(--y)}
+.card{background:#181818;border:1px solid #414141;border-radius:15px;padding:17px;margin:13px 0}
+.card h2{font-size:24px;margin:7px 0}.card .meta{font-size:11px;color:#aaa}
+.card p{white-space:pre-wrap;overflow-wrap:anywhere;color:#eee;font-size:13px}
+.card strong{color:#f5fa45}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin:13px 0}
+.field textarea{border-radius:10px;background:#2b2b2b;color:#fff;padding:12px;border:1px solid #555;min-height:90px;resize:vertical;font:inherit}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{min-height:43px;padding:10px 13px;border:0;border-radius:11px;font-size:12px;font-weight:800;background:var(--y);color:#111}
+.actions button.secondary{background:#333;color:#fff;border:1px solid #555}
+.actions button:disabled{opacity:.55}.notice{border-left:3px solid var(--y);background:#1e1e1e;padding:12px;color:#ddd}
+.status{font-size:12px;color:#bbb;margin-top:10px}
+dialog{max-width:95vw;width:650px;border:1px solid #555;border-radius:15px;background:#121212;color:#fff;padding:18px}
+dialog iframe{width:100%;aspect-ratio:16/9;border:0}
+dialog::backdrop{background:#000d}
+</style><script src="./assets/noya-coach.js?v=1" defer></script></head><body>
+<main><a class="back" href="./club.html#home">← В NOYA CLUB</a>
+<div class="kicker">ДОСТУП ТОЛЬКО ДЛЯ КИНОЛОГОВ</div><h1>ПРОВЕРКА ЗАДАНИЙ</h1>
+<p class="muted">Сначала наблюдение и условия, затем видео и один понятный следующий шаг. Не оценивай характер владельца или собаки.</p>
+<div class="notice" id="coach-status" role="status">Проверяем права доступа…</div>
+<div id="coach-app" hidden>
+<div class="tabs" role="group" aria-label="Статусы проверки">
+<button type="button" data-coach-filter="submitted" aria-pressed="true">Новые <span id="coach-count">0</span></button>
+<button type="button" data-coach-filter="needs_changes" aria-pressed="false">На доработке</button>
+<button type="button" data-coach-filter="approved" aria-pressed="false">Проверены</button>
+</div>
+<div id="coach-list" aria-live="polite"></div>
+<button type="button" id="coach-reload" class="actions" style="background:none;border:1px solid #555;color:#eee;padding:10px;border-radius:10px">Обновить очередь</button>
+</div>
+</main>
+<dialog id="coach-player"><h2>ВИДЕО ОТЧЁТА</h2><div id="coach-player-content"></div><div class="actions"><button type="button" class="secondary" id="coach-player-close">Закрыть</button></div></dialog>
+</body></html>
