@@ -7,7 +7,8 @@ const styles=[
 '.noya-material-actions button[aria-pressed="true"]{border-color:#aeb938;background:#2f3219;color:#f5fa45}',
 '.noya-material-actions button:disabled{opacity:.65;cursor:wait}',
 '.noya-material-actions button:focus-visible{outline:2px solid #f5fa45;outline-offset:2px}',
-'.noya-material-actions .noya-action-error{color:#e98e8e;font-size:11px;flex-basis:100%;margin:0}'
+'.noya-material-actions .noya-action-error{color:#e98e8e;font-size:11px;flex-basis:100%;margin:0}',
+'.noya-material-actions button[hidden]{display:none!important}'
 ].join('\n');
 const st=document.createElement('style');st.textContent=styles;document.head.append(st);
 async function request(action,type,id,value){
@@ -33,6 +34,9 @@ function controls(type,id,options={}){
  const wrap=document.createElement('div');wrap.className='noya-material-actions';wrap.setAttribute('aria-label','Действия с видео');
  const favorite=document.createElement('button'),complete=document.createElement('button'),error=document.createElement('p');
  favorite.type='button';complete.type='button';error.className='noya-action-error';error.hidden=true;
+ // The Attention Management course can only be completed by verified video playback.
+ // Keep the favorite button but never show a manual completion shortcut.
+ if(type==='course')complete.hidden=true;
  favorite.dataset.action='favorite';complete.dataset.action='complete';wrap.append(favorite,complete,error);
  let state={favorited:false,completed:false},busy=false;
  function paint(){
