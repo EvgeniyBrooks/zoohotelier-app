@@ -30,7 +30,8 @@ test('completed lessons can still track progress but no longer advertise NOINCOI
  assert.match(shop,/500 за каждую полную оплату друга/);
  assert.match(api,/Каждая подтверждённая оплата приглашённого друга/);
  assert.match(course,/course_complete/);
- assert.match(course,/Отметить урок пройденным/);
+ assert.match(course,/Посмотри не менее 90% видео/);
+ assert.doesNotMatch(course,/id="course-manual-complete"/);
 });
 
 test('legacy course Students and Cohorts administrator dashboard is removed from course UI',()=>{
