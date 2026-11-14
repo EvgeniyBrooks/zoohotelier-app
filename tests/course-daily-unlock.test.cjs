@@ -39,9 +39,9 @@ test('two pretraining lessons and first core lesson show immediately, subsequent
  assert.equal(result.ensureLesson('pre2').lockReason,'previous');
  assert.equal(result.ensureLesson('day1').unlockAt,'2026-11-14T14:15:00Z');
  assert.equal(result.ensureLesson('day1').lockReason,'previous');
- assert.equal(result.ensureLesson('day2').unlockAt,'2026-11-15T07:00:00.000Z');
- assert.equal(result.ensureLesson('day3').unlockAt,'2026-11-16T07:00:00.000Z');
- assert.equal(result.ensureLesson('day4').unlockAt,'2026-11-17T07:00:00.000Z');
+ assert.equal(result.ensureLesson('day2').unlockAt,'2026-11-15T05:00:00.000Z');
+ assert.equal(result.ensureLesson('day3').unlockAt,'2026-11-16T05:00:00.000Z');
+ assert.equal(result.ensureLesson('day4').unlockAt,'2026-11-17T05:00:00.000Z');
 });
 test('first pretraining must be watched before second and next before first week',async()=>{
  const first=(await fixture({done:['pre1']})).result;
@@ -53,19 +53,19 @@ test('first pretraining must be watched before second and next before first week
 });
 test('next day at ten Moscow unlocks only after predecessor is completed',async()=>{
  const complete=['pre1','pre2','day1'];
- const early=(await fixture({done:complete,now:'2026-11-15T06:59:59Z'})).result;
+ const early=(await fixture({done:complete,now:'2026-11-15T04:59:59Z'})).result;
  assert.equal(early.ensureLesson('day2').available,false);
  assert.equal(early.ensureLesson('day2').lockReason,'time');
- const exact=(await fixture({done:complete,now:'2026-11-15T07:00:00Z'})).result;
+ const exact=(await fixture({done:complete,now:'2026-11-15T05:00:00Z'})).result;
  assert.equal(exact.ensureLesson('day2').available,true);
- const later=(await fixture({done:[...complete,'day2'],now:'2026-11-16T07:01:00Z'})).result;
+ const later=(await fixture({done:[...complete,'day2'],now:'2026-11-16T05:01:00Z'})).result;
  assert.equal(later.ensureLesson('day3').available,true);
  assert.equal(later.ensureLesson('day4').available,false);
 });
 test('drip schedule is anchored in the course open date, not recalculated per request',async()=>{
  const first=(await fixture({now:'2026-11-20T17:00:00Z'})).result;
- assert.equal(first.ensureLesson('day2').unlockAt,'2026-11-15T07:00:00.000Z');
- assert.equal(first.unlockHourMsk,10);
+ assert.equal(first.ensureLesson('day2').unlockAt,'2026-11-15T05:00:00.000Z');
+ assert.equal(first.unlockHourMsk,8);
 });
 test('all blocks require previous lessons even after calendar days have elapsed',async()=>{
  const {result}=await fixture({done:['pre1','pre2','day1','day3'],now:'2027-01-01T10:00:00Z'});
@@ -79,8 +79,8 @@ test('admins can inspect or repair course without blocking learners',async()=>{
  assert.ok(!calls.some(x=>x.path==='rpc/noya_course_drip_start'));
 });
 test('daily clock time uses Moscow calendar days across year boundary',()=>{
- assert.equal(drip.releaseDate('2026-12-31T20:00:00Z',1),'2027-01-01T07:00:00.000Z');
- assert.equal(drip.releaseDate('2026-12-31T20:00:00Z',2),'2027-01-02T07:00:00.000Z');
+ assert.equal(drip.releaseDate('2026-12-31T20:00:00Z',1),'2027-01-01T05:00:00.000Z');
+ assert.equal(drip.releaseDate('2026-12-31T20:00:00Z',2),'2027-01-02T05:00:00.000Z');
 });
 test('server protects lesson details, Cloudflare token and completion against locked lessons',()=>{
  const s=fs.readFileSync(path.join(__dirname,'../api/stream-token.js'),'utf8');
