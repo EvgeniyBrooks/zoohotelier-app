@@ -310,7 +310,13 @@
 .course-club-return{display:inline-flex;align-items:center;justify-content:center;border:1px solid #f5fa45;border-radius:30px;padding:10px 17px;min-height:44px;color:#f5fa45;background:#151515;text-decoration:none;font-size:13px;font-weight:850;margin:0 0 18px}.course-club-return:focus-visible{outline:2px solid #f5fa45;outline-offset:3px}.course-back-nav{display:flex;align-items:center;gap:12px;margin:0 0 16px;position:sticky;top:0;z-index:50;background:#090909ee;backdrop-filter:blur(12px);padding:9px 0 12px}.course-back-nav[hidden]{display:none!important}.course-back-nav button{border:1px solid #f5fa45;background:#171717;color:#f5fa45;border-radius:30px;padding:11px 18px;font-size:15px;font-weight:800;cursor:pointer;min-height:44px}.course-back-nav span{font-size:13px;font-weight:700;color:#ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.back-button{display:none!important}
   </style>
 
-</head>
+<style>
+.course-locked{opacity:.72;border-style:dashed!important;cursor:not-allowed!important}
+.course-locked .lesson-name{color:#686868!important}
+.course-lesson-gate{font-size:12px;margin-top:9px;color:#7d7528;line-height:1.4}
+.course-locked .course-lesson-gate{color:#ad8664}
+.course-locked .noya-material-actions button:not([data-action="favorite"]){display:none}
+</style></head>
 
 <body>
 
@@ -400,7 +406,7 @@ function setupAutomaticLessonCompletion(lessonId,alreadyDone){
    watch.saving=true;
    if(status)status.textContent='Сохраняем прохождение урока…';
    try{
-    await courseProgressRequest('course_complete',{lessonId,completed:true});
+    await courseProgressRequest('course_complete',{lessonId,completed:true,watchedSeconds:Math.min(watch.watched,duration),durationSeconds:duration});
     if(watch.cancelled)return;
     watch.completed=true;
     if(!courseProgress.completed.includes(lessonId))courseProgress.completed.push(lessonId);
@@ -418,6 +424,14 @@ function setupAutomaticLessonCompletion(lessonId,alreadyDone){
  }catch(e){if(status)status.textContent='Автоматическое отслеживание недоступно. Можно отметить урок вручную.'}
 }
 let courseProgress={blocks:[],lessons:[],completed:[]};
+function courseLockText(lesson){
+ if(lesson.available)return lesson.completed?'✓ Просмотрено':'▶ Открыт';
+ const extra=[];
+ if(lesson.lockReason==='previous')extra.push('Сначала просмотри предыдущий урок'+(lesson.previousTitle?' — '+lesson.previousTitle:''));
+ if(lesson.unlockAt&&Number.isFinite(Date.parse(lesson.unlockAt))&&Date.parse(lesson.unlockAt)>Date.now())extra.push('Откроется '+new Date(lesson.unlockAt).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' МСК');
+ return extra.join(' · ')||'🔒 Пока закрыт';
+}
+
 async function courseProgressRequest(action,extra={}){
  const initData=window.Telegram?.WebApp?.initData;
  if(!initData)throw Error('Открой курс через Telegram');
@@ -437,8 +451,13 @@ async function continueCourse(){
    if(!blocks.length)blocks=catalog.blocks||[];
   }
   const order=new Map(blocks.map(b=>[b.id,b.block_number])),allowed=new Set(blocks.map(b=>b.id)),done=new Set(courseProgress.completed);
-  const next=[...lessons].filter(l=>l.is_published&&allowed.has(l.block_id)&&!done.has(l.id)).sort((a,b)=>(order.get(a.block_id)-order.get(b.block_id))||(a.day_number-b.day_number))[0];
-  if(!next){alert('Нет доступных незавершённых уроков. Проверь раздел «Предобучение».');return}
+  const ordered=[...lessons].filter(l=>l.is_published&&allowed.has(l.block_id)&&!done.has(l.id)).sort((a,b)=>(order.get(a.block_id)-order.get(b.block_id))||(a.day_number-b.day_number));
+  const next=ordered.find(l=>l.available);
+  if(!next){
+   const pending=ordered[0];
+   alert(pending?courseLockText(pending):'Все опубликованные уроки пройдены.');
+   return;
+  }
   const block=blocks.find(b=>b.id===next.block_id);
   await loadLesson(next.id,next.block_id,block?.title||'Урок');
  }catch(e){alert('Ошибка открытия урока: '+e.message)}
@@ -658,6 +677,7 @@ async function loadCourse(stateReady=false) {
       <section class="course-hero">
         <div class="course-hero-title">УПРАВЛЕНИЕ<br>ВНИМАНИЕМ</div>
         <div class="course-hero-subtitle">${total} уроков · 4 недели + предобучение</div>
+        <div class="course-hero-subtitle" style="margin-top:5px;font-weight:700">Новый урок ежедневно в ${courseProgress.unlockHourMsk??10}:00 МСК · Предобучение сразу</div>
         <div class="course-hero-actions">
           <span class="course-hero-count">${done.size} ИЗ ${total}</span>
           <button class="course-hero-continue" onclick="continueCourse()">${done.size?'Продолжить':'Начать обучение'} <span>→</span></button>
@@ -738,7 +758,7 @@ async function loadCourse(stateReady=false) {
     // Show the actual opening frame of the first lesson in each block.
     // Signed thumbnails are requested only for the authenticated student.
     const thumbs=blocks.map(block=>({
-      block,lesson:courseProgress.lessons.filter(l=>l.block_id===block.id&&l.is_published).sort((a,b)=>a.day_number-b.day_number)[0]
+      block,lesson:courseProgress.lessons.filter(l=>l.block_id===block.id&&l.is_published&&l.available).sort((a,b)=>a.day_number-b.day_number)[0]
     })).filter(x=>x.lesson);
     await Promise.all(thumbs.map(async ({block,lesson})=>{
       try{
@@ -1033,17 +1053,15 @@ async function loadLessons(
     }
 
     lessons.forEach((lesson, index) => {
+      const accessible=lesson.available===true;
       html += `
         <div
-          class="card lesson-card"
-          onclick="loadLesson(
-            '${lesson.id}',
-            '${lesson.block_id}',
-            '${escapeHtml(blockTitle)}'
-          )"
+          class="card lesson-card ${accessible?'':'course-locked'}"
+          ${accessible?`onclick="loadLesson('${lesson.id}','${lesson.block_id}','${escapeHtml(blockTitle)}')"`:'aria-disabled="true"'}
         >
-          <div class="lesson-number">УРОК ${index + 1}</div>
+          <div class="lesson-number">${accessible?'УРОК':'🔒 УРОК'} ${index + 1}</div>
           <div class="lesson-name">${escapeHtml(lesson.title)}</div>
+          <div class="course-lesson-gate">${escapeHtml(courseLockText(lesson))}</div>
         </div>
       `;
     });
@@ -1114,8 +1132,7 @@ async function loadLesson(
     let videoHtml = "";
     const completeHtml=`<div class="card" style="border:1px solid #ddd">
       <div style="font-weight:700;margin-bottom:10px">Прогресс урока: ${alreadyDone?'✓ Завершён':'Ещё не завершён'}</div>
-      <button id="course-manual-complete" class="button" onclick="markCourseLesson('${lesson.id}',${!alreadyDone},'${currentBlockId}','${escapeHtml(blockTitle)}')">${alreadyDone?'Отменить отметку':'Отметить урок пройденным'}</button>
-      <p style="margin-top:10px;font-size:12px;color:#777">Просмотр урока и выполнение упражнения — разные результаты.</p>
+      <p style="margin-top:10px;font-size:12px;color:#777">Посмотри не менее 90% видео. После этого урок отметится автоматически и откроет путь к следующему. Домашняя практика отмечается отдельно.</p>
     </div>`;
 
 
@@ -1195,19 +1212,12 @@ async function loadLesson(
           if(action==='complete'){
             if(state.completed&&!courseProgress.completed.includes(lesson.id))courseProgress.completed.push(lesson.id);
             if(!state.completed)courseProgress.completed=courseProgress.completed.filter(id=>id!==lesson.id);
-            const button=document.getElementById('course-manual-complete');
-            if(button){
-              button.textContent=state.completed?'Отменить отметку':'Отметить урок пройденным';
-              button.onclick=()=>markCourseLesson(lesson.id,!state.completed,currentBlockId,blockTitle);
-            }
+            // Completing the lesson is controlled by the Cloudflare playback tracker.
           }
         }
       });
       activeCourseVideoControls=widget;
       wrapper.append(widget.element);
-      // Keep the original manual button only as a fallback when shared controls are unavailable.
-      const legacyButton=app.querySelector('#course-manual-complete');
-      if(legacyButton?.closest('.card'))legacyButton.closest('.card').hidden=true;
       const lessonCard=app.querySelector('.lesson-title')?.closest('.card');
       if(lessonCard)lessonCard.append(wrapper);
       if(lesson.video_url)window.NOYAMaterials.touch('course',lesson.id).catch(error=>console.warn('Course history unavailable:',error.message));
