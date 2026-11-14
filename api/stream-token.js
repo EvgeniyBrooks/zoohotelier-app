@@ -112,6 +112,22 @@ async function live(req,res){
      throw fail(403,'Просмотри не менее 90% видео, чтобы открыть следующий урок');
     const receipt=await db('noya_course_watch_sessions?select=opened_at&student_id=eq.'+student+'&lesson_id=eq.'+lessonId+'&limit=1');
     if(!receipt.length)throw fail(403,'Сначала открой видеоурок');
+    // Never trust a duration chosen by the mobile client. Compare it with
+    // the duration reported by Cloudflare Stream for this exact published video.
+    const selected=await db('lessons?select=video_url&id=eq.'+lessonId+'&is_published=eq.true&limit=1');
+    const videoId=selected[0]?.video_url;
+    if(!/^[a-f0-9]{32}$/i.test(videoId||''))throw fail(503,'Длительность урока недоступна');
+    if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Проверка просмотра временно недоступна');
+    const metaResponse=await fetch('https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+'/stream/'+videoId,{
+     headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN},signal:AbortSignal.timeout(10000)
+    });
+    const metadata=await metaResponse.json().catch(()=>null);
+    const actualDuration=Number(metadata?.result?.duration);
+    if(!metaResponse.ok||!metadata?.success||!Number.isFinite(actualDuration)||actualDuration<5)
+     throw fail(502,'Не удалось подтвердить длительность урока. Попробуй позже');
+    if(Math.abs(duration-actualDuration)>Math.max(2,actualDuration*.02)||
+       watched<actualDuration*.9-1||watched>actualDuration*1.05)
+     throw fail(403,'Просмотри не менее 90% настоящего видеоурока');
     const elapsed=(Date.now()-Date.parse(receipt[0].opened_at))/1000;
     // Playback-time proof is backed by a signed token session and elapsed wall-clock time.
     if(!Number.isFinite(elapsed)||elapsed+5<watched)
