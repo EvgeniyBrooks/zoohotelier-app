@@ -51,7 +51,7 @@ test('first pretraining must be watched before second and next before first week
  assert.equal(second.ensureLesson('day1').available,true);
  assert.equal(second.ensureLesson('day2').lockReason,'previous');
 });
-test('next day at ten Moscow unlocks only after predecessor is completed',async()=>{
+test('next day at eight Moscow unlocks only after predecessor is completed',async()=>{
  const complete=['pre1','pre2','day1'];
  const early=(await fixture({done:complete,now:'2026-11-15T04:59:59Z'})).result;
  assert.equal(early.ensureLesson('day2').available,false);
@@ -77,6 +77,17 @@ test('admins can inspect or repair course without blocking learners',async()=>{
  const {result,calls}=await fixture({admin:true,begin:true});
  assert.ok(result.status.every(x=>x.available));
  assert.ok(!calls.some(x=>x.path==='rpc/noya_course_drip_start'));
+});
+test('legacy Amvera 10:00 environment setting cannot override approved 08:00 release',()=>{
+ const legacy=process.env.NOYA_COURSE_UNLOCK_HOUR_MSK;
+ try{
+  process.env.NOYA_COURSE_UNLOCK_HOUR_MSK='10';
+  assert.equal(drip.hour(),8);
+  assert.equal(drip.releaseDate('2026-11-14T12:00:00Z',1),'2026-11-15T05:00:00.000Z');
+ }finally{
+  if(legacy===undefined)delete process.env.NOYA_COURSE_UNLOCK_HOUR_MSK;
+  else process.env.NOYA_COURSE_UNLOCK_HOUR_MSK=legacy;
+ }
 });
 test('daily clock time uses Moscow calendar days across year boundary',()=>{
  assert.equal(drip.releaseDate('2026-12-31T20:00:00Z',1),'2027-01-01T05:00:00.000Z');
