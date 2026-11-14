@@ -123,7 +123,7 @@ module.exports=async function handler(req,res) {
     db('noya_progress_diary?select=id,dog_id,lesson_id,conditions,observation,stress_level,created_at&student_id=eq.'+ctx.studentId+'&order=created_at.desc&limit=100'),
     db('noya_practice_submissions?select=id,dog_id,lesson_id,status,conditions,student_note,question,coach_feedback,created_at,submitted_at,reviewed_at&student_id=eq.'+ctx.studentId+'&order=created_at.desc&limit=100')
    ]);
-   return res.status(200).json({ok:true,dogs,journeys,diary,submissions,reviewEnabled:reviewEnabled(),courseAccess:ctx.courseAccess});
+   return res.status(200).json({ok:true,dogs,journeys,diary,submissions,reviewEnabled:reviewEnabled(),courseAccess:ctx.courseAccess,isAdmin:ctx.admin});
   }
   if(action==='start'){
    requireMember(ctx);
@@ -205,10 +205,19 @@ module.exports=async function handler(req,res) {
   }
   if(action==='coach_queue'){
    requireReview(ctx);
-   const rows=await db('noya_practice_submissions?select=id,student_id,dog_id,lesson_id,status,conditions,student_note,question,coach_feedback,video_uid,created_at,submitted_at,reviewed_at&status=in.(submitted,needs_changes,approved)&order=submitted_at.asc&limit=100');
+   // Load a bounded window per status. Completed reports must not crowd out
+   // new submissions when the club grows to thousands of members.
+   const batches=await Promise.all([
+    db('noya_practice_submissions?select=id,student_id,dog_id,lesson_id,status,conditions,student_note,question,coach_feedback,video_uid,created_at,submitted_at,reviewed_at&status=eq.submitted&order=submitted_at.asc&limit=100'),
+    db('noya_practice_submissions?select=id,student_id,dog_id,lesson_id,status,conditions,student_note,question,coach_feedback,video_uid,created_at,submitted_at,reviewed_at&status=eq.needs_changes&order=reviewed_at.desc&limit=100'),
+    db('noya_practice_submissions?select=id,student_id,dog_id,lesson_id,status,conditions,student_note,question,coach_feedback,video_uid,created_at,submitted_at,reviewed_at&status=eq.approved&order=reviewed_at.desc&limit=100')
+   ]);
+   const rows=batches.flat();
+   const dogIds=[...new Set(rows.map(x=>x.dog_id).filter(x=>uuid.test(x)))];
+   const lessonIds=[...new Set(rows.map(x=>x.lesson_id).filter(x=>uuid.test(x)))];
    const [dogs,lessons]=await Promise.all([
-    db('club_dogs?select=id,name&limit=1000'),
-    db('lessons?select=id,title&limit=1000')
+    dogIds.length?db('club_dogs?select=id,name&id=in.('+dogIds.join(',')+')&limit=300'):[],
+    lessonIds.length?db('lessons?select=id,title&id=in.('+lessonIds.join(',')+')&limit=300'):[]
    ]);
    const names=new Map(dogs.map(d=>[d.id,d.name])),titles=new Map(lessons.map(l=>[l.id,l.title]));
    return res.status(200).json({ok:true,queue:rows.map(({video_uid,...r})=>({...r,hasVideo:!!video_uid,dogName:names.get(r.dog_id)||'Собака',lessonTitle:titles.get(r.lesson_id)||'Задание'}))});
