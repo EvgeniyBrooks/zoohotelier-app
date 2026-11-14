@@ -111,6 +111,7 @@ if(initData){
     await loadDogs();
   }catch(e){status.textContent="Маршрут показан, но пока не сохранён: "+e.message}
 }else{status.textContent="Открой клуб в Telegram, чтобы сохранить результат."}
+const firstGoal=document.createElement("a");firstGoal.href="./journey.html?tab=profile"+(currentDogId?"&dog="+encodeURIComponent(currentDogId):"");firstGoal.className="primary";firstGoal.style.cssText="display:block;text-align:center;text-decoration:none;margin-top:12px";firstGoal.textContent="Выбрать одну цель и начать";panel.append(firstGoal);
 const home=document.createElement("a");home.href="./club.html";home.className="primary noya-legacy-return";home.style.cssText="display:block;text-align:center;text-decoration:none;margin-top:12px";home.textContent="Вернуться в клуб";panel.append(home);
 const restart=document.createElement("button");restart.className="primary";restart.textContent="Повторить диагностику этой собаки";restart.onclick=()=>{answers=[];index=0;renderQuestion()};panel.append(restart);
 }
@@ -161,6 +162,7 @@ function showSaved(dog,diagnostic){
  renderCourseStartingVideo();
  (diagnostic.recommended_topics||[]).forEach((key,i)=>{if(!topics[key])return;const el=document.createElement("div");el.className="topic";const strong=document.createElement("strong");strong.textContent=(i+1)+". "+topics[key][0];const small=document.createElement("small");small.textContent=topics[key][1];el.append(strong,small);panel.append(el)});
  if(diagnostic.answers?.[6]===0){const p=document.createElement("p");p.className="notice";p.textContent="При выраженном беспокойстве в одиночестве рекомендуем оценку специалиста по поведению и исключение медицинских причин.";panel.append(p)}
+ const goalLink=document.createElement("a");goalLink.href="./journey.html?tab=profile&dog="+encodeURIComponent(dog.id);goalLink.className="primary";goalLink.style.cssText="display:block;text-align:center;text-decoration:none;margin:14px 0";goalLink.textContent="Выбрать главную цель";panel.append(goalLink);
  const b=document.createElement("button");b.className="primary";b.textContent="Повторить диагностику";b.onclick=()=>{answers=[];index=0;renderQuestion()};panel.append(b);
  const a=document.createElement("a");a.href="./club.html";a.className="secondary noya-legacy-return";a.textContent="← На главную";panel.append(a);
 }
