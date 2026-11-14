@@ -444,6 +444,9 @@ async function markCourseLesson(id,completed,blockId,title){
 }
 async function continueCourse(){
  try{
+  // Refresh the server schedule before jumping to a lesson: a new Moscow day
+  // may have started while the participant kept the course tab open.
+  await loadCourseState();
   let blocks=courseProgress.blocks,lessons=courseProgress.lessons;
   if(!lessons.length){
    const catalog=await courseProgressRequest('course_catalog');
@@ -684,7 +687,7 @@ async function loadCourse(stateReady=false) {
         </div>
       </section>
       `;
-    if(courseProgress.error)html+='<div class="status">Прогресс временно недоступен. Уроки можно смотреть — отметки обновятся при следующем входе.</div>';
+    if(courseProgress.error)html+='<div class="status">Прогресс временно недоступен. Доступность уроков будет проверена перед воспроизведением.</div>';
     // ----------------------------------------------
     // БЛОКИ
     // ----------------------------------------------
