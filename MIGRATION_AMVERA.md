@@ -53,10 +53,10 @@ https://docs.amvera.ru/applications/configuration/variables.html
 - NOYA_AI_ENABLED=0 для первого запуска
 - OPENAI_API_KEY — если планируется включить ИИ
 
-Платежи (сначала ВЫКЛЮЧИТЬ):
-- NOYA_PRODAMUS_ENABLE=0
-- NOYA_PRODAMUS_TEST_MODE=1
-- NOYA_PRODAMUS_DEMO_MODE=1
+Платежи (текущее рабочее состояние уже согласовано с владельцем):
+- NOYA_PRODAMUS_ENABLE — СОХРАНИТЬ действующее значение Amvera
+- NOYA_PRODAMUS_TEST_MODE — СОХРАНИТЬ действующее значение Amvera
+- NOYA_PRODAMUS_DEMO_MODE — СОХРАНИТЬ действующее значение Amvera
 - NOYA_PRODAMUS_FORM_URL — адрес действующей формы
 - NOYA_PRODAMUS_SECRET — секрет подписи
 - NOYA_PRODAMUS_SUBSCRIPTION_ID — действующий товар
@@ -108,9 +108,9 @@ npm run test:amvera
 
 После успешной проверки:
 1. Настроить в Prodamus URL уведомлений https://YOUR-AMVERA-DOMAIN/api/club-prodamus-webhook.
-2. Обновить ссылки возврата и условий подписки на новый HTTPS-домен.
-3. Только после проверки подписанных уведомлений установить NOYA_PRODAMUS_ENABLE=1, NOYA_PRODAMUS_TEST_MODE=0 и убедиться, что реальные списания соответствуют оферте.
-4. Обновить ссылку Telegram Mini App на https://YOUR-AMVERA-DOMAIN/club.html.
+2. Сверить уже действующие ссылки возврата и условий подписки с текущим HTTPS-доменом Amvera.
+3. Сохранить включённые по разрешению владельца реальные платежи и действующие значения переменных; не переключать тестовый режим без отдельного нового указания.
+4. Проверить, что действующая ссылка Telegram Mini App ведёт на проверенный адрес Amvera.
 5. Проверить реальный платёж, доступ и отмену продления.
 6. Оставить старую версию на Vercel для отката.
 
