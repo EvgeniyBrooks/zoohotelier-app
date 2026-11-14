@@ -49,7 +49,7 @@ test('Static HEAD and method restrictions are respected',async()=>{
 });
 
 test('11 API endpoints remain and every legacy rewrite has a destination',()=>{
- assert.equal(ENDPOINTS.size,11);
+ assert.equal(ENDPOINTS.size,12);
  for(const [old,[target]] of Object.entries(REWRITES)){
   assert.ok(old.startsWith('/api/'));
   assert.ok(ENDPOINTS.has(target));
