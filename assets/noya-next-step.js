@@ -38,10 +38,14 @@ async function load(){
     head=d.dogs?.length?'Выбери одну цель':'Начни с карточки собаки';
     description=d.dogs?.length?'Твои собаки уже в клубе. Выбери главную задачу на ближайший месяц.':'Добавь кличку собаки и одну задачу, чтобы начать без поиска среди десятков уроков.';
     cta='Начать';link='./journey.html?tab=profile';
-  }else if(!entries.length){
+  }else if(!entries.length&&!journey.baseline?.trim()){
     head='Запиши исходную точку';
     description='Одна обычная ситуация, условия и наблюдение. Не провоцируй страх ради отчёта.';
-    cta='Открыть дневник';link='./journey.html?tab=diary&dog='+encodeURIComponent(journey.dog_id);
+    cta='Записать исходную точку';link='./journey.html?tab=profile&dog='+encodeURIComponent(journey.dog_id);
+  }else if(!entries.length){
+    head='Начни курс «Управление вниманием»';
+    description='Карточка собаки и исходная точка сохранены.';
+    cta='Перейти к началу курса';link='./index.html#first-video';
   }else if(recent?.status==='needs_changes'){
     head='Кинолог ответил';
     description='Открой разбор и попробуй посильную корректировку. Ошибка — повод упростить условия, а не повод ругать собаку.';

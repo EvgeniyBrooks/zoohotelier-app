@@ -5,7 +5,6 @@ const byId=id=>root.getElementById(id);
 const init=()=>window.Telegram?.WebApp?.initData||'';
 const params=new URLSearchParams(location.search);
 let data={dogs:[],journeys:[],diary:[],submissions:[],reviewEnabled:false,courseAccess:false},lessonData=[],busy=false;
-const goalNames={attention:'Контакт и внимание',walks:'Спокойная прогулка',home:'Правила дома',fear:'Страхи и сложные ситуации',social:'Другие собаки и люди',calm:'Спокойствие и отдых'};
 const feedbackNames={submitted:'Ожидает проверки',uploading:'Видео загружается',approved:'Проверено ✓',needs_changes:'Нужна доработка',cancelled:'Отменено'};
 function elt(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
 function msg(id,value,error=false){const box=byId(id);if(box){box.textContent=value||'';box.dataset.error=String(!!error);}}
@@ -134,14 +133,9 @@ byId('journey-profile-form').addEventListener('submit',async e=>{
  if(!goal){msg('journey-profile-message','Выбери одну цель на ближайший месяц.',true);return;}
  busy=true;byId('journey-save').disabled=true;
  try{
-  const result=await post('start',{dogId:byId('journey-existing').value||undefined,name:byId('journey-name').value,entryMode,goal,
+  await post('start',{dogId:byId('journey-existing').value||undefined,name:byId('journey-name').value,entryMode,goal,
    breed:byId('journey-breed').value,age:byId('journey-age').value,baseline:byId('journey-baseline').value});
-  await reloadQuiet();
-  for(const id of ['journey-existing','journey-diary-dog','journey-report-dog'])byId(id).value=result.dog.id;
-  params.set('dog',result.dog.id);
-  msg('journey-profile-message','Карточка сохранена. Теперь запиши первое наблюдение.');
-  msg('journey-status','Цель: '+goalNames[goal]+'. Первый шаг — наблюдение в подходящих условиях.');
-  showTab('diary');renderTimeline();
+  location.assign('./index.html#first-video');
  }catch(err){msg('journey-profile-message',err.message,true);}
  finally{busy=false;byId('journey-save').disabled=false;}
 });
