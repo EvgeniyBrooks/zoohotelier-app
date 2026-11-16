@@ -51,6 +51,12 @@ test('member directory, ratings, privacy and information links are connected',()
  assert.doesNotMatch(page,/data-members-tab="ranking"/);
  assert.match(page,/data-members-tab="all"/);
  assert.match(page,/data-members-tab="favorites"/);
+ assert.match(page,/id="noya-members-city-search" type="search"/);
+ assert.match(ui,/cityKey\(person\.city\)===city\.value/);
+ const catalog={window:{}};
+ vm.runInNewContext(read('assets/noya-russian-cities.js'),catalog);
+ assert.ok(catalog.window.NOYARussianCities.length>1100);
+ assert.ok(catalog.window.NOYARussianCities.includes('Сочи'));
  assert.match(ui,/people=data\.leaders/);
  assert.match(api,/sort\(memberRanking\.compare\)[^\n]+rank:i\+1/);
  assert.match(ui,/function openPerson\(/);

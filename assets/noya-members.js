@@ -8,6 +8,7 @@ const myBox=document.getElementById('noya-my-member-card');
 const tabs=[...section.querySelectorAll('[data-members-tab]')];
 const query=document.getElementById('noya-members-search');
 const city=document.getElementById('noya-members-city');
+const citySearch=document.getElementById('noya-members-city-search');
 const searchToggle=document.getElementById('noya-member-search-toggle');
 const filterToggle=document.getElementById('noya-member-filter-toggle');
 function togglePanel(button,panel,input){
@@ -18,10 +19,35 @@ function togglePanel(button,panel,input){
  });
 }
 if(searchToggle)togglePanel(searchToggle,document.getElementById('noya-member-search-panel'),query);
-if(filterToggle)togglePanel(filterToggle,document.getElementById('noya-member-filter-panel'),city);
-document.getElementById('noya-member-filter-reset')?.addEventListener('click',()=>{city.value='';paint();});
+if(filterToggle)togglePanel(filterToggle,document.getElementById('noya-member-filter-panel'),citySearch);
 const normalize=value=>String(value||'').trim().toLocaleLowerCase('ru');
+const cityKey=value=>normalize(value).replace(/^г(?:\.\s*|\s+)/u,'').replace(/ё/g,'е').replace(/\s+/g,' ');
+const catalog=new Map((window.NOYARussianCities||[]).map(name=>[cityKey(name),name]));
 let view='all',people=[],me=null,busy=false,loadError='';
+function paintCities(selected=''){
+ if(!city)return;
+ const cities=new Map(catalog);
+ for(const person of people){
+  const key=cityKey(person.city);
+  if(key&&!cities.has(key))cities.set(key,person.city.trim());
+ }
+ const term=cityKey(citySearch?.value);
+ const matches=[...cities].filter(([key])=>key.includes(term))
+  .sort((a,b)=>a[1].localeCompare(b[1],'ru'));
+ city.replaceChildren(new Option(term&&!matches.length?'Город не найден':'Все города',''),
+  ...matches.map(([key,label])=>new Option(label,key)));
+ if(selected&&cities.has(selected)&&selected.includes(term))city.value=selected;
+}
+citySearch?.addEventListener('input',()=>{
+ const term=cityKey(citySearch.value);
+ paintCities(term);
+ paint();
+});
+document.getElementById('noya-member-filter-reset')?.addEventListener('click',()=>{
+ citySearch.value='';
+ paintCities();
+ paint();
+});
 const api=async(action,params={})=>{
  const initData=window.Telegram?.WebApp?.initData;
  if(!initData)throw Error('Открой клуб из Telegram');
@@ -65,19 +91,13 @@ function paint(){
  if(filterToggle)filterToggle.dataset.active=String(Boolean(city?.value));
  tabs.forEach(tab=>tab.setAttribute('aria-selected',String(tab.dataset.membersTab===view)));
  const match=query.value.trim().toLocaleLowerCase('ru');
- if(city){
-  const selected=city.value;
-  const cities=new Map(people.filter(p=>normalize(p.city)).map(p=>[normalize(p.city),p.city.trim()]));
-  city.replaceChildren(new Option('Все города',''),...[...cities].sort((a,b)=>a[1].localeCompare(b[1],'ru')).map(([key,label])=>new Option(label,key)));
-  if(cities.has(selected))city.value=selected;
- }
  const visible=people.filter(person=>
-  (view!=='favorites'||person.favorite)&&(!city?.value||normalize(person.city)===city.value)&&
+  (view!=='favorites'||person.favorite)&&(!city?.value||cityKey(person.city)===city.value)&&
   (!match||normalize([person.name,person.about,person.city,person.dogName,person.profession,person.hobbies].filter(Boolean).join(' ')).includes(match)));
 
  root.replaceChildren();
  if(loadError){root.append(el('div','noya-member-empty',loadError));return;}
- if(!visible.length)root.append(el('div','noya-member-empty',(match||city?.value)?'Ничего не найдено.':view==='favorites'?'В избранном пока никого нет.':'Открытых профилей пока нет.'));
+ if(!visible.length)root.append(el('div','noya-member-empty',match?'Ничего не найдено.':city?.value?'Нет открытых профилей из выбранного города.':view==='favorites'?'В избранном пока никого нет.':'Открытых профилей пока нет.'));
  else{const fragment=document.createDocumentFragment();visible.forEach(person=>fragment.append(card(person)));root.append(fragment);}
 }
 function textField(label,initial,max,textarea=false){
@@ -224,13 +244,14 @@ async function refresh(){
   loadError='';people=data.leaders||[];
   me=data.me;
   total.textContent=Number.isFinite(Number(data.memberCount))?Number(data.memberCount):people.length;
-  paintMine();paint();
+  paintCities(city?.value);paintMine();paint();
  }catch(e){loadError=e.message;root.replaceChildren(el('div','noya-member-empty',e.message));}
  finally{busy=false;}
 }
 tabs.forEach(tab=>tab.addEventListener('click',()=>{view=tab.dataset.membersTab;paint();}));
 query.addEventListener('input',paint);
 city?.addEventListener('change',paint);
+paintCities();
 section.querySelector('#noya-members-edit').addEventListener('click',edit);
 document.querySelectorAll('[data-screen="members"]').forEach(item=>item.addEventListener('click',refresh));
 window.addEventListener('pageshow',()=>{if(location.hash==='#members')refresh();});
