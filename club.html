@@ -802,6 +802,11 @@ document.getElementById('ai-form').addEventListener('submit',async e=>{
    link.href='./index.html';
    link.className='button secondary';
    link.textContent=data.courseAction==='start'?'Начать курс «Управление вниманием»':'Продолжить курс «Управление вниманием»';
+   const next=data.nextCourseLesson;
+   if(next&&/^[a-f0-9-]{36}$/i.test(next.id)){
+    link.href='./index.html?lesson='+encodeURIComponent(next.id);
+    link.textContent='Смотреть: '+next.title;
+   }
    container.lastElementChild.append(document.createElement('br'),link);
   }
   if(aiHistory.length>8)aiHistory.splice(0,aiHistory.length-8);

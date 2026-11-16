@@ -45,18 +45,26 @@ const question=[{role:'user',content:'Что делать на прогулке?
 test('NOYA offers beginners the course and the available first lesson',()=>withAi(async(ask,calls,prompt)=>{
  const response=await ask(question);
  assert.equal(response.body.courseAction,'start');
+ assert.deepEqual(response.body.nextCourseLesson,{id:'home',title:'Правила дома'});
  assert.match(prompt(),/"title":"Правила дома","available":true/);
  assert.doesNotMatch(prompt(),/Закрытый урок/);
 },course));
 test('NOYA uses the real release date without sending the locked lesson title',()=>withAi(async(ask,calls,prompt)=>{
  const response=await ask(question);
  assert.equal(response.body.courseAction,'continue');
+ assert.equal(response.body.nextCourseLesson,null);
  assert.match(prompt(),/"available":false,"opensMsk":"[^"]+"/);
  assert.doesNotMatch(prompt(),/Закрытый урок/);
 },{...course,course_lesson_completions:[{lesson_id:'home'}]}));
 test('NOYA switches to practical help after course completion',()=>withAi(async(ask,calls,prompt)=>{
  const response=await ask(question);
  assert.equal(response.body.courseAction,null);
+ assert.equal(response.body.nextCourseLesson,null);
  assert.match(prompt(),/"status":"completed","completed":2,"total":2/);
 },{...course,course_lesson_completions:[{lesson_id:'home'},{lesson_id:'street'}]}));
+test('NOYA directs returning participants to their first unwatched available lesson',()=>withAi(async(ask)=>{
+ const response=await ask(question);
+ assert.deepEqual(response.body.nextCourseLesson,{id:'street',title:'Закрытый урок'});
+},{...course,noya_course_drip_starts:[{started_at:'2025-01-01T05:00:00Z'}],
+ course_lesson_completions:[{lesson_id:'home'}]}));
 

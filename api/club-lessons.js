@@ -36,7 +36,7 @@ async function attentionCourseProgress(student,hasClubAccess,now){
  const entry=gate.ensureLesson(next.id);
  return {
   status:completed?'in_progress':'not_started',completed,total:gate.lessons.length,
-  next:entry.available?{title:next.title,available:true}:{
+  next:entry.available?{id:next.id,title:next.title,available:true}:{
    available:false,
    opensMsk:gate.begin&&entry.lockReason==='time'&&entry.unlockAt
     ?new Date(entry.unlockAt).toLocaleString('ru-RU',{timeZone:'Europe/Moscow'}):null
@@ -187,7 +187,7 @@ module.exports=async function handler(req,res){
     'По результатам обратной связи partial или difficulty предложи упростить упражнение, повторить в спокойных условиях и уточнить, где именно возникла трудность. Просмотр видео не означает освоения навыка.',
     'Из клубных уроков рекомендуй только уроки из проверенного профиля. Для курса «Управление вниманием» используй серверный прогресс ниже. Не выдумывай названия и ссылки.',
     'Серверный прогресс курса «Управление вниманием»: '+JSON.stringify(course)+'.',
-    'При not_started или in_progress помоги с текущим вопросом и в каждом ответе по обучению предлагай пройти курс «Управление вниманием» целиком по порядку. Объясни применительно к вопросу, как домашние правила, спокойный контакт и внимание готовят собаку к работе на улице. Предлагай только следующий урок из серверного прогресса, когда available=true.',
+    'При not_started или in_progress помоги с текущим вопросом и в каждом ответе по обучению направляй к первому непросмотренному уроку из серверного прогресса, когда available=true. Назови этот урок и объясни связь с вопросом. Продолжай курс «Управление вниманием» по порядку: сначала домашние правила, спокойный контакт и внимание, затем работа на улице. Не предлагай повторно смотреть пройденный урок, кроме случаев, когда участнику полезно повторить конкретное упражнение.',
     'Если следующий урок закрыт, предложи закрепить доступное упражнение. Укажи срок открытия по Москве, только если передан opensMsk. Не обещай открытие завтра и не раскрывай закрытые материалы. При unknown не угадывай прогресс, при unavailable не обещай доступ.',
     'При completed сразу помогай с конкретной трудностью: опирайся на вопрос, диагностику и результаты практики, дай один следующий шаг и критерий результата. Не отправляй проходить курс заново. Возвращай к отдельному упражнению только по делу. Не придумывай содержание видео или таймкоды.',
     'Не ставь диагнозов и не обещай гарантированных результатов. При риске укуса, выраженной тревоге, внезапном изменении поведения рекомендуй очного специалиста и/или ветеринара. Не рекомендуй болезненные рывки, запугивание и наказание за страх.',
@@ -221,7 +221,8 @@ module.exports=async function handler(req,res){
     }catch(e){console.error('NOYA chat memory unavailable')}
    }
    const courseAction=course.status==='not_started'?'start':course.status==='in_progress'?'continue':null;
-   return res.status(200).json({ok:true,answer:answer.slice(0,4000),recommendedLessons,memoryEnabled,courseAction});
+   const nextCourseLesson=course.next?.available?{id:course.next.id,title:course.next.title}:null;
+   return res.status(200).json({ok:true,answer:answer.slice(0,4000),recommendedLessons,memoryEnabled,courseAction,nextCourseLesson});
   }
   const lessons=await db('club_lessons?select=id,slug,title,description,topic,sort_order,duration_seconds&is_published=eq.true&order=topic.asc,sort_order.asc&limit=500');
   return res.status(200).json({ok:true,lessons,aiAvailable:process.env.NOYA_AI_ENABLED==='true'&&Boolean(process.env.OPENAI_API_KEY)});
