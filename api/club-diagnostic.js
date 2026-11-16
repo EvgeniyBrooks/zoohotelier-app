@@ -2075,7 +2075,13 @@ module.exports=async function handler(req,res){
       if(!Array.isArray(students))throw Object.assign(new Error("Database operation failed"),{status:502});
       const subscriptions=students.length?await accountSubscriptions(students[0].id):[];
       const account=accountSubscription(subscriptions,Date.now());
-      await applyProdamusPaidLoyalty(students[0]?.id,subscriptions,account,Date.now());
+      try{
+        await applyProdamusPaidLoyalty(students[0]?.id,subscriptions,account,Date.now());
+      }catch(error){
+        if(rewardRequest)throw error;
+        account.loyalty={unlockedMonths:0,totalMonths:12,nextUnlockAt:null};
+        console.warn('NOYA account gift progress unavailable',error.status||500);
+      }
       if(account.subscription.status!=="active"&&students.length){
         const trials=await db("noya_club_trials?select=starts_at,ends_at&student_id=eq."+students[0].id+"&limit=1");
         const now=Date.now();

@@ -29,7 +29,7 @@
   <div class="account-dialog-content"><div id="account-overview">
     <h2 id="account-dialog-title" class="account-visually-hidden">Профиль и подарки NOYA CLUB</h2>
     <button class="button secondary" id="account-edit-profile" type="button">Редактировать профиль</button>
-    <details class="account-membership-details" id="account-membership-details"><summary><span>Моя подписка</span><span aria-hidden="true">+</span></summary>
+    <details class="account-membership-details" id="account-membership-details" open><summary><span>Моя подписка</span><span aria-hidden="true">+</span></summary>
     <section class="account-membership" aria-label="Подписка NOYA CLUB" aria-live="polite">
       <div class="account-membership-top"><span class="account-membership-brand">NOYA CLUB</span><span class="account-membership-status" id="account-subscription-status">Проверяем…</span></div>
       <p class="account-membership-message" id="account-membership-message">Загружаем подписку…</p>
@@ -162,7 +162,9 @@
       const end = dateLabel(subscription?.endDate);
       const start = dateLabel(subscription?.startDate);
       if (active) {
-        label = 'Активна';summary = end ? `до ${end}` : 'Подписка активна';message = 'Ты в NOYA CLUB';note = '';
+        label = 'Активна';summary = end ? `Активна до ${end}` : 'Подписка активна';message = 'Ты в NOYA CLUB';note = '';
+      } else if (subscription?.status === 'trial') {
+        label = 'Пробный доступ';summary = end ? `Пробный доступ до ${end}` : 'Пробный доступ';message = 'Пробный доступ к клубу';note = '';
       } else if (subscription?.status === 'expired') {
         label = 'Завершилась';summary = 'Подписка завершилась';message = 'Срок подписки закончился';note = 'После продления здесь появится новый срок доступа к клубу.';
       } else if (subscription?.status === 'cancelled') {

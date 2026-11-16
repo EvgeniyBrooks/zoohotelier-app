@@ -38,3 +38,15 @@ test('only an assigned reviewer can read or publish a final reply once',async()=
  };
  await assert.rejects(assessment({db,req,action:'reply',telegramId:'456'}),{status:409});
 });
+test('only the signed administrator can open a test and it reads a separate table',async()=>{
+ const req={method:'GET',query:{test:'1'}};
+ await assert.rejects(assessment({db:async()=>[],req,action:'mine',studentId,telegramId:'123'}),{status:403});
+ const db=async path=>{
+  if(path.startsWith('admins?'))return [{telegram_id:123}];
+  assert.match(path,/^noya_dog_assessment_tests\?/);
+  assert.match(path,new RegExp(studentId));
+  return [{review,noya_assessment_reviewers:{display_name:'Дарья'}}];
+ };
+ const result=await assessment({db,req,action:'mine',studentId,telegramId:'123'});
+ assert.deepEqual(result.assessment.review,review);
+});
