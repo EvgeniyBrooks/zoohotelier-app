@@ -180,7 +180,7 @@ async function edit(){
   if(container===d)container.append(el('h3','noya-person-form-section',title));
   else {container.append(el('summary','',title));d.append(container);}
   for(const [key,label,max,textarea] of entries){
-   const v=textField(label,me[key],max,!!textarea);
+   const v=textField(label,profile[key],max,!!textarea);
    if(key==='name'){v.input.required=true;v.input.autocomplete='name';}
    if(key==='city')v.input.autocomplete='address-level2';
    fields[key]=v.input;container.append(v.wrap);
