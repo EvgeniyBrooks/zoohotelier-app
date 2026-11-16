@@ -7,7 +7,7 @@ test('rejects invalid Telegram auth before database',async()=>{const old=global.
 test('does not call AI when feature disabled',async()=>{const old=global.fetch;let aiCalled=false;global.fetch=async(url)=>{if(url.includes('openai.com')){aiCalled=true;throw Error('AI must be disabled')}let data=[];if(url.includes('/students?'))data=[{id:'11111111-1111-4111-8111-111111111111'}];if(url.includes('/admins?'))data=[{id:'22222222-2222-4222-8222-222222222222'}];return {ok:true,json:async()=>data}};try{const r=res();await handler({method:'POST',body:{initData:auth(),action:'noya_chat',messages:[{role:'user',content:'Как научить собаку?' }]}},r);assert.equal(r.statusCode,503);assert.equal(aiCalled,false)}finally{global.fetch=old}});
 
 async function withAi(run,courseData={}){
- const old=global.fetch,oldKey=process.env.OPENAI_API_KEY;let calls=0,prompt='';
+ const old=global.fetch,oldKey=process.env.OPENAI_API_KEY;let calls=0,prompt='',sent=[];
  process.env.NOYA_AI_ENABLED='true';process.env.OPENAI_API_KEY='mock-openai-key';
  global.fetch=async(url,options={})=>{
   let data=[];
@@ -18,11 +18,11 @@ async function withAi(run,courseData={}){
   if(url.includes('/rpc/noya_ai_reserve_request'))data=true;
   const resource=new URL(url).pathname.split('/').pop();
   if(Object.hasOwn(courseData,resource))data=courseData[resource];
-  if(url.includes('api.openai.com')){calls++;prompt=JSON.parse(options.body).messages[0].content;data={choices:[{message:{content:'Ответ '.repeat(600)}}]};}
+  if(url.includes('api.openai.com')){calls++;sent=JSON.parse(options.body).messages;prompt=sent[0].content;data={choices:[{message:{content:'Ответ '.repeat(600)}}]};}
   return {ok:true,json:async()=>data};
  };
  const ask=async(messages,extra={})=>{const r=res();await handler({method:'POST',body:{initData:auth(),action:'noya_chat',messages,...extra}},r);return r;};
- try{await run(ask,()=>calls,()=>prompt);}finally{global.fetch=old;process.env.NOYA_AI_ENABLED='false';if(oldKey===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldKey;}
+ try{await run(ask,()=>calls,()=>prompt,()=>sent);}finally{global.fetch=old;process.env.NOYA_AI_ENABLED='false';if(oldKey===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldKey;}
 }
 test('member can ask a follow-up after a long NOYA answer',()=>withAi(async(ask,calls)=>{
  const first=await ask([{role:'user',content:'Что делать?'}]);assert.equal(first.statusCode,200);assert.ok(first.body.answer.length>1200);
@@ -67,4 +67,19 @@ test('NOYA directs returning participants to their first unwatched available les
  assert.deepEqual(response.body.nextCourseLesson,{id:'street',title:'Закрытый урок'});
 },{...course,noya_course_drip_starts:[{started_at:'2025-01-01T05:00:00Z'}],
  course_lesson_completions:[{lesson_id:'home'}]}));
+
+const startAdvice={action:'noya_start_advice',dogId:'22222222-2222-4222-8222-222222222222'};
+test('start advice uses the saved observation and one practical next step',()=>withAi(async(ask,calls,prompt,sent)=>{
+ const response=await ask(null,startAdvice);
+ assert.equal(response.statusCode,200);
+ assert.ok(response.body.answer.length<=1000);
+ assert.match(prompt(),/одно простое действие на сегодня/);
+ assert.match(sent()[1].content,/У двери тянет поводок/);
+ assert.match(sent()[1].content,/walks/);
+ assert.equal(calls(),1);
+},{noya_dog_journeys:[{primary_goal:'walks',baseline:'У двери тянет поводок'}]}));
+test('start advice does not call AI for a dog owned by someone else',()=>withAi(async(ask,calls)=>{
+ assert.equal((await ask(null,startAdvice)).statusCode,404);
+ assert.equal(calls(),0);
+},{club_dogs:[]}));
 

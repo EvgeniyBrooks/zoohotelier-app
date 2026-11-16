@@ -123,6 +123,21 @@ async function loadLessons(){
  }catch(e){msg('journey-report-message','Уроки не загрузились: '+e.message,true);}
 }
 function selectedRadio(name){return root.querySelector('input[name="'+name+'"]:checked')?.value||'';}
+async function showStartAdvice(dogId){
+ const panel=byId('journey-start-advice'),message=byId('journey-start-advice-text');
+ panel.hidden=false;
+ message.textContent='Ноя подбирает первый шаг…';
+ panel.scrollIntoView({block:'nearest'});
+ try{
+  const response=await fetch('/api/club-lessons',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({action:'noya_start_advice',initData:init(),dogId}),signal:AbortSignal.timeout(25000)});
+  const advice=await response.json();
+  if(!response.ok||typeof advice.answer!=='string')throw Error('Рекомендация недоступна');
+  message.textContent=advice.answer;
+ }catch{
+  message.textContent='Карточка сохранена. Ноя сейчас недоступна. Можно перейти к первому уроку.';
+ }
+}
 byId('journey-existing').addEventListener('change',updateCurrentDog);
 byId('journey-diary-dog').addEventListener('change',renderTimeline);
 byId('journey-report-dog').addEventListener('change',renderReports);
@@ -133,9 +148,13 @@ byId('journey-profile-form').addEventListener('submit',async e=>{
  if(!goal){msg('journey-profile-message','Выбери одну цель на ближайший месяц.',true);return;}
  busy=true;byId('journey-save').disabled=true;
  try{
-  await post('start',{dogId:byId('journey-existing').value||undefined,name:byId('journey-name').value,entryMode,goal,
+  const result=await post('start',{dogId:byId('journey-existing').value||undefined,name:byId('journey-name').value,entryMode,goal,
    breed:byId('journey-breed').value,age:byId('journey-age').value,baseline:byId('journey-baseline').value});
-  location.assign('./index.html#first-video');
+  const select=byId('journey-existing');
+  if(![...select.options].some(option=>option.value===result.dog.id))select.add(new Option(result.dog.name,result.dog.id));
+  select.value=result.dog.id;
+  msg('journey-profile-message','Карточка сохранена.');
+  await showStartAdvice(result.dog.id);
  }catch(err){msg('journey-profile-message',err.message,true);}
  finally{busy=false;byId('journey-save').disabled=false;}
 });
