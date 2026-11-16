@@ -206,6 +206,7 @@
           material={month};ownerId=requestOwner;claim.hidden=true;
           status.textContent=(data.credited?'Начислено 10 000 NOINCOINS.':'Ты уже получил этот подарок.')
             +' Баланс: '+data.balance.toLocaleString('ru-RU')+' NOINCOINS.';
+          document.dispatchEvent(new Event('noya-coin-balance-updated'));
           return;
         }
         if(data.reward?.month!==month||!Array.isArray(data.reward.sections))throw new Error('Gift unavailable');

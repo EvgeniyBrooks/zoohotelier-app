@@ -6,7 +6,7 @@
  const fmt=n=>new Intl.NumberFormat('ru-RU').format(n);
  const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  let loaded=false,loading=false,link='',tab='history',offset=0;
- let invitationsBusy=false,rankingVersion=0;
+ let invitationsBusy=false,rankingVersion=0,refreshAfterLoad=false;
  const status=text=>{$('status').textContent=text;};
  async function api(action,extra={},post=false){
   const initData=tg?.initData||'';
@@ -46,7 +46,10 @@
   loading=true;$('reload').disabled=true;status('Загружаем бонусы…');
   try{render(await api('coins'));loaded=true;status('');}
   catch(e){status(e.message);link='';$('link').value='';$('balance').textContent='—';$('pending').textContent='—';$('paid').textContent='—';$('copy').disabled=true;$('share').disabled=true;$('unlocked').replaceChildren();$('history').replaceChildren();loaded=false;}
-  finally{loading=false;$('reload').disabled=false;}
+  finally{
+   loading=false;$('reload').disabled=false;
+   if(refreshAfterLoad){refreshAfterLoad=false;refreshWallet();}
+  }
  }
  async function invitations(reset=true){
   if(invitationsBusy)return;
@@ -99,6 +102,13 @@
   const url='https://t.me/share/url?'+new URLSearchParams({url:link,text:'Присоединяйся к NOYA CLUB — будем учиться понимать своих собак 🐾'});
   if(typeof tg?.openTelegramLink==='function')tg.openTelegramLink(url);else window.location.assign(url);
  });
+ function refreshWallet(){
+  loaded=false;
+  if(root.hidden)return;
+  if(loading)refreshAfterLoad=true;
+  else load();
+ }
+ document.addEventListener('noya-coin-balance-updated',refreshWallet);
  new MutationObserver(()=>{if(!root.hidden&&!loaded)load();}).observe(root,{attributes:true,attributeFilter:['hidden']});
  if(!root.hidden)load();
 })();
