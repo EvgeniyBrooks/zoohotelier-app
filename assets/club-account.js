@@ -219,13 +219,14 @@
       }
       card.dataset.unlocked = String(unlocked);
       const button = card.querySelector('.account-reward-state');
-      const stateLabel = ready ? (unlocked && active ? (index===1?'Забрать подарок':'Забрать →') : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
+      const isSecondGift = index === 1;
+      const stateLabel = isSecondGift ? 'Забрать подарок' : ready ? (unlocked && active ? 'Забрать →' : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
       button.querySelector('span').textContent = stateLabel;
       button.querySelector('svg').style.display = ready && !unlocked ? '' : 'none';
       button.disabled = !reader || !unlocked || !active;
       card.querySelector('.account-reward-preview').disabled = !reader || (index >= 6 && !revealed);
       card.querySelector('.account-reward-preview').hidden = (unlocked && active) || (index >= 6 && !revealed);
-      button.hidden = index < 6 && !(unlocked && active);
+      button.hidden = !isSecondGift && index < 6 && !(unlocked && active);
       button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок за ${index + 1}-й месяц откроется после его завершения и оплаты ${index + 2}-го месяца`) : stateLabel);
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
