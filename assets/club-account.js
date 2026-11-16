@@ -49,9 +49,15 @@
       <a class="account-route-link" id="account-route-link" href="./club.html#route" hidden>Продолжить свой маршрут →</a>
       <details class="account-reward-rules"><summary>Как открываются подарки</summary><p>За каждый завершённый 30-дневный период подписки открывается подарок, если следующий период оплачен. Первый подарок — после завершения первого месяца и оплаты второго. Двенадцатый — после завершения двенадцатого и оплаты тринадцатого.</p><p>Читать подарки в клубе можно при активной подписке. После перерыва отсчёт начинается заново. Полученные материалы можно скачать и оставить себе.</p><p>Все подарки цифровые. Предметы на картинках — иллюстрации. «Кинолог» и «Суперкинолог» — названия клубных уровней, а не профессиональная квалификация.</p></details>
     </section>
+    <details id="account-assessment-panel" class="account-reward-rules" hidden>
+      <summary>Анкеты за второй месяц</summary>
+      <button type="button" class="account-action">Обновить анкеты</button>
+      <div data-assessment-queue></div>
+    </details>
     
   </div></div>`;
   document.body.append(dialog);
+  window.NoyaDogAssessment?.mountQueue(dialog.querySelector('#account-assessment-panel'));
 
   const byId = id => document.getElementById(id);
   const rail = byId('account-reward-rail');
@@ -213,7 +219,7 @@
       }
       card.dataset.unlocked = String(unlocked);
       const button = card.querySelector('.account-reward-state');
-      const stateLabel = ready ? (unlocked && active ? 'Забрать →' : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
+      const stateLabel = ready ? (unlocked && active ? (index===1?'Забрать подарок':'Забрать →') : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
       button.querySelector('span').textContent = stateLabel;
       button.querySelector('svg').style.display = ready && !unlocked ? '' : 'none';
       button.disabled = !reader || !unlocked || !active;

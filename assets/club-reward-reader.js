@@ -14,10 +14,12 @@
       <button class="account-action reward-reader-claim" type="button">Забрать подарок →</button>
       <a class="account-action reward-reader-pdf" href="#" target="_blank" rel="noopener noreferrer" hidden>Открыть / скачать PDF ↗</a>
       <a class="account-action reward-reader-telegram" href="https://t.me/NoyaClubBrooksBot" target="_blank" rel="noopener noreferrer" hidden>Открыть в Telegram ↗</a>
+      <div data-reward-test-slot></div>
       <div class="reward-reader-body" hidden></div>`;
     dialog.querySelector('.account-dialog-content').append(panel);
     const $ = selector => panel.querySelector(selector);
     const body = $('.reward-reader-body');
+    const testSlot = $('[data-reward-test-slot]');
     const status = $('.reward-reader-access');
     const claim = $('.reward-reader-claim');
     const telegramLink = $('.reward-reader-telegram');
@@ -78,6 +80,7 @@
     function close() {
       if (panel.hidden) return false;
       cancelRequest();
+      testSlot.replaceChildren();
       pdfLink.hidden = true;
       pdfLink.removeAttribute('href');
       panel.hidden = true;
@@ -94,6 +97,19 @@
       selected = entry; material = null; origin = trigger;
       pdfLink.hidden = true; pdfLink.removeAttribute('href');
       body.replaceChildren(); body.hidden = true;
+      testSlot.replaceChildren();
+      if(month===2&&window.NoyaDogAssessment){
+        const preview=document.createElement('details');
+        preview.hidden=true;
+        preview.className='account-reward-rules';
+        preview.append(el('summary','Тестовая анкета для Дарьи'),
+          el('p','Для проверки заполни анкету вымышленными данными.'));
+        const content=document.createElement('div');
+        content.dataset.assessmentTest='';
+        preview.append(content);
+        testSlot.append(preview);
+        window.NoyaDogAssessment.mountTest(preview).catch(()=>{});
+      }
       fields = []; checks = []; storageKey = null; ownerId = null;
       $('.reward-reader-cover img').src = entry.image;
       $('[data-reward-month]').textContent = `${month}-й месяц · ${entry.level}`;

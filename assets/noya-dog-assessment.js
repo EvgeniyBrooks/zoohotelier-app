@@ -48,12 +48,7 @@
   submit(form,test?'Отправить тестовую анкету':'Отправить анкету',async answers=>{const data=await request('submit',{answers},test);member(target,data.assessment,test);});
   target.append(form);
  }
- window.NoyaDogAssessment={async open(target){
-  target.textContent='Загружаем анкету…';
-  member(target,(await request('mine')).assessment);
- }};
- const panel=document.getElementById('shop-assessment-panel');
- if(!panel)return;
+ function mountQueue(panel){
  const list=panel.querySelector('[data-assessment-queue]');
  async function queue(){
   const data=await request('queue');
@@ -79,14 +74,22 @@
   }
  }
  panel.querySelector('button').addEventListener('click',()=>queue().catch(error=>{list.textContent=error.message;}));
- if(initData()){
-  queue().catch(()=>{});
-  const preview=document.getElementById('shop-assessment-test');
-  if(preview)request('mine',null,true).then(data=>{
-   preview.hidden=false;
-   member(preview.querySelector('[data-assessment-test]'),data.assessment,true);
-  }).catch(()=>{});
+  if(initData())queue().catch(()=>{});
  }
+ window.NoyaDogAssessment={
+  mountQueue,
+  async open(target){
+   target.textContent='Загружаем анкету…';
+   member(target,(await request('mine')).assessment);
+  },
+  async mountTest(panel){
+   if(!initData())return;
+   const data=await request('mine',null,true);
+   if(!panel.isConnected)return;
+   member(panel.querySelector('[data-assessment-test]'),data.assessment,true);
+   panel.hidden=false;
+  }
+ };
 })({
  groups:[
   ['Общая информация о собаке',[
