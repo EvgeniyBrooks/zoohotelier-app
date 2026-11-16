@@ -21,7 +21,7 @@ if(searchToggle)togglePanel(searchToggle,document.getElementById('noya-member-se
 if(filterToggle)togglePanel(filterToggle,document.getElementById('noya-member-filter-panel'),city);
 document.getElementById('noya-member-filter-reset')?.addEventListener('click',()=>{city.value='';paint();});
 const normalize=value=>String(value||'').trim().toLocaleLowerCase('ru');
-let view='all',people=[],leaders=[],me=null,busy=false,loadError='';
+let view='all',people=[],me=null,busy=false,loadError='';
 const api=async(action,params={})=>{
  const initData=window.Telegram?.WebApp?.initData;
  if(!initData)throw Error('Открой клуб из Telegram');
@@ -64,17 +64,14 @@ function paint(){
  if(searchToggle)searchToggle.dataset.active=String(Boolean(query.value.trim()));
  if(filterToggle)filterToggle.dataset.active=String(Boolean(city?.value));
  tabs.forEach(tab=>tab.setAttribute('aria-selected',String(tab.dataset.membersTab===view)));
- const rankingInfo=document.getElementById('noya-member-points-info');
- if(rankingInfo)rankingInfo.hidden=view!=='ranking';
  const match=query.value.trim().toLocaleLowerCase('ru');
- const source=view==='ranking'?leaders:people;
  if(city){
   const selected=city.value;
-  const cities=new Map([...people,...leaders].filter(p=>normalize(p.city)).map(p=>[normalize(p.city),p.city.trim()]));
+  const cities=new Map(people.filter(p=>normalize(p.city)).map(p=>[normalize(p.city),p.city.trim()]));
   city.replaceChildren(new Option('Все города',''),...[...cities].sort((a,b)=>a[1].localeCompare(b[1],'ru')).map(([key,label])=>new Option(label,key)));
   if(cities.has(selected))city.value=selected;
  }
- const visible=source.filter(person=>
+ const visible=people.filter(person=>
   (view!=='favorites'||person.favorite)&&(!city?.value||normalize(person.city)===city.value)&&
   (!match||normalize([person.name,person.about,person.city,person.dogName,person.profession,person.hobbies].filter(Boolean).join(' ')).includes(match)));
 
@@ -224,9 +221,7 @@ async function refresh(){
  busy=true;
  try{
   const data=await api('list');
-  loadError='';people=data.users||[];leaders=data.leaders||[];
-  const ranks=new Map(leaders.map(p=>[p.id,p.rank]));
-  people.forEach(p=>p.rank=ranks.get(p.id)||null);
+  loadError='';people=data.leaders||[];
   me=data.me;
   total.textContent=Number.isFinite(Number(data.memberCount))?Number(data.memberCount):people.length;
   paintMine();paint();

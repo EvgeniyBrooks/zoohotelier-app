@@ -85,7 +85,6 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-tabs button{flex:1;padding:11px 4px;color:#bbb;border:0;border-bottom:3px solid transparent;background:transparent;font-size:12px}
 .noya-member-tabs button[aria-selected=true]{border-color:#f5fa45;color:#f5fa45;font-weight:850}
 .noya-member-points-info{margin-bottom:11px;color:#999;font-size:11px;line-height:1.5}
-.noya-member-points-info strong{color:#f5fa45}
 .noya-member-empty{padding:35px 15px;text-align:center;border:1px dashed #484848;border-radius:16px;color:#aaa;font-size:13px}
 .noya-person-card{display:flex;align-items:center;gap:12px;border-bottom:1px solid #343434;padding:14px 0}
 .noya-person-avatar{display:grid;place-items:center;position:relative;width:57px;height:57px;flex:0 0 57px;background:#343434;border:2px solid #575757;border-radius:50%;overflow:hidden;font:800 23px Oswald,Impact,sans-serif;color:#f5fa45}
@@ -112,7 +111,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
 .noya-member-primary,.noya-member-secondary{flex:1;min-width:130px;text-align:center;text-decoration:none;font-size:13px;font-weight:850;border-radius:12px;padding:12px;border:0;cursor:pointer}
 .noya-member-primary{background:#f5fa45;color:#111}.noya-member-secondary{background:#343434;color:#fff}
-</style><script src="./assets/noya-members.js?v=7" defer></script><style>
+</style><script src="./assets/noya-members.js?v=8" defer></script><style>
 .noya-member-titlebar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:10px 0 20px}
 .noya-member-titlebar h1{margin:0;min-width:0;font:700 clamp(27px,7.1vw,42px)/1 Oswald,Impact,sans-serif;letter-spacing:-.7px}
 .noya-member-titlebar h1 span{color:#f5fa45}
@@ -120,7 +119,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-info-button:focus-visible{outline:2px solid #f5fa45;outline-offset:3px}
 .noya-member-tabs{margin-bottom:12px}
 .noya-my-member-card{margin-bottom:15px}
-.noya-member-points-info[hidden],.noya-member-edit[hidden]{display:none!important}
+.noya-member-edit[hidden]{display:none!important}
 </style>
 <style id="noya-refinement">
 [hidden]{display:none!important}
@@ -234,15 +233,14 @@ body.noya-guided-home #noya-next-route{display:none!important}
  </div>
  <button type="button" id="noya-my-member-card" class="noya-my-member-card" hidden aria-label="Мой профиль участника"></button>
  <button id="noya-members-edit" type="button" class="noya-member-edit">+ Заполнить мой профиль</button>
- <div class="noya-member-tabs" role="tablist" aria-label="Участники и рейтинг">
+ <div class="noya-member-tabs" role="tablist" aria-label="Участники">
   <button role="tab" data-members-tab="all" aria-selected="true">Все</button>
   <button role="tab" data-members-tab="favorites" aria-selected="false">Избранное</button>
-  <button role="tab" data-members-tab="ranking" aria-selected="false">Рейтинг</button>
  </div>
  <div class="noya-member-tools"><button type="button" id="noya-member-search-toggle" class="noya-icon-button" aria-label="Поиск участников" aria-expanded="false" aria-controls="noya-member-search-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg></button><button type="button" id="noya-member-filter-toggle" class="noya-icon-button" aria-label="Фильтры участников" aria-expanded="false" aria-controls="noya-member-filter-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6"/></svg></button></div>
  <div id="noya-member-search-panel" hidden><label class="noya-member-search" for="noya-members-search"><input type="search" id="noya-members-search" placeholder="Имя, город или интересы" aria-label="Поиск участников" autocomplete="off"></label></div>
  <div id="noya-member-filter-panel" class="noya-member-filter-panel" hidden><label for="noya-members-city">Город</label><select class="route-select" id="noya-members-city"><option value="">Все города</option></select><button type="button" id="noya-member-filter-reset">Сбросить</button></div>
- <details class="noya-member-points-info noya-disclosure" id="noya-member-points-info" hidden><summary>Как начисляются баллы</summary><p>Урок — 10 · практика — 20 · эфир — 5 · подтверждённое приглашение — 100. В рейтинге участвуют открытые профили.</p></details>
+ <details class="noya-member-points-info noya-disclosure"><summary>Как начисляются баллы</summary><p>Урок — 10 · практика — 20 · эфир — 5 · подтверждённое приглашение — 100. Места присваиваются открытым профилям по количеству баллов.</p></details>
  <div id="noya-members-list" aria-live="polite"><div class="noya-member-empty">Загружаем участников…</div></div>
 </section>
 <section id="library" class="screen" hidden>

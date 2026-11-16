@@ -48,8 +48,11 @@ test('member directory, ratings, privacy and information links are connected',()
  const page=read('club.html'),ui=read('assets/noya-members.js'),api=read('api/club-members.js');
  assert.match(page,/id="noya-members-count"/);
  assert.match(page,/href="\.\/about\.html"/);
- assert.match(page,/data-members-tab="ranking"/);
+ assert.doesNotMatch(page,/data-members-tab="ranking"/);
+ assert.match(page,/data-members-tab="all"/);
  assert.match(page,/data-members-tab="favorites"/);
+ assert.match(ui,/people=data\.leaders/);
+ assert.match(api,/b\.points-a\.points[^\n]+rank:i\+1/);
  assert.match(ui,/function openPerson\(/);
  assert.match(ui,/function edit\(/);
  assert.match(ui,/https:\/\/t\.me\//);
