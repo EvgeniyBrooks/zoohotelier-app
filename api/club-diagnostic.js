@@ -2051,7 +2051,26 @@ module.exports=async function handler(req,res){
     if(rewardRequest&&(typeof req.query.reward!=="string"||!/^(?:[1-9]|1[0-2])$/.test(req.query.reward)))return res.status(400).json({error:"Invalid reward month"});
     if(req.method==="GET"&&req.query?.authOnly==="1"&&!rewardRequest)return res.status(200).json({ok:true,authenticated:true});
     if(!URL_BASE||!KEY)throw new Error("Missing database configuration");
+    const assessmentAction=req.query?.assessment;
+    if(assessmentAction==='queue'||assessmentAction==='reply'){
+      const result=await require('../lib/club-dog-assessment')({db,req,action:assessmentAction,telegramId});
+      return res.status(200).json(result);
+    }
     const students=await db("students?select=id&telegram_id=eq."+encodeURIComponent(telegramId)+"&limit=1");
+    if(assessmentAction==='mine'||assessmentAction==='submit'){
+      const studentId=students[0]?.id;
+      const canSubmit=async()=>{
+        const now=Date.now();
+        const subscriptions=await accountSubscriptions(studentId);
+        const account=accountSubscription(subscriptions,now);
+        const paid=subscriptions.filter(row=>row.prodamus_subscription_id);
+        if(!paid.length)return false;
+        await applyProdamusPaidLoyalty(studentId,subscriptions,account,now);
+        return account.subscription.status==='active'&&account.loyalty.unlockedMonths>=2;
+      };
+      const result=await require('../lib/club-dog-assessment')({db,req,action:assessmentAction,telegramId,studentId,canSubmit});
+      return res.status(200).json(result);
+    }
     if(req.method==="GET"&&(rewardRequest||req.query?.account==="1")){
       if(!Array.isArray(students))throw Object.assign(new Error("Database operation failed"),{status:502});
       const subscriptions=students.length?await accountSubscriptions(students[0].id):[];

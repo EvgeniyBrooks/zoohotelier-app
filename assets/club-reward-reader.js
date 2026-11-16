@@ -57,7 +57,7 @@
         status.textContent = 'Не удалось проверить доступ. Попробуй загрузить подписку ещё раз.';
         claim.hidden = false; claim.textContent = 'Повторить проверку';
       } else if (canOpen()) {
-        status.textContent = selected.month === 1 ? 'Методичка «101 трюк» доступна. Нажми «Забрать», чтобы получить ссылку на PDF.' : 'Твой подарок уже доступен. Открой его и выбери первое задание.';
+        status.textContent = selected.month === 1 ? 'Методичка «101 трюк» доступна. Нажми «Забрать», чтобы получить ссылку на PDF.' : selected.month === 2 ? 'Анкета для персонального разбора доступна.' : 'Твой подарок уже доступен. Открой его и выбери первое задание.';
         claim.hidden = false; claim.textContent = 'Забрать подарок →';
       } else {
         status.textContent = `Подарок откроется после завершения ${selected.month}-го месяца и оплаты ${selected.month + 1}-го.`;
@@ -178,12 +178,20 @@
         }
         if (!response.ok || data.ok !== true || data.reward?.month !== month || !Array.isArray(data.reward.sections)) throw new Error('Gift unavailable');
         if (!canOpen() || String(getAccount()?.user?.id) !== requestOwner) {eligibility();return;}
+        if(month===2){
+          body.hidden=false;
+          const assessment=document.createElement('div');
+          body.replaceChildren(assessment);
+          await window.NoyaDogAssessment.open(assessment);
+          if (currentRequest !== requestNumber || panel.hidden) return;
+        }
         material = data.reward; ownerId = requestOwner;
-        renderGift();
+        if(month!==2)renderGift();
         claim.hidden = true;
-        status.textContent = 'Подарок открыт. Сохрани материал вместе со своими заметками.';
+        status.textContent = month===2?'':'Подарок открыт. Сохрани материал вместе со своими заметками.';
       } catch (error) {
         if (currentRequest !== requestNumber || panel.hidden) return;
+        if(month===2){body.replaceChildren();body.hidden=true;}
         status.textContent = 'Не удалось открыть подарок. Проверь соединение и попробуй ещё раз.';
         claim.hidden = false; claim.disabled = false; claim.textContent = 'Попробовать ещё раз';
       } finally {
