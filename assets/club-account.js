@@ -75,10 +75,7 @@
       card.dataset.secret = 'true';
       card.querySelector('.account-reward-art').innerHTML = `<span class="account-secret-lock" aria-hidden="true">🔒</span>`;
     } else if (month === 5) {
-      const amount = document.createElement('strong');
-      amount.className = 'account-coin-gift';
-      amount.textContent = '10 000';
-      card.querySelector('.account-reward-art').replaceChildren(amount);
+      card.querySelector('.account-reward-art').innerHTML = '<div class="account-coin-gift"><span class="account-coin-emblem">N</span><strong>10 тысяч</strong></div>';
     } else card.querySelector('img').src = reward.image;
     card.querySelector('.account-reward-state').addEventListener('click', event => reader?.open(month,true,event.currentTarget));
     card.querySelector('.account-reward-preview').addEventListener('click', event => reader?.open(month,false,event.currentTarget));

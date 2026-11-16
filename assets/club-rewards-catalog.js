@@ -48,7 +48,7 @@ window.NOYA_REWARD_CATALOG = Object.freeze([
     "description": "Забери 10 000 NOINCOINS после завершения пятого месяца и подтверждённой оплаты шестого.",
     "format": "Ноинкоины",
     "image": "/assets/rewards/05.webp",
-    "cardLabel": "10 000 NOINCOINS"
+    "cardLabel": "Ноинкоины"
   },
   {
     "month": 6,

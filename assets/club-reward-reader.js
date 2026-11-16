@@ -8,7 +8,7 @@
     panel.hidden = true;
     panel.setAttribute('aria-labelledby', 'reward-reader-title');
     panel.innerHTML = `<button class="reward-back noya-legacy-return" type="button">← Все подарки</button>
-      <div class="reward-reader-cover"><img alt="" width="300" height="300"><div><p class="account-kicker" data-reward-month></p><h2 id="reward-reader-title" tabindex="-1"></h2><p class="reward-reader-format"></p></div></div>
+      <div class="reward-reader-cover"><img alt="" width="300" height="300"><div class="account-coin-gift" data-reward-coin hidden aria-hidden="true"><span class="account-coin-emblem">N</span><strong>10 тысяч</strong></div><div><p class="account-kicker" data-reward-month></p><h2 id="reward-reader-title" tabindex="-1"></h2><p class="reward-reader-format"></p></div></div>
       <p class="reward-reader-description"></p>
       <p class="reward-reader-access" role="status" aria-live="polite"></p>
       <button class="account-action reward-reader-claim" type="button">Забрать подарок →</button>
@@ -113,6 +113,7 @@
       fields = []; checks = []; storageKey = null; ownerId = null;
       $('.reward-reader-cover img').src = entry.image;
       $('.reward-reader-cover img').hidden = month === 5;
+      $('[data-reward-coin]').hidden = month !== 5;
       $('[data-reward-month]').textContent = `${month}-й месяц · ${entry.level}`;
       $('#reward-reader-title').textContent = entry.title;
       $('.reward-reader-format').textContent = `${entry.format} · Цифровой подарок`;
