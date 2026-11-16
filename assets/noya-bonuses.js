@@ -5,7 +5,7 @@
  const $=id=>document.getElementById('bonus-'+id);
  const fmt=n=>new Intl.NumberFormat('ru-RU').format(n);
  const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
- let loaded=false,loading=false,redeeming=false,link='',tab='store',offset=0;
+ let loaded=false,loading=false,link='',tab='history',offset=0;
  let invitationsBusy=false,rankingVersion=0;
  const status=text=>{$('status').textContent=text;};
  async function api(action,extra={},post=false){
@@ -31,36 +31,21 @@
   $('pending').textContent=fmt(ref.pending||0);$('paid').textContent=fmt(ref.rewarded||0);
   $('invite-rule').textContent='За каждую подтверждённую оплату приглашённого друга — '+fmt(ref.coinsPerConfirmedPayment||0)+' ноинкоинов.';
   $('rules-list').replaceChildren(node('p','Начальный баланс — 0.'),...(data.earningRules||[]).map(r=>node('p','+'+fmt(r.coins)+' · '+r.event)));
-  const items=Array.isArray(data.items)?data.items:[];
-  $('store').replaceChildren();
-  for(const item of items){
-   const card=node('article',undefined,'card');
-   card.append(node('h3',item.title),node('p',item.description),node('div',fmt(item.cost)+' ◈','bonus-price'));
-   if(item.owned){
-    const details=node('details');details.append(node('summary','Как получить подарок'),node('pre',item.content||'Инструкция по получению пока недоступна'));card.append(details);
-   }else{
-    const buy=node('button',data.balance<item.cost?'Недостаточно баллов':'Получить за '+fmt(item.cost),'button');
-    buy.type='button';buy.disabled=data.balance<item.cost;
-    buy.addEventListener('click',async()=>{
-     if(redeeming||loading)return;
-     if(!window.confirm('Обменять '+item.cost+' ноинкоинов на «'+item.title+'»?'))return;
-     redeeming=true;buy.disabled=true;
-     try{const result=await api('coin_redeem',{itemCode:item.code},true);render(result.wallet);status(result.applied?'Подарок оформлен! Открой инструкцию по получению.':'Этот подарок уже оформлен.');}
-     catch(e){status(e.message);buy.disabled=false;}finally{redeeming=false;}
-    });card.append(buy);
-   }
-   $('store').append(card);
-  }
-  if(!items.length)$('store').append(node('p','Бонусы скоро появятся здесь.'));
+  const unlocked=Array.isArray(data.items)?data.items:[];
+  $('unlocked').replaceChildren(...unlocked.map(item=>{
+   const details=node('details',undefined,'bonus-unlocked');
+   details.append(node('summary',item.title),node('pre',item.content||'Инструкция пока недоступна'));
+   return details;
+  }));
   const history=Array.isArray(data.history)?data.history:[];
   $('history').replaceChildren(...history.map(tx=>row((tx.coins>0?'+':'')+fmt(tx.coins)+' ◈ · '+tx.reason,date(tx.created_at))));
-  if(!history.length)$('history').append(node('p','Пока нет операций. Здесь появятся начисления и покупки.'));
+  if(!history.length)$('history').append(node('p','Пока нет операций. Здесь появятся начисления.'));
  }
  async function load(){
-  if(loading||redeeming)return;
+  if(loading)return;
   loading=true;$('reload').disabled=true;status('Загружаем бонусы…');
   try{render(await api('coins'));loaded=true;status('');}
-  catch(e){status(e.message);link='';$('link').value='';$('balance').textContent='—';$('pending').textContent='—';$('paid').textContent='—';$('copy').disabled=true;$('share').disabled=true;$('store').replaceChildren();$('history').replaceChildren();loaded=false;}
+  catch(e){status(e.message);link='';$('link').value='';$('balance').textContent='—';$('pending').textContent='—';$('paid').textContent='—';$('copy').disabled=true;$('share').disabled=true;$('unlocked').replaceChildren();$('history').replaceChildren();loaded=false;}
   finally{loading=false;$('reload').disabled=false;}
  }
  async function invitations(reset=true){

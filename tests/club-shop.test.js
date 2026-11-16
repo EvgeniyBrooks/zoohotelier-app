@@ -174,21 +174,16 @@ test('admin can complete a valid private review without granting real money-base
   assert.equal(mock.state.calls.some(x=>x.host==='api.telegram.org'),true);
  }finally{mock.restore();}
 });
-test('app has a shop navigation and never pretends shop purchases are enabled',()=>{
+test('club has a wallet and old shop links open Bonuses without a store',()=>{
  const root=path.join(__dirname,'..');
  const html=fs.readFileSync(path.join(root,'club.html'),'utf8');
  const shop=fs.readFileSync(path.join(root,'shop.html'),'utf8');
- const ui=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
- const api=fs.readFileSync(path.join(root,'api','club-shop.js'),'utf8');
- assert.match(html,/id="bonus-panel-store"/);
- assert.match(html,/href="\.\/shop\.html"/);
- assert.match(shop,/noya-shop-reviewer-tab/);
- assert.match(shop,/club-shop\.js\?v=\d+/);
- assert.match(shop,/data-tab="coins" aria-selected="true"/);
- assert.doesNotMatch(shop,/data-tab="catalog"|id="shop-services"/);
- assert.doesNotMatch(ui,/Персональный видеоразбор|Проверка домашнего задания/);
- assert.match(api,/purchaseEnabled:false/);
- assert.doesNotMatch(api,/action==='purchase'/);
+ const ui=fs.readFileSync(path.join(root,'assets','noya-bonuses.js'),'utf8');
+ assert.match(html,/id="bonus-balance"/);
+ assert.match(html,/id="bonus-tab-history"[^>]*aria-selected="true"/);
+ assert.doesNotMatch(html,/bonus-panel-store|href="\.\/shop\.html"/);
+ assert.match(shop,/url=\.\/club\.html#bonuses/);
+ assert.doesNotMatch(ui,/coin_redeem|item\.cost/);
 });
 
 test('NOINCOINS wallet verifies user identity and never discloses locked paid bonus content',async()=>{
@@ -198,27 +193,25 @@ test('NOINCOINS wallet verifies user identity and never discloses locked paid bo
   assert.equal(wallet.statusCode,200);
   assert.equal(wallet.body.currency,'НОИНКОИНЫ');
   assert.equal(wallet.body.balance,100);
-  assert.equal(wallet.body.items[0].cost,80);
-  assert.equal(wallet.body.items[0].owned,false);
+  assert.deepEqual(wallet.body.items,[]);
   assert.equal(wallet.body.referral.coinsPerConfirmedPayment,500);
   assert.equal(wallet.body.referral.pending,2);
   assert.equal(wallet.body.referral.rewarded,1);
   assert.equal(wallet.body.referral.code,'a'.repeat(24));
-  assert.equal(Object.hasOwn(wallet.body.items[0],'content'),false);
+  assert.equal(mock.state.calls.some(x=>x.path.endsWith('/noya_coin_store_items')),false);
   assert.equal(wallet.body.history.length,1);
  }finally{mock.restore();}
 });
 
-test('NOINCOINS redemption accepts only server-owned prices, not client-supplied coin amounts',async()=>{
+test('closed store rejects purchases and preserves access to previously redeemed materials',async()=>{
  const mock=network({member:true,claimed:true});
  try{
-  const redeem=await invoke('POST','coin_redeem',{itemCode:'walk_checklist',coins:-999999});
-  assert.equal(redeem.statusCode,200);
-  assert.equal(redeem.body.applied,true);
-  assert.equal(redeem.body.wallet.items[0].content,'SECRET PURCHASED MATERIAL');
-  assert.equal(Object.hasOwn(redeem.body.wallet.items[1],'content'),false);
-  const other=await invoke('POST','coin_redeem',{itemCode:'different-secret'});
-  assert.equal(other.statusCode,400); // invalid item codes cannot reach the private RPC
+  const result=await invoke('POST','coin_redeem',{itemCode:'walk_checklist'});
+  assert.equal(result.statusCode,410);
+  assert.equal(mock.state.calls.some(x=>x.path.endsWith('/noya_coin_redeem')),false);
+  const wallet=await invoke('GET','coins');
+  assert.deepEqual(wallet.body.items.map(item=>item.code),['walk_checklist']);
+  assert.equal(wallet.body.items[0].content,'SECRET PURCHASED MATERIAL');
  }finally{mock.restore();}
 });
 
@@ -228,21 +221,9 @@ test('without paid or trial club access, NOINCOINS cannot be earned or spent',as
   const denied=await invoke('GET','coins');
   assert.equal(denied.statusCode,403);
   const spend=await invoke('POST','coin_redeem',{itemCode:'walk_checklist'});
-  assert.equal(spend.statusCode,403);
+  assert.equal(spend.statusCode,410);
   assert.equal(mock.state.calls.some(x=>x.path.endsWith('/noya_coin_sync')),false);
  }finally{mock.restore();}
-});
-
-test('NOINCOINS shop contains wallet and a working earned bonus redemption control',()=>{
- const root=path.join(__dirname,'..');
- const html=fs.readFileSync(path.join(root,'shop.html'),'utf8');
- const ui=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
- assert.match(html,/data-tab="coins"/);
- assert.match(html,/shop-coins-balance/);
- assert.match(html,/НОИНКОИНЫ/);
- assert.match(ui,/coin_redeem/);
- assert.match(ui,/data\.balance/);
- assert.match(ui,/item\.content/);
 });
 
 test('referral claims use signed Telegram recipient and cannot create NOINCOINS directly',async()=>{
@@ -257,25 +238,16 @@ test('referral claims use signed Telegram recipient and cannot create NOINCOINS 
   assert.equal(invalid.statusCode,400);
  }finally{mock.restore();}
 });
-test('referral section is above redeemable goods with copy/share controls',()=>{
+test('referral link and sharing controls remain available in Bonuses',()=>{
  const root=path.join(__dirname,'..');
- const html=fs.readFileSync(path.join(root,'shop.html'),'utf8');
- const shop=fs.readFileSync(path.join(root,'assets','club-shop.js'),'utf8');
+ const ui=fs.readFileSync(path.join(root,'assets','noya-bonuses.js'),'utf8');
  const club=fs.readFileSync(path.join(root,'club.html'),'utf8');
- assert.ok(html.indexOf('id="shop-referral-card"')<html.indexOf('id="shop-coin-items"'));
- assert.match(html,/500 🪙 ЗА КАЖДЫЙ ПЛАТЁЖ/);
- assert.match(html,/включая продления/);
- assert.match(html,/Повторные уведомления об одном платеже/);
- assert.match(html,/id="shop-referral-copy"/);
- assert.match(html,/id="shop-referral-share"/);
- assert.match(shop,/NoyaClubBrooksBot\?startapp=ref_/);
- assert.match(shop,/shop-referral-rewarded/);
+ assert.match(club,/id="bonus-copy"/);
+ assert.match(club,/id="bonus-share"/);
+ assert.match(ui,/NoyaClubBrooksBot\?startapp=ref_/);
  assert.match(club,/action:'referral_claim',initData,referralCode/);
  assert.ok(club.indexOf("action:'referral_claim'")<club.indexOf("const status=await billingFetch('/api/club-checkout?status=1'"));
 });
-
-
-
 
 test('bonus statistics require signed membership and scope invitations to the current student',async()=>{
  let mock=network({});

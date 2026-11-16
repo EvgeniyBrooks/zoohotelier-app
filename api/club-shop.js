@@ -119,13 +119,15 @@ async function coinWallet(auth){
  if(!(await hasClub(auth)))throw fail(403,'Active club or trial required');
  const rpc=await db('rpc/noya_coin_sync','POST',{p_student_id:auth.student});
  const wallet=rpc?.[0]||{balance:0,lifetime_earned:0,lifetime_spent:0};
- const [items,redemptions,history,referrals]=await Promise.all([
-  db('noya_coin_store_items?select=code,title,description,cost,content,sort_order&enabled=eq.true&order=sort_order.asc&limit=50'),
+ const [redemptions,history,referrals]=await Promise.all([
   db('noya_coin_redemptions?select=item_code,paid_coins,created_at&student_id=eq.'+auth.student+'&limit=100'),
   db('noya_coin_ledger?select=coins,reason,created_at&student_id=eq.'+auth.student+'&order=created_at.desc&limit=20'),
   db('rpc/noya_referral_ensure_code','POST',{p_student_id:auth.student})
  ]);
- const owned=new Set(redemptions.map(x=>x.item_code));
+ const codes=new Set(redemptions.map(x=>x.item_code).filter(code=>/^[a-z0-9_]{3,50}$/.test(code)));
+ const items=codes.size
+  ?await db('noya_coin_store_items?select=code,title,content&code=in.('+[...codes].join(',')+')')
+  :[];
  return {
   balance:Number(wallet.balance)||0,
   earned:Number(wallet.lifetime_earned)||0,
@@ -141,36 +143,10 @@ async function coinWallet(auth){
    {event:'Каждое подтверждённое продление своей подписки',coins:500},
    {event:'Каждая подтверждённая оплата приглашённого друга (2 900 ₽)',coins:500}
   ],
-  // Never expose the digital bonus content until its redemption is recorded.
-  items:items.map(x=>({code:x.code,title:x.title,description:x.description,cost:x.cost,
-   owned:owned.has(x.code),...(owned.has(x.code)?{content:x.content}:{})})),
+  items:items.filter(item=>codes.has(item.code)),
   history
  };
 }
-async function redeemCoins(auth,code){
- if(!auth.student||!(await hasClub(auth)))throw fail(403,'Active club required');
- if(typeof code!=='string'||!/^[a-z0-9_]{3,50}$/.test(code))throw fail(400,'Invalid item code');
- // Private SQL RPC debits the wallet and records the unlock in a single transaction.
- const url=DB()+'/rest/v1/rpc/noya_coin_redeem';
- const resp=await fetch(url,{method:'POST',headers:serviceHeaders(),
-  body:JSON.stringify({p_student_id:auth.student,p_item_code:code}),
-  cache:'no-store',signal:AbortSignal.timeout(12000)});
- if(!resp.ok){
-  const problem=await resp.json().catch(()=>null);
-  if(resp.status===400&&String(problem?.message||'').includes('Not enough NOINCOINS'))
-   throw fail(409,'Недостаточно НОИНКОИНОВ');
-  if(resp.status===400&&String(problem?.message||'').includes('Active membership required'))
-   throw fail(403,'Активная подписка необходима для покупки');
-  if(resp.status===400&&String(problem?.message||'').includes('Item unavailable'))
-   throw fail(404,'Бонус сейчас недоступен');
-  throw fail(502,'Coin purchase unavailable');
- }
- const data=await resp.json().catch(()=>null);
- if(!Array.isArray(data)||data.length!==1||typeof data[0].applied!=='boolean')
-  throw fail(502,'Unexpected coin purchase response');
- return {applied:data[0].applied,wallet:await coinWallet(auth)};
-}
-
 async function notifyReviewReady(row){
  // A completed review must remain available even if a Telegram message fails.
  try{
@@ -278,10 +254,7 @@ module.exports=async function handler(req,res){
    if(!claim||typeof claim.applied!=='boolean')throw fail(502,'Referral claim unavailable');
    return payload(res,200,{ok:true,applied:claim.applied,reason:claim.reason});
   }
-  if(action==='coin_redeem'){
-   const result=await redeemCoins(auth,req.body.itemCode);
-   return payload(res,200,{ok:true,...result});
-  }
+  if(action==='coin_redeem')throw fail(410,'Обмен ноинкоинов закрыт');
   if(action==='test_create'){
    if(!auth.admin||!auth.student)throw fail(403,'Administrator only');
    const service=req.body.serviceCode;
