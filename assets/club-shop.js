@@ -4,8 +4,7 @@
  try{tg?.ready();tg?.expand();}catch(_){}
  const initData=tg?.initData||'';
  const message=document.getElementById('shop-message');
- const screens={catalog:document.getElementById('shop-catalog'),
-  coins:document.getElementById('shop-coins'),
+ const screens={coins:document.getElementById('shop-coins'),
   orders:document.getElementById('shop-orders'),queue:document.getElementById('shop-queue')};
  let isAdmin=false,isReviewer=false;
  const labels={
@@ -43,7 +42,7 @@
   return data;
  }
  function switchTab(name){
-  if(!screens[name])name='catalog';
+  if(!Object.hasOwn(screens,name))name='coins';
   Object.entries(screens).forEach(([id,section])=>section.hidden=id!==name);
   document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===name)));
   history.replaceState(null,'','#'+name);
@@ -138,37 +137,12 @@
   }catch(e){setMessage(e.message||'Не удалось открыть приглашение');}
  });
  document.getElementById('shop-coins-reload').addEventListener('click',loadCoins);
- async function loadCatalog(){
+ async function loadPermissions(){
   const data=await request('catalog');
   isAdmin=data.adminPreview===true;
   isReviewer=data.reviewer===true;
   document.getElementById('noya-shop-reviewer-tab').hidden=!isReviewer;
   document.getElementById('shop-staff-manager').hidden=!isAdmin;
-  const dest=document.getElementById('shop-services');dest.replaceChildren();
-  const services=Array.isArray(data.services)?data.services:[];
-  for(const service of services){
-   const card=el('article','card'+(service.code==='evgeniy'?' highlight':''));
-   card.append(el('div','kicker',service.code==='evgeniy'?'ЛИЧНО С ЕВГЕНИЕМ':'ПОМОЩЬ КИНОЛОГА'),
-    el('h2','service-name',service.name),el('div','price',money(service.priceRub)));
-   const desc=service.code==='evgeniy'?
-    'Персональный видеоразбор с Евгением Бруксом: где ошибка, почему она появляется и как двигаться дальше.':
-    'Проверка домашнего задания: кинолог разберёт упражнение и подскажет, что исправить.';
-   card.append(el('p','',desc));
-   const meta=el('div','meta');meta.append(el('span','tag','1 видео до 2 минут'),
-    el('span','tag',service.deadline),el('span','tag','Без автопродления'));
-   card.append(meta);
-   if(service.adminTestEnabled===true){
-    card.append(button('Создать тестовый заказ · без оплаты',async()=>{
-     const result=await request('test_create',{serviceCode:service.code},'POST');
-     setMessage('Тестовый заказ создан. Денежного списания нет.');
-     switchTab('orders');await loadOrders();
-    }));
-   }else{
-    const disabled=el('button','cta','Оплата разборов скоро появится');
-    disabled.type='button';disabled.disabled=true;card.append(disabled);
-   }
-   dest.append(card);
-  }
  }
  function cardOrder(row,reviewer=false){
   const service=row.serviceCode==='evgeniy'?'Личный разбор с Евгением':'Проверка кинологом';
@@ -296,11 +270,11 @@
  async function start(){
   if(!initData){setMessage('Открой магазин через @NoyaClubBrooksBot в Telegram.');return;}
   try{
-   await loadCatalog();setMessage('');
+   await loadPermissions();
    const tab=location.hash.slice(1);
-   if(tab==='coins'||tab==='orders'||tab==='queue'&&isReviewer)switchTab(tab);
+   switchTab(tab==='orders'||tab==='queue'&&isReviewer?tab:'coins');
   }catch(e){
-   setMessage(e.message);document.getElementById('shop-catalog').hidden=true;
+   setMessage(e.message);
   }
  }
  start();

@@ -183,8 +183,10 @@ test('app has a shop navigation and never pretends shop purchases are enabled',(
  assert.match(html,/id="bonus-panel-store"/);
  assert.match(html,/href="\.\/shop\.html"/);
  assert.match(shop,/noya-shop-reviewer-tab/);
- assert.match(shop,/club-shop\.js\?v=2/);
- assert.match(ui,/Оплата разборов скоро появится/);
+ assert.match(shop,/club-shop\.js\?v=\d+/);
+ assert.match(shop,/data-tab="coins" aria-selected="true"/);
+ assert.doesNotMatch(shop,/data-tab="catalog"|id="shop-services"/);
+ assert.doesNotMatch(ui,/Персональный видеоразбор|Проверка домашнего задания/);
  assert.match(api,/purchaseEnabled:false/);
  assert.doesNotMatch(api,/action==='purchase'/);
 });

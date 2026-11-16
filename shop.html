@@ -17,8 +17,6 @@ a{color:inherit;text-decoration:none}p{color:#bdbdbd;margin:0 0 14px}
 .kicker{font-size:12px;font-weight:900;letter-spacing:1.4px;color:var(--yellow);text-transform:uppercase}
 .card{background:#1a1a1a;border:1px solid var(--line);border-radius:22px;padding:20px;margin:13px 0}
 .card.highlight{background:linear-gradient(145deg,#302811,#1b1a13);border-color:#b7be4d}
-.service-name{font:700 29px/1.13 Oswald,Impact,sans-serif;margin:5px 0 12px;text-transform:uppercase}
-.price{font-size:30px;font-weight:900;color:var(--yellow);letter-spacing:-1px}
 .small{font-size:12px;color:#a9a9a9}.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .tag{border:1px solid #5b5b5b;padding:4px 9px;border-radius:30px;font-size:11px;color:#e1e1e1}
 button{font:inherit;cursor:pointer}
@@ -40,24 +38,19 @@ hr{border:0;border-top:1px solid #424242;margin:19px 0}
 .footer{font-size:12px;color:#aaa;margin-top:26px;text-align:center}
 :focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
 </style>
-<script src="./assets/club-shop.js?v=2" defer></script>
+<script src="./assets/club-shop.js?v=3" defer></script>
 </head><body><main>
 
 <a class="return noya-legacy-return" href="./club.html#home">← Вернуться в клуб</a>
 
 <h1>МАГАЗИН</h1>
-<p>Бонусы клуба и персональные разборы.</p>
 <div class="tabs" role="tablist" aria-label="Разделы магазина">
-<button type="button" data-tab="catalog" aria-selected="true">Услуги</button>
-<button type="button" data-tab="coins" aria-selected="false">🪙 НОИНКОИНЫ</button>
+<button type="button" data-tab="coins" aria-selected="true">🪙 НОИНКОИНЫ</button>
 <button type="button" data-tab="orders" aria-selected="false">Мои разборы</button>
 <button type="button" data-tab="queue" aria-selected="false" id="noya-shop-reviewer-tab" hidden>Специалист</button>
 </div>
 <div id="shop-message" class="status" role="status" aria-live="polite">Загружаем магазин…</div>
-<section id="shop-catalog" class="screen" aria-label="Каталог услуг"><div id="shop-services"></div>
-<div class="notice">Приём новых платных разборов временно закрыт.</div>
-</section>
-<section id="shop-coins" class="screen" aria-label="НОИНКОИНЫ и бонусный магазин" hidden>
+<section id="shop-coins" class="screen" aria-label="НОИНКОИНЫ и бонусный магазин">
 <div class="card highlight">
  <div class="kicker">ТВОЙ КОШЕЛЁК</div>
  <h2 style="margin:10px 0 6px">НОИНКОИНЫ 🪙</h2>
@@ -98,5 +91,5 @@ hr{border:0;border-top:1px solid #424242;margin:19px 0}
 <button class="cta alt" id="shop-staff-save" type="button">Добавить специалиста</button>
 <div id="shop-staff-list"></div>
 </div></section>
-<div class="footer">NOYA CLUB · 2 900 ₽ / 30 дней · Индивидуальные разборы оплачиваются отдельно</div>
+<div class="footer">NOYA CLUB</div>
 </main><script src="./assets/noya-navigation.js?v=1"></script><script>window.NOYABack.set(()=>location.assign("./club.html#bonuses"));</script></body></html>
