@@ -61,6 +61,14 @@ function publicCard(p,stats,liked){
           canMessage:!!(p.messages_enabled&&username),username:p.messages_enabled?username:null,
           favorite:liked.has(p.student_id),...stats};
 }
+function ownProfile(mine,user,me){
+  const defaultName=(typeof user.first_name==='string'?user.first_name.trim():'')||'Участник NOYA';
+  return {id:me,name:mine?.display_name||defaultName,about:mine?.about||'',avatar:mine?.avatar_url||null,
+          city:mine?.city||'',profession:mine?.profession||'',dogName:mine?.dog_name||'',dogInfo:mine?.dog_info||'',dogGoals:mine?.dog_goals||'',helpWith:mine?.help_with||'',lookingFor:mine?.looking_for||'',hobbies:mine?.hobbies||'',instagram:mine?.instagram||'',telegramChannel:mine?.telegram_channel||'',
+          publicEnabled:mine?.public_enabled===true,messagesEnabled:mine?.messages_enabled===true,
+          canMessage:typeof user.username==='string'&&/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(user.username),
+          username:typeof user.username==='string'?user.username:null};
+}
 export default async function handler(req,res){
   res.setHeader('Cache-Control','private, no-store');
   res.setHeader('Allow','POST');
@@ -80,6 +88,10 @@ export default async function handler(req,res){
     const trial=trials.some(r=>Date.parse(r.starts_at)<=now&&Date.parse(r.ends_at)>now);
     if(!admins.length&&!subscribed&&!trial)throw error(403,'Профили участников доступны при активной подписке NOYA CLUB');
     const base='noya_member_profiles?select=student_id,display_name,about,avatar_url,public_enabled,messages_enabled,contact_username,city,profession,dog_name,dog_info,dog_goals,help_with,looking_for,hobbies,instagram,telegram_channel';
+    if(action==='profile'){
+      const [profile]=await db(base+'&student_id=eq.'+me+'&limit=1');
+      return res.status(200).json({ok:true,me:ownProfile(profile,user,me)});
+    }
     if(action==='save'){
       const data=req.body?.profile||{};
       if(typeof data!== 'object'||data===null||Array.isArray(data))throw error(400,'Неверный профиль');
@@ -118,7 +130,7 @@ export default async function handler(req,res){
       db('noya_member_count_v?select=count&limit=1'),
       db('club_subscriptions?select=student_id,start_date,end_date&status=eq.active&limit=10000'),
       db('noya_club_trials?select=student_id,starts_at,ends_at&limit=10000'),
-      allRows('payments?select=student_id,product_id,paid_at&product_type=eq.club&product_id=like.noya:*&status=eq.paid&currency=eq.RUB&amount=gt.0&prodamus_payment_id=not.is.null&paid_at=not.is.null&order=paid_at.asc,id.asc'),
+      allRows('noya_confirmed_club_payments_v?select=student_id,product_id,paid_at&order=paid_at.asc,id.asc'),
       now<ranking.LAUNCH?[]:allRows('noya_referral_attributions?select=inviter_student_id,referred_student_id,created_at&order=referred_student_id.asc')
     ]);
     // A public profile is discoverable only while its owner has active club access.
@@ -136,15 +148,9 @@ export default async function handler(req,res){
     const myPublic=visibleProfiles.some(p=>p.student_id===me);
     const myScore=memberStats(me);
     const myRank=leaders.find(x=>x.id===me)?.rank||null;
-    const defaultName=(typeof user.first_name==='string'?user.first_name.trim():'')||'Участник NOYA';
     return res.status(200).json({
       ok:true,users:cards,leaders,memberCount:Math.max(0,Number(counts?.[0]?.count)||0),
-      me:{id:me,name:mine[0]?.display_name||defaultName,about:mine[0]?.about||'',
-          city:mine[0]?.city||'',profession:mine[0]?.profession||'',dogName:mine[0]?.dog_name||'',dogInfo:mine[0]?.dog_info||'',dogGoals:mine[0]?.dog_goals||'',helpWith:mine[0]?.help_with||'',lookingFor:mine[0]?.looking_for||'',hobbies:mine[0]?.hobbies||'',instagram:mine[0]?.instagram||'',telegramChannel:mine[0]?.telegram_channel||'',
-          publicEnabled:myPublic,messagesEnabled:mine[0]?.messages_enabled===true,
-          canMessage:!!(typeof user.username==='string'&&/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(user.username)),
-          username:typeof user.username==='string'?user.username:null,
-          rank:myRank,...myScore}
+      me:{...ownProfile(mine[0],user,me),publicEnabled:myPublic,rank:myRank,...myScore}
     });
   }catch(e){
     if(!e.status)console.error('NOYA members',e.message);

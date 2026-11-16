@@ -161,13 +161,18 @@ function openPerson(person){
  }
  foot.append(closeButton(d));d.append(foot);d.showModal();
 }
+let loadingProfile=false;
 async function edit(){
- if(!me){try{me=(await api('list')).me;}catch(error){alert(error.message);return;}}
- if(!me)return;
+ if(loadingProfile||document.querySelector('.noya-member-dialog[open]'))return;
+ loadingProfile=true;
+ let profile;
+ try{profile=(await api('profile')).me;}catch(error){alert(error.message);return;}
+ finally{loadingProfile=false;}
+ if(!profile)return;
  const d=createDialog('РЕДАКТИРОВАТЬ ПРОФИЛЬ');
- const identity=el('div','noya-member-self');identity.append(avatar(me));
- const identityCopy=el('div');identityCopy.append(el('strong','',me.name));
- if(me.username)identityCopy.append(el('small','','@'+me.username));
+ const identity=el('div','noya-member-self');identity.append(avatar(profile));
+ const identityCopy=el('div');identityCopy.append(el('strong','',profile.name));
+ if(profile.username)identityCopy.append(el('small','','@'+profile.username));
  identity.append(identityCopy);d.append(identity);
  const fields={};
  function group(title,entries){
@@ -202,24 +207,24 @@ async function edit(){
   ['telegramChannel','Telegram-канал — @username',80,false]
  ]);
  d.append(el('h3','noya-person-form-section','ВИДИМОСТЬ'));
- const display=el('label','noya-person-toggle');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=me.publicEnabled;
+ const display=el('label','noya-person-toggle');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=profile.publicEnabled;
  display.append(checkbox,el('span','','Показывать мой профиль участникам'));d.append(display);
  const msg=el('label','noya-person-toggle');const contact=document.createElement('input');
- contact.type='checkbox';contact.checked=me.messagesEnabled;contact.disabled=!me.username||!me.publicEnabled;
- msg.append(contact,el('span','',me.username?'Разрешить другим написать мне в Telegram':'Для сообщений установи @username в Telegram'));
+ contact.type='checkbox';contact.checked=profile.messagesEnabled;contact.disabled=!profile.username||!profile.publicEnabled;
+ msg.append(contact,el('span','',profile.username?'Разрешить другим написать мне в Telegram':'Для сообщений установи @username в Telegram'));
  d.append(msg);
- checkbox.addEventListener('change',()=>{contact.disabled=!me.username||!checkbox.checked;if(contact.disabled)contact.checked=false;});
+ checkbox.addEventListener('change',()=>{contact.disabled=!profile.username||!checkbox.checked;if(contact.disabled)contact.checked=false;});
  const status=el('p','noya-person-status','');status.setAttribute('role','status');d.append(status);
  const actions=el('div','noya-member-actions noya-member-edit-actions');const save=el('button','noya-member-primary','Сохранить');save.type='button';
  save.onclick=async()=>{
   if(!fields.name.value.trim()){status.textContent='Укажи имя';fields.name.focus();return;}
   save.disabled=true;status.textContent='Сохраняем…';
-  const profile={};
+  const values={};
   for(const [name,input] of Object.entries(fields)){
-   profile[name==='name'?'displayName':name]=input.value;
+   values[name==='name'?'displayName':name]=input.value;
   }
-  profile.publicEnabled=checkbox.checked;profile.messagesEnabled=contact.checked;
-  try{await api('save',{profile});document.dispatchEvent(new CustomEvent('noya-profile-updated',{detail:{name:profile.displayName.trim()}}));d.close();await refresh();}
+  values.publicEnabled=checkbox.checked;values.messagesEnabled=contact.checked;
+  try{const result=await api('save',{profile:values});document.dispatchEvent(new CustomEvent('noya-profile-updated',{detail:{name:result.profile?.display_name||values.displayName.trim()}}));d.close();if(!section.hidden)await refresh();}
   catch(e){status.textContent=e.message;save.disabled=false;}
  };
  actions.append(closeButton(d),save);d.append(actions);d.showModal();
