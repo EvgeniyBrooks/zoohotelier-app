@@ -797,6 +797,13 @@ document.getElementById('ai-form').addEventListener('submit',async e=>{
   if(version!==aiConversationVersion)return;
   const container=document.getElementById('ai-messages');
   for(const [role,content] of [['user',question],['assistant',data.answer]]){const el=document.createElement('div');el.className='ai-message '+role;el.textContent=content;container.append(el);aiHistory.push({role,content})}
+  if(data.courseAction==='start'||data.courseAction==='continue'){
+   const link=document.createElement('a');
+   link.href='./index.html';
+   link.className='button secondary';
+   link.textContent=data.courseAction==='start'?'Начать курс «Управление вниманием»':'Продолжить курс «Управление вниманием»';
+   container.lastElementChild.append(document.createElement('br'),link);
+  }
   if(aiHistory.length>8)aiHistory.splice(0,aiHistory.length-8);
   const rec=document.getElementById('ai-recommendations');rec.replaceChildren();rec.hidden=!data.recommendedLessons?.length;
   if(data.recommendedLessons?.length){

@@ -6,8 +6,8 @@ function res(){return {statusCode:200,setHeader(){return this},status(n){this.st
 test('rejects invalid Telegram auth before database',async()=>{const old=global.fetch;global.fetch=async()=>{throw Error('No DB access expected')};try{const r=res();await handler({method:'POST',body:{initData:'invalid',action:'noya_chat',messages:[{role:'user',content:'Привет'}]}},r);assert.equal(r.statusCode,401)}finally{global.fetch=old}});
 test('does not call AI when feature disabled',async()=>{const old=global.fetch;let aiCalled=false;global.fetch=async(url)=>{if(url.includes('openai.com')){aiCalled=true;throw Error('AI must be disabled')}let data=[];if(url.includes('/students?'))data=[{id:'11111111-1111-4111-8111-111111111111'}];if(url.includes('/admins?'))data=[{id:'22222222-2222-4222-8222-222222222222'}];return {ok:true,json:async()=>data}};try{const r=res();await handler({method:'POST',body:{initData:auth(),action:'noya_chat',messages:[{role:'user',content:'Как научить собаку?' }]}},r);assert.equal(r.statusCode,503);assert.equal(aiCalled,false)}finally{global.fetch=old}});
 
-async function withAi(run){
- const old=global.fetch,oldKey=process.env.OPENAI_API_KEY;let calls=0;
+async function withAi(run,courseData={}){
+ const old=global.fetch,oldKey=process.env.OPENAI_API_KEY;let calls=0,prompt='';
  process.env.NOYA_AI_ENABLED='true';process.env.OPENAI_API_KEY='mock-openai-key';
  global.fetch=async(url,options={})=>{
   let data=[];
@@ -16,11 +16,13 @@ async function withAi(run){
   if(url.includes('/club_dogs?'))data=[{id:'22222222-2222-4222-8222-222222222222',name:'Тест'}];
   if(url.includes('/noya_practice_feedback?'))data=[{lesson_id:'lesson',outcome:'partial',note:null}];
   if(url.includes('/rpc/noya_ai_reserve_request'))data=true;
-  if(url.includes('api.openai.com')){calls++;data={choices:[{message:{content:'Ответ '.repeat(600)}}]};}
+  const resource=new URL(url).pathname.split('/').pop();
+  if(Object.hasOwn(courseData,resource))data=courseData[resource];
+  if(url.includes('api.openai.com')){calls++;prompt=JSON.parse(options.body).messages[0].content;data={choices:[{message:{content:'Ответ '.repeat(600)}}]};}
   return {ok:true,json:async()=>data};
  };
  const ask=async(messages,extra={})=>{const r=res();await handler({method:'POST',body:{initData:auth(),action:'noya_chat',messages,...extra}},r);return r;};
- try{await run(ask,()=>calls);}finally{global.fetch=old;process.env.NOYA_AI_ENABLED='false';if(oldKey===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldKey;}
+ try{await run(ask,()=>calls,()=>prompt);}finally{global.fetch=old;process.env.NOYA_AI_ENABLED='false';if(oldKey===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldKey;}
 }
 test('member can ask a follow-up after a long NOYA answer',()=>withAi(async(ask,calls)=>{
  const first=await ask([{role:'user',content:'Что делать?'}]);assert.equal(first.statusCode,200);assert.ok(first.body.answer.length>1200);
@@ -34,4 +36,27 @@ test('chat limits reject oversized user and assistant input before spending AI q
 test('dog feedback without a note does not break NOYA',()=>withAi(async(ask)=>{
  assert.equal((await ask([{role:'user',content:'Как упростить упражнение?'}],{dogId:'22222222-2222-4222-8222-222222222222'})).statusCode,200);
 }));
+
+const course={courses:[{id:'attention'}],course_blocks:[{id:'block',block_number:1}],
+ lessons:[{id:'home',block_id:'block',day_number:1,title:'Правила дома'},
+  {id:'street',block_id:'block',day_number:2,title:'Закрытый урок'}],
+ noya_course_drip_starts:[{started_at:new Date().toISOString()}]};
+const question=[{role:'user',content:'Что делать на прогулке?'}];
+test('NOYA offers beginners the course and the available first lesson',()=>withAi(async(ask,calls,prompt)=>{
+ const response=await ask(question);
+ assert.equal(response.body.courseAction,'start');
+ assert.match(prompt(),/"title":"Правила дома","available":true/);
+ assert.doesNotMatch(prompt(),/Закрытый урок/);
+},course));
+test('NOYA uses the real release date without sending the locked lesson title',()=>withAi(async(ask,calls,prompt)=>{
+ const response=await ask(question);
+ assert.equal(response.body.courseAction,'continue');
+ assert.match(prompt(),/"available":false,"opensMsk":"[^"]+"/);
+ assert.doesNotMatch(prompt(),/Закрытый урок/);
+},{...course,course_lesson_completions:[{lesson_id:'home'}]}));
+test('NOYA switches to practical help after course completion',()=>withAi(async(ask,calls,prompt)=>{
+ const response=await ask(question);
+ assert.equal(response.body.courseAction,null);
+ assert.match(prompt(),/"status":"completed","completed":2,"total":2/);
+},{...course,course_lesson_completions:[{lesson_id:'home'},{lesson_id:'street'}]}));
 
