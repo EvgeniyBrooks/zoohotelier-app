@@ -150,9 +150,11 @@ byId('journey-profile-form').addEventListener('submit',async e=>{
  try{
   const result=await post('start',{dogId:byId('journey-existing').value||undefined,name:byId('journey-name').value,entryMode,goal,
    breed:byId('journey-breed').value,age:byId('journey-age').value,baseline:byId('journey-baseline').value});
-  const select=byId('journey-existing');
-  if(![...select.options].some(option=>option.value===result.dog.id))select.add(new Option(result.dog.name,result.dog.id));
-  select.value=result.dog.id;
+  data.dogs=[result.dog,...data.dogs.filter(dog=>dog.id!==result.dog.id)];
+  data.journeys=[result.journey,...data.journeys.filter(journey=>journey.dog_id!==result.dog.id)];
+  buildDogSelectors();
+  byId('journey-existing').value=result.dog.id;
+  updateCurrentDog();
   msg('journey-profile-message','Карточка сохранена.');
   await showStartAdvice(result.dog.id);
  }catch(err){msg('journey-profile-message',err.message,true);}

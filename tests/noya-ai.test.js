@@ -83,3 +83,38 @@ test('start advice does not call AI for a dog owned by someone else',()=>withAi(
  assert.equal(calls(),0);
 },{club_dogs:[]}));
 
+
+test('administrators can edit published lessons without changing access, while new lessons are drafts',async()=>{
+ const originalFetch=global.fetch;
+ const id='33333333-3333-4333-8333-333333333333';
+ const lesson={id,title:'Урок внимания',slug:'attention-lesson',topic:'attention',sort_order:1,cloudflare_video_id:'a'.repeat(32)};
+ let admin=true;
+ const writes=[];
+ global.fetch=async(url,options={})=>{
+  const target=new URL(url);
+  if(target.pathname.endsWith('/students'))return Response.json([{id}]);
+  if(target.pathname.endsWith('/admins'))return Response.json(admin?[{id}]:[]);
+  if(target.pathname.endsWith('/club_subscriptions'))return Response.json([]);
+  assert.ok(target.pathname.endsWith('/club_lessons'));
+  if(!options.method)return Response.json([{is_published:true}]);
+  const body=JSON.parse(options.body);
+  writes.push({method:options.method,body});
+  if(target.searchParams.get('is_published')==='eq.false')return Response.json([]);
+  return Response.json([{id,is_published:options.method==='PATCH',...body}]);
+ };
+ async function save(lesson){
+  const result=res();
+  await handler({method:'POST',body:{initData:auth(),action:'admin_save_lesson',lesson}},result);
+  return result;
+ }
+ try{
+  assert.equal((await save(lesson)).body.lesson.is_published,true);
+  assert.equal(Object.hasOwn(writes[0].body,'is_published'),false);
+  assert.equal((await save({...lesson,cloudflare_video_id:''})).statusCode,400);
+  assert.equal((await save({...lesson,id:undefined,cloudflare_video_id:''})).body.lesson.is_published,false);
+  assert.equal(writes[2].method,'POST');
+  admin=false;
+  assert.equal((await save(lesson)).statusCode,403);
+  assert.equal(writes.length,3);
+ }finally{global.fetch=originalFetch;}
+});

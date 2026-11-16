@@ -77,6 +77,7 @@ function card(person){
  if(brief)desc.append(el('div','noya-person-brief',brief));
  if(person.about){const about=el('p','noya-person-short',person.about);desc.append(about);}
  box.append(desc);
+ if(person.id===me?.id)return box;
  const heart=el('button','noya-person-fav',person.favorite?'♥':'♡');
  heart.type='button';heart.setAttribute('aria-label',person.favorite?'Убрать из избранного':'Добавить в избранное');
  heart.setAttribute('aria-pressed',String(person.favorite));

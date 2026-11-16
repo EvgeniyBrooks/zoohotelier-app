@@ -112,7 +112,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-member-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
 .noya-member-primary,.noya-member-secondary{flex:1;min-width:130px;text-align:center;text-decoration:none;font-size:13px;font-weight:850;border-radius:12px;padding:12px;border:0;cursor:pointer}
 .noya-member-primary{background:#f5fa45;color:#111}.noya-member-secondary{background:#343434;color:#fff}
-</style><script src="./assets/noya-russian-cities.js" defer></script><script src="./assets/noya-members.js?v=10" defer></script><style>
+</style><script src="./assets/noya-russian-cities.js" defer></script><script src="./assets/noya-members.js?v=11" defer></script><style>
 .noya-member-titlebar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:10px 0 20px}
 .noya-member-titlebar h1{margin:0;min-width:0;font:700 clamp(27px,7.1vw,42px)/1 Oswald,Impact,sans-serif;letter-spacing:-.7px}
 .noya-member-titlebar h1 span{color:#f5fa45}
@@ -282,9 +282,9 @@ body.noya-guided-home #noya-next-route{display:none!important}
  <section role="tabpanel" id="bonus-panel-ranking" aria-labelledby="bonus-tab-ranking" hidden><h2>Рейтинг участников</h2><p>По числу приглашённых друзей с подтверждённой первой оплатой. Продления не увеличивают число друзей. При равенстве — одинаковое место.</p><label for="bonus-period">Период</label><select id="bonus-period"><option value="month">Этот месяц · Москва</option><option value="all">За всё время</option></select><div id="bonus-ranking"></div></section>
  <button class="noya-bonus-card" type="button" data-open-account><span class="noya-bonus-icon" aria-hidden="true">☆</span><span><strong>Твои подарки</strong><small>За каждый месяц участия</small></span><span aria-hidden="true">→</span></button>
 </section>
-<section id="admin" class="screen" hidden style="background:#171717;color:#fff;border:1px solid #555;border-radius:16px;padding:18px;margin:16px 0"><h2 style="color:#f5fa45">NOYA CLUB · АДМИН</h2><a href="./index.html" class="button" style="margin:12px 0">Открыть курс «Управление вниманием» →</a><button id="admin-refresh" class="button secondary" type="button">Обновить статистику</button><p id="admin-state">Загрузка…</p><div id="admin-summary"></div><h3>Приоритеты диагностик</h3><div id="admin-topics"></div><h3>Результаты упражнений</h3><div id="admin-outcomes"></div><h3>УПРАВЛЕНИЕ УРОКАМИ</h3>
+<section id="admin" class="screen" hidden style="background:#171717;color:#fff;border:1px solid #555;border-radius:16px;padding:18px;margin:16px 0"><h2 style="color:#f5fa45">NOYA CLUB · АДМИН</h2><a href="./index.html" class="button" style="margin:12px 0">Открыть курс «Управление вниманием» →</a><button id="admin-refresh" class="button secondary" type="button" disabled>Обновить статистику</button><p id="admin-state">Загрузка…</p><div id="admin-summary"></div><h3>Приоритеты диагностик</h3><div id="admin-topics"></div><h3>Результаты упражнений</h3><div id="admin-outcomes"></div><h3>УПРАВЛЕНИЕ УРОКАМИ</h3>
 <p>Добавляй уроки в библиотеку. Новые уроки сохраняются как черновики и не видны участникам.</p>
-<form id="admin-lesson-form" class="card" style="display:grid;gap:10px">
+<form id="admin-lesson-form" class="card" style="display:none;gap:10px">
 <label>Название урока<input id="admin-lesson-title" required minlength="3" maxlength="160" placeholder="Например: Как научить собаку обращать внимание" style="width:100%;padding:12px;background:#222;color:#fff;border:1px solid #555;border-radius:10px"></label>
 <label>Короткий адрес (slug, латиница)<input id="admin-lesson-slug" required pattern="[a-z0-9-]{3,100}" placeholder="vnimanie-na-ulice" style="width:100%;padding:12px;background:#222;color:#fff;border:1px solid #555;border-radius:10px"></label>
 <label>Тема<select id="admin-lesson-topic" class="route-select"><option value="home">Правила дома</option><option value="understanding">Понимание собаки</option><option value="attention">Внимание и контакт</option><option value="social">Раздражители и социализация</option><option value="walks">Прогулки</option><option value="emotions">Эмоции и страхи</option><option value="advanced">Продвинутые упражнения</option></select></label>
@@ -836,8 +836,10 @@ async function checkNoyaTelegram(){
  }catch(e){el.hidden=false;el.textContent='Не удалось подключиться. Проверь соединение и попробуй ещё раз.'}
 }
 let adminLessonCache=[];
+const adminLessonSubmit=document.querySelector('#admin-lesson-form [type=submit]');
 function resetAdminLesson(){
  document.getElementById('admin-lesson-form').reset();document.getElementById('admin-lesson-id').value='';
+ adminLessonSubmit.textContent='Сохранить черновик';
  document.getElementById('admin-lesson-state').textContent='Новый урок — черновик';
 }
 async function loadAdminLessons(){
@@ -855,7 +857,8 @@ async function loadAdminLessons(){
    const edit=document.createElement('button');edit.type='button';edit.className='button secondary';edit.textContent='Редактировать';
    edit.onclick=()=>{
     for(const [key,id] of [['id','admin-lesson-id'],['title','admin-lesson-title'],['slug','admin-lesson-slug'],['description','admin-lesson-description'],['topic','admin-lesson-topic'],['sort_order','admin-lesson-order'],['duration_seconds','admin-lesson-duration'],['cloudflare_video_id','admin-lesson-video']])document.getElementById(id).value=l[key]??'';
-    document.getElementById('admin-lesson-state').textContent=l.is_published?'Внимание: редактирование опубликованного урока сейчас сохранит его как черновик.':'Редактирование черновика';
+    adminLessonSubmit.textContent=l.is_published?'Сохранить изменения':'Сохранить черновик';
+    document.getElementById('admin-lesson-state').textContent=l.is_published?'Редактирование опубликованного урока':'Редактирование черновика';
     document.getElementById('admin-lesson-form').scrollIntoView({behavior:'smooth',block:'start'});
    };
    row.append(name,meta,edit);box.append(row);
@@ -867,14 +870,14 @@ document.getElementById('admin-lesson-form').addEventListener('submit',async e=>
  e.preventDefault();const form=e.currentTarget,button=form.querySelector('[type=submit]'),status=document.getElementById('admin-lesson-state');
  const initData=window.Telegram?.WebApp?.initData;if(!initData)return;
  const val=id=>document.getElementById(id).value.trim();
- const lesson={id:val('admin-lesson-id')||undefined,title:val('admin-lesson-title'),slug:val('admin-lesson-slug'),topic:val('admin-lesson-topic'),description:val('admin-lesson-description'),sort_order:Number(val('admin-lesson-order')),duration_seconds:val('admin-lesson-duration')?Number(val('admin-lesson-duration')):null,cloudflare_video_id:val('admin-lesson-video'),is_published:false};
+ const lesson={id:val('admin-lesson-id')||undefined,title:val('admin-lesson-title'),slug:val('admin-lesson-slug'),topic:val('admin-lesson-topic'),description:val('admin-lesson-description'),sort_order:Number(val('admin-lesson-order')),duration_seconds:val('admin-lesson-duration')?Number(val('admin-lesson-duration')):null,cloudflare_video_id:val('admin-lesson-video')};
  button.disabled=true;status.textContent='Сохраняем…';
  try{
   const r=await fetch('/api/club-lessons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'admin_save_lesson',initData,lesson})});
   const data=await r.json();if(!r.ok)throw Error(data.error||'Не удалось сохранить урок');
-  status.textContent='Черновик сохранён. Участники пока не видят этот урок.';
+  status.textContent=data.lesson.is_published?'Изменения опубликованного урока сохранены.':'Черновик сохранён. Участники пока не видят этот урок.';
   document.getElementById('admin-lesson-id').value=data.lesson.id;
-  await loadAdminLessons();await loadClubAdmin();
+  await loadClubAdmin();
  }catch(err){status.textContent=err.message}finally{button.disabled=false}
 });
 async function loadClubAdmin(){
@@ -883,10 +886,17 @@ async function loadClubAdmin(){
  const state=document.getElementById('admin-state');
  try{
   const r=await fetch('/api/club-lessons?admin=overview',{headers:{'x-telegram-init-data':initData}});
-  if(r.status===403)return;
+  if(r.status===403){
+   state.textContent='Раздел доступен только администратору.';
+   document.getElementById('admin-lesson-form').style.display='none';
+   document.getElementById('admin-refresh').disabled=true;
+   return;
+  }
   const data=await r.json();
   if(!r.ok)throw Error('Не удалось загрузить аналитику (HTTP '+r.status+')');
   document.getElementById('admin-nav').style.display='flex';
+  document.getElementById('admin-lesson-form').style.display='grid';
+  document.getElementById('admin-refresh').disabled=false;
   const summary=document.getElementById('admin-summary');summary.replaceChildren();
   for(const [name,key] of [['Активные подписчики','activeMembers'],['Собаки','dogs'],['Диагностики','diagnosedDogs'],['Пройденные уроки','completedLessons'],['Результаты практики','practiceReports'],['Диалоги за 24 часа','aiChatsLast24h'],['Опубликованные уроки','publishedLessons']]){
    const p=document.createElement('p');p.textContent=name+': '+data.summary[key];summary.append(p);

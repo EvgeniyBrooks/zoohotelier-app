@@ -81,10 +81,20 @@ module.exports=async function handler(req,res){
    const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
    const updating=typeof lessonId==='string'&&/^[a-f0-9-]{36}$/i.test(lessonId);
    if(lessonId&&!updating)throw fail(400,'Invalid lesson ID');
-   const path='club_lessons'+(updating?'?id=eq.'+encodeURIComponent(lessonId):'');
+   const preservePublication=updating&&v.is_published===undefined;
+   if(preservePublication)delete record.is_published;
+   const filter=updating?'?id=eq.'+encodeURIComponent(lessonId):'';
+   const path='club_lessons'+filter+(preservePublication&&!videoId?'&is_published=eq.false':'');
    const response=await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL+'/rest/v1/'+path,{method:updating?'PATCH':'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(record),signal:AbortSignal.timeout(10000)});
    if(!response.ok){const problem=await response.json().catch(()=>null);if(problem?.code==='23505')throw fail(409,'Такой slug уже существует');throw fail(502,'Не удалось сохранить урок в базе')}
-   const rows=await response.json();if(!rows.length)throw fail(404,'Урок не найден');
+   const rows=await response.json();
+   if(!rows.length){
+    if(preservePublication&&!videoId){
+     const [current]=await db('club_lessons'+filter+'&select=is_published&limit=1');
+     if(current?.is_published)throw fail(400,'Для опубликованного урока нужен Cloudflare Stream video ID');
+    }
+    throw fail(404,'Урок не найден');
+   }
    return res.status(200).json({ok:true,lesson:rows[0]});
   }
   if(req.method==='GET'&&req.query?.admin==='overview'){
