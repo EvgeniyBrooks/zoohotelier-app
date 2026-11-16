@@ -112,6 +112,7 @@
       }
       fields = []; checks = []; storageKey = null; ownerId = null;
       $('.reward-reader-cover img').src = entry.image;
+      $('.reward-reader-cover img').hidden = month === 5;
       $('[data-reward-month]').textContent = `${month}-й месяц · ${entry.level}`;
       $('#reward-reader-title').textContent = entry.title;
       $('.reward-reader-format').textContent = `${entry.format} · Цифровой подарок`;
@@ -180,7 +181,12 @@
       claim.disabled = true; claim.textContent = 'Открываем…'; status.textContent = 'Проверяем доступ к подарку…';
       panel.setAttribute('aria-busy','true');
       try {
-        const response = await fetch(`/api/club-diagnostic?reward=${month}`, {headers:{'x-telegram-init-data':initData}, cache:'no-store', signal:requestController.signal});
+        const coinGift=month===5;
+        const response = await fetch(coinGift?'/api/club-diagnostic':`/api/club-diagnostic?reward=${month}`, {
+          method:coinGift?'POST':'GET',headers:coinGift?{'Content-Type':'application/json'}:{'x-telegram-init-data':initData},
+          body:coinGift?JSON.stringify({action:'claim_fifth_month_gift',initData}):undefined,
+          cache:'no-store',signal:requestController.signal
+        });
         const data = await response.json();
         if (currentRequest !== requestNumber || panel.hidden) return;
         if (response.status === 401) {
@@ -192,8 +198,16 @@
           claim.textContent = 'Пока закрыто'; claim.disabled = true;
           await refreshAccount(); return;
         }
-        if (!response.ok || data.ok !== true || data.reward?.month !== month || !Array.isArray(data.reward.sections)) throw new Error('Gift unavailable');
+        if (!response.ok || data.ok !== true)throw new Error('Gift unavailable');
         if (!canOpen() || String(getAccount()?.user?.id) !== requestOwner) {eligibility();return;}
+        if(coinGift){
+          if(typeof data.credited!=='boolean'||!Number.isInteger(data.balance))throw new Error('Gift unavailable');
+          material={month};ownerId=requestOwner;claim.hidden=true;
+          status.textContent=(data.credited?'Начислено 10 000 NOINCOINS.':'Ты уже получил этот подарок.')
+            +' Баланс: '+data.balance.toLocaleString('ru-RU')+' NOINCOINS.';
+          return;
+        }
+        if(data.reward?.month!==month||!Array.isArray(data.reward.sections))throw new Error('Gift unavailable');
         if(month===2){
           body.hidden=false;
           const assessment=document.createElement('div');

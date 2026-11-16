@@ -67,6 +67,7 @@
 .account-reward-state svg{width:12px;height:12px;flex-shrink:0}
 .account-reward-state:not(:disabled){cursor:pointer;background:#185fdb;color:#fff;box-shadow:0 0 14px #2d79ff80}
 .account-reward-state:not(:disabled):hover{background:#1453c4}
+.account-coin-gift{color:#f5fa45;font:750 clamp(30px,9vw,54px)/1 Oswald,system-ui,sans-serif}
 .account-reward-title{min-height:40px;margin:0 0 6px!important;color:#f1f2e9!important;font-size:14px!important;font-weight:750;line-height:1.4}
 .account-reward-caption{min-height:46px}
 .account-gift-format{display:block;margin:0 0 12px;color:#929584;font-size:9px;letter-spacing:.3px;text-align:center}

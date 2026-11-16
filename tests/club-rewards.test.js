@@ -158,8 +158,11 @@ test('each earned month returns its own complete private reward and no other rew
     assert.equal(res.body.reward.level,levels[month-1]);
     assert.equal(typeof res.body.reward.title,'string');
     assert.ok(res.body.reward.title.length>0);
-    assert.ok(Array.isArray(res.body.reward.sections)&&res.body.reward.sections.length>0);
-    assert.ok(Array.isArray(res.body.reward.worksheet.fields)&&res.body.reward.worksheet.fields.length>0);
+    if(month===5)assert.equal(res.body.reward.title,'10 000 ноинкоинов');
+    else {
+      assert.ok(Array.isArray(res.body.reward.sections)&&res.body.reward.sections.length>0);
+      assert.ok(Array.isArray(res.body.reward.worksheet.fields)&&res.body.reward.worksheet.fields.length>0);
+    }
     assert.equal(res.body.reward.image,'/assets/rewards/'+String(month).padStart(2,'0')+'.webp');
   }
 });
@@ -229,5 +232,33 @@ test('reward flags do not bypass POST or DELETE subscription checks or normal bo
       assert.equal(calls.length,3);
       assert.ok(calls.every(call=>call.init.method===undefined));
     }
+  }
+});
+
+test('month five coins require a completed fifth paid period and confirmed sixth payment',async()=>{
+  const start=Date.parse('2026-06-01T12:00:00Z'),day=86400000;
+  const row={...subscription(new Date(start).toISOString(),'2027-01-01T00:00:00Z'),prodamus_subscription_id:'42'};
+  for(const [elapsed,paymentCount,expected] of [[149,6,403],[150,5,403],[150,6,200]]){
+    let claims=0;
+    const {res}=await request({method:'POST',now:new Date(start+elapsed*day).toISOString(),
+      body:{action:'claim_fifth_month_gift',studentId:foreignStudentId,coins:99999},
+      fetchResponse:async(url,opts)=>{
+        const table=url.pathname.split('/').pop();
+        let data;
+        if(table==='students')data=[{id:studentId}];
+        else if(table==='club_subscriptions')data=[row];
+        else if(table==='payments')data=Array.from({length:paymentCount},(_,i)=>({
+          prodamus_payment_id:String(i+1),product_id:'noya:42',status:'paid',currency:'RUB',amount:2900,
+          paid_at:new Date(start+(i===5?149:i*30)*day).toISOString()
+        }));
+        else if(table==='noya_claim_fifth_month_coin_gift'){
+          claims++;
+          assert.deepEqual(JSON.parse(opts.body),{p_student_id:studentId});
+          data=[{credited:true,balance:10000}];
+        }else throw Error('Unexpected table '+table);
+        return {ok:true,json:async()=>data};
+      }});
+    assert.equal(res.statusCode,expected);
+    assert.equal(claims,expected===200?1:0);
   }
 });
