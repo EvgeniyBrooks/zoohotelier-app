@@ -68,7 +68,7 @@
     card.className = 'account-reward-card';
     card.setAttribute('role', 'listitem');
     card.setAttribute('aria-label', secret ? `${month}-й месяц: ${reward.level}. Секретный подарок` : `${month}-й месяц: ${reward.level}. ${reward.title}`);
-    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><button class="account-reward-state" type="button" disabled>${lock}<span>Закрыто</span></button><button class="account-reward-preview" type="button">Подробнее</button>`;
+    card.innerHTML = `<div class="account-reward-month">${month} ${month === 1 ? 'месяц' : month < 5 ? 'месяца' : 'месяцев'}</div><h3></h3><p class="account-reward-title"></p><div class="account-reward-art" aria-hidden="true"><img width="300" height="300" alt="" loading="lazy" decoding="async"></div><button class="account-reward-state" type="button" disabled>${lock}<span>Забрать подарок</span></button><button class="account-reward-preview" type="button">Подробнее</button>`;
     card.querySelector('h3').textContent = reward.level;
     card.querySelector('.account-reward-title').textContent = secret ? 'Пока в секрете' : (reward.cardLabel || reward.title);
     if (secret) {
@@ -219,15 +219,11 @@
       }
       card.dataset.unlocked = String(unlocked);
       const button = card.querySelector('.account-reward-state');
-      const isSecondGift = index === 1;
-      const stateLabel = isSecondGift ? 'Забрать подарок' : ready ? (unlocked && active ? 'Забрать →' : 'Пока закрыто') : phase === 'loading' ? 'Проверяем…' : ['telegram','auth'].includes(phase) ? 'Вход через Telegram' : 'Нет данных';
-      button.querySelector('span').textContent = stateLabel;
       button.querySelector('svg').style.display = ready && !unlocked ? '' : 'none';
       button.disabled = !reader || !unlocked || !active;
       card.querySelector('.account-reward-preview').disabled = !reader || (index >= 6 && !revealed);
       card.querySelector('.account-reward-preview').hidden = (unlocked && active) || (index >= 6 && !revealed);
-      button.hidden = !isSecondGift && index < 6 && !(unlocked && active);
-      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок за ${index + 1}-й месяц откроется после его завершения и оплаты ${index + 2}-го месяца`) : stateLabel);
+      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок за ${index + 1}-й месяц откроется после его завершения и оплаты ${index + 2}-го месяца`) : 'Забрать подарок');
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
     const nextTitle = months >= 6 ? 'секретный подарок' : REWARDS[months]?.title;
