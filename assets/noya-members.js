@@ -124,7 +124,7 @@ function openPerson(person){
  detail(d,'С ЧЕМ МОГУ ПОМОЧЬ',person.helpWith);
  detail(d,'ЧТО ИЩУ',person.lookingFor);
  detail(d,'ИНТЕРЕСЫ',person.hobbies);
- d.append(el('p','noya-person-stats','Уроки: '+person.lessons+' · Практика: '+person.practices+' · Эфиры: '+person.streams+' · Приглашения: '+person.referrals));
+ d.append(el('p','noya-person-stats','Дней участия: '+person.activeDays+' · Оплативших приглашённых: '+person.referrals));
  const links=el('div','noya-member-social-links');
  for(const [kind,value,label] of [['instagram',person.instagram,'Instagram'],['telegram',person.telegramChannel,'Telegram-канал']]){
   const url=safeSocial(kind,value);

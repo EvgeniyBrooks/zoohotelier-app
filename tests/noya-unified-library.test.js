@@ -52,7 +52,7 @@ test('member directory, ratings, privacy and information links are connected',()
  assert.match(page,/data-members-tab="all"/);
  assert.match(page,/data-members-tab="favorites"/);
  assert.match(ui,/people=data\.leaders/);
- assert.match(api,/b\.points-a\.points[^\n]+rank:i\+1/);
+ assert.match(api,/sort\(memberRanking\.compare\)[^\n]+rank:i\+1/);
  assert.match(ui,/function openPerson\(/);
  assert.match(ui,/function edit\(/);
  assert.match(ui,/https:\/\/t\.me\//);

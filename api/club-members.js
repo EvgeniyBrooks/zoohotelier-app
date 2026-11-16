@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import ranking from '../lib/noya-member-ranking.cjs';
 
 const DB = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -36,17 +37,23 @@ async function db(resource,method='GET',payload){
   return response.status===204?[]:response.json();
 }
 function validId(id){return typeof id==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8a-f][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id);}
+async function allRows(resource) {
+  const rows=[];
+  const size=500;
+  for(let offset=0;;offset+=size){
+    const page=await db(resource+'&limit='+size+'&offset='+offset);
+    rows.push(...page);
+    if(page.length<size)return rows;
+  }
+}
 function score(p){
   return {
-    points:Math.max(0,Number(p?.points)||0),
     lessons:Math.max(0,Number(p?.lessons)||0),
     practices:Math.max(0,Number(p?.practices)||0),
-    streams:Math.max(0,Number(p?.streams)||0),
-    referrals:Math.max(0,Number(p?.referrals)||0)
+    streams:Math.max(0,Number(p?.streams)||0)
   };
 }
-function publicCard(p,scores,liked){
-  const stats=score(scores.get(p.student_id));
+function publicCard(p,stats,liked){
   const safeAvatar=typeof p.avatar_url==='string'&&/^https:\/\//i.test(p.avatar_url)?p.avatar_url:null;
   const username=typeof p.contact_username==='string'&&/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(p.contact_username)?p.contact_username:null;
   return {id:p.student_id,name:p.display_name||'Участник NOYA',about:p.about||'',avatar:safeAvatar,
@@ -103,14 +110,16 @@ export default async function handler(req,res){
       return res.status(200).json({ok:true,favorite:req.body.favorite});
     }
     if(action!=='list')throw error(400,'Неизвестное действие');
-    const [profiles,mine,scores,likes,counts,activeSubscriptions,activeTrials]=await Promise.all([
+    const [profiles,mine,scores,likes,counts,activeSubscriptions,activeTrials,payments,attributions]=await Promise.all([
       db(base+'&public_enabled=eq.true&order=updated_at.desc&limit=500'),
       db(base+'&student_id=eq.'+me+'&limit=1'),
-      db('noya_member_scores_v?select=student_id,points,lessons,practices,streams,referrals&limit=2000'),
+      db('noya_member_scores_v?select=student_id,lessons,practices,streams&limit=2000'),
       db('noya_member_favorites?select=favorite_student_id&student_id=eq.'+me+'&limit=1000'),
       db('noya_member_count_v?select=count&limit=1'),
       db('club_subscriptions?select=student_id,start_date,end_date&status=eq.active&limit=10000'),
-      db('noya_club_trials?select=student_id,starts_at,ends_at&limit=10000')
+      db('noya_club_trials?select=student_id,starts_at,ends_at&limit=10000'),
+      allRows('payments?select=student_id,product_id,paid_at&product_type=eq.club&product_id=like.noya:*&status=eq.paid&currency=eq.RUB&amount=gt.0&prodamus_payment_id=not.is.null&paid_at=not.is.null&order=paid_at.asc,id.asc'),
+      now<ranking.LAUNCH?[]:allRows('noya_referral_attributions?select=inviter_student_id,referred_student_id,created_at&order=referred_student_id.asc')
     ]);
     // A public profile is discoverable only while its owner has active club access.
     const activeIds=new Set([
@@ -120,10 +129,12 @@ export default async function handler(req,res){
     const visibleProfiles=profiles.filter(p=>activeIds.has(p.student_id));
     const scoreById=new Map(scores.map(s=>[s.student_id,s]));
     const liked=new Set(likes.map(f=>f.favorite_student_id));
-    const cards=visibleProfiles.map(p=>publicCard(p,scoreById,liked));
-    const leaders=[...cards].sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'ru')||a.id.localeCompare(b.id)).map((card,i)=>({...card,rank:i+1}));
+    const memberRanking=ranking.membershipRanking(payments,attributions,now);
+    const memberStats=id=>({...score(scoreById.get(id)),...memberRanking.score(id)});
+    const cards=visibleProfiles.map(p=>publicCard(p,memberStats(p.student_id),liked));
+    const leaders=[...cards].sort(memberRanking.compare).map((card,i)=>({...card,rank:i+1}));
     const myPublic=visibleProfiles.some(p=>p.student_id===me);
-    const myScore=score(scoreById.get(me));
+    const myScore=memberStats(me);
     const myRank=leaders.find(x=>x.id===me)?.rank||null;
     const defaultName=(typeof user.first_name==='string'?user.first_name.trim():'')||'Участник NOYA';
     return res.status(200).json({
