@@ -45,9 +45,9 @@
       <div class="account-progress" id="account-progress" role="progressbar" aria-label="Уровни участия в клубе" aria-valuemin="0" aria-valuemax="12"><div class="account-progress-fill" id="account-progress-fill"></div></div>
       <div class="account-rail-toolbar"><span class="account-rail-hint">12 месяцев вместе</span><div class="account-rail-controls"><button class="account-icon-button" id="account-months-prev" type="button" aria-label="Предыдущие месяцы">${chevron.replace('<svg ', '<svg style="transform:rotate(180deg)" ')}</button><button class="account-icon-button" id="account-months-next" type="button" aria-label="Следующие месяцы">${chevron}</button></div></div>
       <div class="account-reward-rail" id="account-reward-rail" role="list" aria-label="12 месяцев участия" tabindex="0"></div>
-      <p class="account-next-level" id="account-next-level">Первый подарок открывается после подтверждённой оплаты второго месяца.</p>
+      <p class="account-next-level" id="account-next-level">Первый подарок откроется, когда первый месяц закончится и второй будет оплачен.</p>
       <a class="account-route-link" id="account-route-link" href="./club.html#route" hidden>Продолжить свой маршрут →</a>
-      <details class="account-reward-rules"><summary>Как открываются подарки</summary><p>Уровни начисляются за полные календарные месяцы непрерывной подписки. При вступлении — 0 из 12. Оплата за год не открывает все подарки сразу.</p><p>Читать подарки в клубе можно при активной подписке. После перерыва отсчёт начинается заново. Полученные материалы можно скачать и оставить себе.</p><p>Все подарки цифровые. Предметы на картинках — иллюстрации. «Кинолог» и «Суперкинолог» — названия клубных уровней, а не профессиональная квалификация.</p></details>
+      <details class="account-reward-rules"><summary>Как открываются подарки</summary><p>За каждый завершённый 30-дневный период подписки открывается подарок, если следующий период оплачен. Первый подарок — после завершения первого месяца и оплаты второго. Двенадцатый — после завершения двенадцатого и оплаты тринадцатого.</p><p>Читать подарки в клубе можно при активной подписке. После перерыва отсчёт начинается заново. Полученные материалы можно скачать и оставить себе.</p><p>Все подарки цифровые. Предметы на картинках — иллюстрации. «Кинолог» и «Суперкинолог» — названия клубных уровней, а не профессиональная квалификация.</p></details>
     </section>
     
   </div></div>`;
@@ -218,11 +218,11 @@
       card.querySelector('.account-reward-preview').disabled = !reader || (index >= 6 && !revealed);
       card.querySelector('.account-reward-preview').hidden = (unlocked && active) || (index >= 6 && !revealed);
       button.hidden = index < 6 && !(unlocked && active);
-      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : index === 0 ? 'Методичка откроется после подтверждённой оплаты второго месяца' : `Подарок откроется после ${index + 1} полных месяцев участия`) : stateLabel);
+      button.setAttribute('aria-label', ready ? (unlocked && active ? `Забрать подарок: ${REWARDS[index].title}` : `Подарок за ${index + 1}-й месяц откроется после его завершения и оплаты ${index + 2}-го месяца`) : stateLabel);
     });
     const next = dateLabel(ready ? account.loyalty?.nextUnlockAt : null, true);
     const nextTitle = months >= 6 ? 'секретный подарок' : REWARDS[months]?.title;
-    byId('account-next-level').textContent = months === 12 ? 'Все 12 подарков открыты. Целый год вместе с NOYA! Продолжай работу по своему маршруту.' : active && next && nextTitle ? `Следующий подарок — «${nextTitle}». Откроется ${next} при действующей подписке.` : active && nextTitle ? `Впереди — «${nextTitle}». Подарок откроется после следующего полного месяца непрерывного участия при активной подписке.` : 'Первый подарок — после оплаты второго месяца.';
+    byId('account-next-level').textContent = months === 12 ? 'Все 12 подарков открыты. Целый год вместе с NOYA! Продолжай работу по своему маршруту.' : active && next && nextTitle ? `Следующий подарок — «${nextTitle}». Откроется ${next} при действующей подписке.` : active && nextTitle ? `Впереди — «${nextTitle}». Подарок откроется после завершения ${months + 1}-го месяца и оплаты ${months + 2}-го.` : 'Первый подарок — после завершения первого месяца и оплаты второго.';
     byId('account-route-link').hidden = months !== 12;
     reader?.refresh();
     updateRailButtons();

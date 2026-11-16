@@ -2120,26 +2120,20 @@ async function accountSubscriptions(studentId){
   }
 }
 async function applyProdamusPaidLoyalty(studentId,subscriptions,account,now){
-  if(process.env.NOYA_PRODAMUS_ENABLE!=="1" || !studentId)return;
+  if(!studentId)return;
   const current=subscriptions.filter(row=>subscriptionPeriod(row,now).status==="active")
     .sort((a,b)=>(dateValue(b.start_date)??0)-(dateValue(a.start_date)??0))[0];
   const providerId=current?.prodamus_subscription_id;
+  if(!providerId && process.env.NOYA_PRODAMUS_ENABLE!=="1")return;
   account.loyalty.unlockedMonths=0;
   account.loyalty.nextUnlockAt=null;
   if(!providerId || account.subscription.status!=="active")return;
-  const payments=await db("payments?select=prodamus_payment_id,paid_at,product_id,status"
-    +"&student_id=eq."+encodeURIComponent(studentId)
-    +"&product_type=eq.club&product_id=eq."+encodeURIComponent("noya:"+providerId)
-    +"&status=eq.paid&order=paid_at.asc&limit=1000");
+  const {paidGiftProgress,giftPaymentsPath}=require('../lib/club-paid-gifts');
+  const payments=await db(giftPaymentsPath(studentId,providerId));
   if(!Array.isArray(payments)||payments.length>=1000)throw Object.assign(new Error("Payment history unavailable"),{status:502});
-  const first=dateValue(current.start_date);
-  const unique=new Set(payments.filter(row=>typeof row.prodamus_payment_id==="string"
-    && row.prodamus_payment_id.trim()
-    && dateValue(row.paid_at)!==null
-    && (first===null||dateValue(row.paid_at)>=first-72*3600000))
-    .map(row=>row.prodamus_payment_id));
-  // First paid period starts membership; second confirmed payment earns month 1 gift.
-  account.loyalty.unlockedMonths=Math.min(12,Math.max(0,unique.size-1));
+  const progress=paidGiftProgress(payments,providerId,dateValue(current.start_date),now);
+  account.loyalty.unlockedMonths=progress.unlockedMonths;
+  account.loyalty.nextUnlockAt=progress.nextUnlockAt;
 }
 function recommend(a){
   const s={understanding:0,attention:0,social:0,walks:0,home:0,emotions:0,advanced:0};

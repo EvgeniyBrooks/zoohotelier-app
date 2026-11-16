@@ -48,7 +48,7 @@
       telegramLink.hidden = true;
       claim.disabled = false;
       if (phase === 'telegram' || phase === 'auth') {
-        status.textContent = phase === 'auth' ? 'Сессия Telegram закончилась. Открой мини-приложение заново.' : selected.month === 1 ? 'Методичка открывается после оплаты второго месяца. Войди через Telegram, чтобы проверить доступ.' : `Подарок откроется после ${selected.month} полных месяцев участия. Войди через Telegram, чтобы увидеть свой прогресс.`;
+        status.textContent = phase === 'auth' ? 'Сессия Telegram закончилась. Открой мини-приложение заново.' : 'Войди через Telegram, чтобы проверить доступ к подарку.';
         telegramLink.hidden = false;
       } else if (phase === 'loading') {
         status.textContent = 'Проверяем твою подписку…';
@@ -60,7 +60,7 @@
         status.textContent = selected.month === 1 ? 'Методичка «101 трюк» доступна. Нажми «Забрать», чтобы получить ссылку на PDF.' : 'Твой подарок уже доступен. Открой его и выбери первое задание.';
         claim.hidden = false; claim.textContent = 'Забрать подарок →';
       } else {
-        status.textContent = selected.month === 1 ? 'Методичка откроется после подтверждённой оплаты второго месяца при активной подписке.' : `Откроется после ${selected.month} полных месяцев участия при активной подписке.`;
+        status.textContent = `Подарок откроется после завершения ${selected.month}-го месяца и оплаты ${selected.month + 1}-го.`;
         claim.hidden = false; claim.disabled = true; claim.textContent = 'Пока закрыто';
       }
     }
@@ -130,7 +130,7 @@
           claim.hidden=true;telegramLink.hidden=false;return;
         }
         if (response.status===403) {
-          status.textContent='Методичка доступна только после подтверждённой оплаты второго месяца.';
+          status.textContent='Методичка откроется после завершения первого месяца и подтверждённой оплаты второго.';
           claim.hidden=false;claim.disabled=true;claim.textContent='Пока закрыто';
           await refreshAccount();return;
         }
