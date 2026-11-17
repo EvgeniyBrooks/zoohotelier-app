@@ -134,3 +134,13 @@ test('the podcast folder serves its own episode and signs playback only for club
  assert.equal(allowed.code,200);
  assert.equal(allowed.body.token,'test-signed-stream-token');
 });
+
+test('the training folder opens its own video without mixing it with the podcast',async()=>{
+ const streamId='reinforcement-and-punishment';
+ const catalog=await run('training_list',null,{paid:true});
+ assert.equal(catalog.code,200);
+ assert.deepEqual(catalog.body.streams.map(({id,title})=>({id,title})),[{id:streamId,title:'Виды наказания и поощрения'}]);
+ assert.equal((await run('training_watch',null,{paid:true,streamId})).code,200);
+ assert.equal((await run('podcast_watch',null,{paid:true,streamId})).code,404);
+ assert.equal((await run('training_watch',null,{streamId})).code,403);
+});

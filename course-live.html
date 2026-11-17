@@ -72,15 +72,17 @@ dialog iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:
 "use strict";
 let streams=[],favorites=new Set(),watched=new Set(),loading=false,activeDialog=null,playerSdkPromise=null;
 const params=new URLSearchParams(location.search);
-const isPodcast=params.get('folder')==='podcast';
+const folderId=params.get('folder');
+const folderTitle=folderId==='podcast'?'Подкаст':folderId==='training'?'Виды наказания и поощрения':null;
+const videoAction=folderId==='podcast'||folderId==='training'?folderId:'live';
 let deepLinkId=params.get('open')||null;
 const list=document.getElementById('list'),search=document.getElementById('search');
 const counter=document.getElementById('live-numbers'),statusEl=document.getElementById('status');
-if(isPodcast){
- document.title='Подкаст · NOYA CLUB';
- document.getElementById('library-heading').textContent='ПОДКАСТ';
+if(folderTitle){
+ document.title=folderTitle+' · NOYA CLUB';
+ document.getElementById('library-heading').textContent=folderTitle;
  document.getElementById('live-count').hidden=true;
- search.setAttribute('aria-label','Поиск по выпускам');
+ search.setAttribute('aria-label','Поиск по видео');
 }
 window.Telegram?.WebApp?.ready();
 function api(action,extra){
@@ -96,7 +98,7 @@ function api(action,extra){
  });
 }
 function updateCounter(){
- if(isPodcast)return;
+ if(folderTitle)return;
  const valid=new Set(streams.map(s=>s.id));
  let count=0;
  for(const id of watched)if(valid.has(id))count++;
@@ -110,7 +112,7 @@ function render(){
  if(!found.length){
   const empty=document.createElement('div');
   empty.className='empty';
-  empty.textContent=q?'По запросу ничего не найдено':(isPodcast?'Выпусков пока нет.':'Опубликованных эфиров пока нет.');
+  empty.textContent=q?'По запросу ничего не найдено':(folderTitle?'Видео пока нет.':'Опубликованных эфиров пока нет.');
   list.append(empty);return;
  }
  const fragment=document.createDocumentFragment();
@@ -124,11 +126,11 @@ function render(){
    const img=document.createElement('img');img.src=s.cover_url;img.alt='Обложка: '+s.title;img.loading='lazy';img.decoding='async';
    cover.append(img);
   }else{
-   const placeholder=document.createElement('span');placeholder.className='cover-placeholder';placeholder.textContent=isPodcast?'ПОДКАСТ':'ПРЯМЫЕ ЭФИРЫ';cover.append(placeholder);
+   const placeholder=document.createElement('span');placeholder.className='cover-placeholder';placeholder.textContent=folderTitle||'ПРЯМЫЕ ЭФИРЫ';cover.append(placeholder);
   }
   const play=document.createElement('span');play.className='cover-play';play.textContent='▶';play.setAttribute('aria-hidden','true');cover.append(play);
   cover.onclick=()=>watch(s);card.append(cover);
-  if(!isPodcast&&window.NOYAMaterials){
+  if(!folderTitle&&window.NOYAMaterials){
    const widget=window.NOYAMaterials.controls('live',s.id,{onChanged(action,state){
     if(action==='favorite'){if(state.favorited)favorites.add(s.id);else favorites.delete(s.id);}
     if(action==='complete'){if(state.completed)watched.add(s.id);else watched.delete(s.id);updateCounter();}
@@ -144,7 +146,7 @@ async function reload(){
  if(loading||document.hidden)return;
  loading=true;
  try{
-  const data=await api(isPodcast?'podcast_list':'live_list');
+  const data=await api(videoAction+'_list');
   streams=Array.isArray(data.streams)?data.streams:[];
   favorites=new Set(data.favorites||[]);
   watched=new Set(data.watched||[]);
@@ -190,18 +192,18 @@ async function watch(s){
  if(activeDialog)return;
  try{
   statusEl.textContent='';
-  const data=await api(isPodcast?'podcast_watch':'live_watch',{streamId:s.id});
+  const data=await api(videoAction+'_watch',{streamId:s.id});
   const dialog=document.createElement('dialog');activeDialog=dialog;
   const heading=document.createElement('h2');heading.textContent=s.title;dialog.append(heading);
   const iframe=document.createElement('iframe');iframe.title=s.title;
   const playerUrl=new URL('https://customer-9y0wom20nneqpu4g.cloudflarestream.com/'+encodeURIComponent(data.token)+'/iframe');
-  if(isPodcast&&s.cover_url)playerUrl.searchParams.set('poster',new URL(s.cover_url,location.origin).href);
+  if(folderTitle&&s.cover_url)playerUrl.searchParams.set('poster',new URL(s.cover_url,location.origin).href);
   iframe.src=playerUrl.href;
   iframe.allow='accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture';
   iframe.allowFullscreen=true;dialog.append(iframe);
   const actions=document.createElement('div');actions.className='dialog-actions';
   let dialogWidget=null;
-  if(!isPodcast&&window.NOYAMaterials){
+  if(!folderTitle&&window.NOYAMaterials){
    dialogWidget=window.NOYAMaterials.controls('live',s.id,{onChanged(action,state){
     if(action==='favorite'){if(state.favorited)favorites.add(s.id);else favorites.delete(s.id);}
     if(action==='complete'){if(state.completed)watched.add(s.id);else watched.delete(s.id);}
@@ -213,8 +215,8 @@ async function watch(s){
   actions.append(close);dialog.append(actions);
   dialog.addEventListener('close',()=>{iframe.src='about:blank';dialog.remove();activeDialog=null;},{once:true});
   document.body.append(dialog);dialog.showModal();
-  if(!isPodcast&&window.NOYAMaterials)window.NOYAMaterials.touch('live',s.id).catch(error=>console.warn('Live history unavailable:',error.message));
-  if(isPodcast)return;
+  if(!folderTitle&&window.NOYAMaterials)window.NOYAMaterials.touch('live',s.id).catch(error=>console.warn('Live history unavailable:',error.message));
+  if(folderTitle)return;
   // Cloudflare Stream fires playback events from its iframe API. Mark as watched
   // near the end of playback, not when a person merely opens a recording.
   ensurePlayerSdk().then(()=>{

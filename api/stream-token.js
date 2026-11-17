@@ -1,7 +1,10 @@
 
 import crypto from 'node:crypto';
 import courseDrip from '../lib/course-drip.cjs';
-const podcastEpisodes=[{id:'evgeniy-antoine-nadzharyan',title:'Евгений и Антуан Наджарян',cover_url:'/assets/noya-podcast-antoine.jpg',videoId:'19f836f4dd2121f66c1ba4279ef123f1'}];
+const videoFolders={
+ podcast:[{id:'evgeniy-antoine-nadzharyan',title:'Евгений и Антуан Наджарян',cover_url:'/assets/noya-podcast-antoine.jpg',videoId:'19f836f4dd2121f66c1ba4279ef123f1'}],
+ training:[{id:'reinforcement-and-punishment',title:'Виды наказания и поощрения',cover_url:'https://customer-9y0wom20nneqpu4g.cloudflarestream.com/a5b1de60220c861b0e41c3b56db6a618/thumbnails/thumbnail.jpg?time=25s&width=900',videoId:'a5b1de60220c861b0e41c3b56db6a618'}]
+};
 async function live(req,res){
  res.setHeader('Cache-Control','private, no-store');
  const fail=(s,m)=>Object.assign(new Error(m),{status:s});
@@ -43,10 +46,13 @@ async function live(req,res){
    if(!cf.ok||!data?.success||!data.result?.token)throw fail(502,'Video unavailable');
    return data.result.token;
   }
-  if(action==='podcast_list'||action==='podcast_watch'){
-   if(!admins.length&&!paidClub)throw fail(403,'Подкаст доступен при активной подписке NOYA CLUB');
-   if(action==='podcast_list')return res.status(200).json({ok:true,streams:podcastEpisodes.map(({id,title,cover_url})=>({id,title,cover_url}))});
-   const episode=podcastEpisodes.find(item=>item.id===req.body.streamId);
+  const folderAction=/^(podcast|training)_(list|watch)$/.exec(action);
+  if(folderAction){
+   if(!admins.length&&!paidClub)throw fail(403,'Видео доступно при активной подписке NOYA CLUB');
+   const [,folder,operation]=folderAction;
+   const videos=videoFolders[folder];
+   if(operation==='list')return res.status(200).json({ok:true,streams:videos.map(({id,title,cover_url})=>({id,title,cover_url}))});
+   const episode=videos.find(item=>item.id===req.body.streamId);
    if(!episode)throw fail(404,'Выпуск не найден');
    return res.status(200).json({ok:true,token:await signVideo(episode.videoId)});
   }
@@ -229,7 +235,7 @@ async function live(req,res){
  }catch(e){if(!e.status)console.error('Course live error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
 }
 export default async function handler(req, res) {
-  if(req.method==='POST'&&/^(live_|course_|folder_|podcast_)/.test(String(req.body?.action||'')))return live(req,res);
+  if(req.method==='POST'&&/^(live_|course_|folder_|podcast_|training_)/.test(String(req.body?.action||'')))return live(req,res);
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Allow','POST');
   return res.status(405).json({error:'Use authenticated POST for video playback'});
