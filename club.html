@@ -162,7 +162,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-first-detail{font-size:11px;color:#acb18f;margin:0 0 16px}
 .noya-first-action{display:inline-flex;min-height:44px;align-items:center;justify-content:center;border-radius:13px;padding:11px 17px;background:#f5fa45;color:#111;font-size:13px;font-weight:850}
 body.noya-guided-home #noya-next-route{display:none!important}
-</style><script src="./assets/noya-next-step.js?v=2" defer></script><link rel="stylesheet" href="./assets/noya-bonuses.css?v=2"><script src="./assets/noya-bonuses.js?v=3" defer></script></head><body>
+</style><link rel="stylesheet" href="./assets/noya-bonuses.css?v=2"><script src="./assets/noya-bonuses.js?v=3" defer></script></head><body class="noya-guided-home">
 <div id="noya-payment-redirect" role="status" aria-live="polite">
  <div class="noya-waiting" aria-hidden="true"></div>
  <span id="noya-payment-state">Проверяем доступ…</span>
@@ -171,13 +171,7 @@ body.noya-guided-home #noya-next-route{display:none!important}
  <button type="button" id="noya-payment-retry" hidden>Попробовать ещё раз</button>
 </div><main><div id="noya-account-slot"></div>
 
-<section id="home" class="screen" aria-label="Главная NOYA CLUB"><section id="noya-first-step" class="noya-first-step" aria-labelledby="noya-first-step-title" hidden>
- <div data-next-status class="noya-first-kicker">NOYA / ЛИЧНЫЙ ПЛАН</div>
- <h2 id="noya-first-step-title" data-next-title>МОЙ СЛЕДУЮЩИЙ ШАГ</h2>
- <p data-next-text>Выбери одну задачу и начни с простого наблюдения.</p>
- <div data-next-detail class="noya-first-detail"></div>
- <a class="noya-first-action" data-next-action href="./journey.html?tab=profile">Начать →</a>
-</section><section class="card" aria-labelledby="noya-next-title" id="noya-next-route" hidden>
+<section id="home" class="screen" aria-label="Главная NOYA CLUB"><section class="card" aria-labelledby="noya-next-title" id="noya-next-route" hidden>
  <div class="noya-next-heading"><h2 id="noya-next-title">Твой маршрут</h2><button type="button" class="noya-icon-button" id="noya-route-open" aria-label="Открыть маршрут">↗</button></div>
  <p id="noya-next-progress"></p>
  <progress id="noya-next-meter" aria-label="Прогресс маршрута" style="width:100%;accent-color:var(--accent)" hidden></progress>
