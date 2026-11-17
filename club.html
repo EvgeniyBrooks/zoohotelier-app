@@ -273,8 +273,16 @@ body.noya-guided-home #noya-next-route{display:none!important}
 </section>
 <section id="materials" class="screen" hidden aria-labelledby="materials-title">
  <h1 id="materials-title">БАЗА МАТЕРИАЛОВ</h1>
- <div class="empty">Материалов пока нет.</div>
+ <article class="card" aria-labelledby="four-principles-title">
+  <div class="label">PDF · 6 страниц · 6,1 МБ</div>
+  <h2 id="four-principles-title" style="font-size:27px;margin-top:12px">4 принципа поощрения и наказания</h2>
+  <p>Конспект урока Евгения Брукса: четыре принципа, примеры и работа с вниманием собаки. Скачай и сохрани, чтобы возвращаться к материалу после занятия.</p>
+  <button type="button" class="button" data-material-download="four-principles">Скачать PDF <span aria-hidden="true">↓</span></button>
+  <p data-download-status role="status" aria-live="polite" style="margin-top:12px;margin-bottom:0"></p>
+  <a class="button secondary" data-download-link target="_blank" rel="noopener noreferrer" hidden>Открыть PDF ↗</a>
+ </article>
 </section>
+<script src="./assets/noya-material-downloads.js?v=1" defer></script>
 <section id="library" class="screen" hidden>
  <h1>МОЯ БИБЛИОТЕКА</h1>
  <div class="tabs noya-library-tabs" role="tablist" aria-label="Моя библиотека">
@@ -970,5 +978,6 @@ loadClubAdmin();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadLiveFolderCover,{once:true});else loadLiveFolderCover();
 })();
 </script></body></html>
+
 
 

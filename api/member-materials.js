@@ -29,6 +29,27 @@ async function db(resource,method='GET',payload){
 }
 const activePeriod=(s,now)=>(!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&(!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now);
 const keyFor=(type,id)=>type+':'+id;
+const downloadFiles=Object.freeze({
+ 'four-principles':{bucket:'club-rewards',file:'NOYA_4_principles.pdf',title:'4 принципа поощрения и наказания'}
+});
+async function materialDownload(id){
+ const item=Object.hasOwn(downloadFiles,id)?downloadFiles[id]:null;
+ if(!item)throw fail(404,'Материал не найден');
+ const base=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+ if(!base||!key)throw fail(503,'Хранилище клуба недоступно');
+ const origin=new URL(base);
+ const objectPath=item.bucket+'/'+encodeURIComponent(item.file);
+ const response=await fetch(origin.origin+'/storage/v1/object/sign/'+objectPath,{
+  method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
+  body:JSON.stringify({expiresIn:300,download:item.file}),signal:AbortSignal.timeout(12000)
+ });
+ const data=await response.json().catch(()=>null),signedPath=data?.signedURL||data?.signedUrl;
+ if(!response.ok||typeof signedPath!=='string')throw fail(502,'Не удалось подготовить PDF. Попробуй ещё раз.');
+ const url=new URL(/^https:\/\//.test(signedPath)||signedPath.startsWith('/storage/v1/')?signedPath:'/storage/v1'+signedPath,origin);
+ if(url.protocol!=='https:'||url.origin!==origin.origin||url.pathname!=='/storage/v1/object/sign/'+objectPath)throw fail(502,'Не удалось подготовить ссылку на PDF');
+ url.searchParams.set('download',item.file);
+ return {url:url.href,fileName:item.file,title:item.title,expiresIn:300};
+}
 async function signedThumbnail(id){
  if(typeof id!=='string'||!/^[a-f0-9]{32}$/i.test(id))return null;
  const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
@@ -68,6 +89,11 @@ export default async function handler(req,res){
   const canLive=canCourse,canClub=admin||clubPaid||trial;
   const allowed={course:canCourse,live:canLive,club:canClub};
   const action=req.body?.action||'list';
+  if(action==='download'){
+   if(!canClub)throw fail(403,'Материалы доступны при активной подписке NOYA CLUB');
+   if(typeof req.body?.id!=='string')throw fail(400,'Выбери материал');
+   return res.status(200).json({ok:true,...await materialDownload(req.body.id)});
+  }
   if(action==='states'){
    const permitted=Object.entries(allowed).filter(([,yes])=>yes).map(([name])=>name);
    if(!permitted.length)return res.status(200).json({ok:true,states:[]});
@@ -165,3 +191,4 @@ export default async function handler(req,res){
   return res.status(e.status||500).json({error:e.status?e.message:'Ошибка материалов клуба'});
  }
 }
+
