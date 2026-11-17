@@ -52,7 +52,7 @@ async function run(action,lessonId,opts={}){
   if(resource==='admins')rows=[];
   if(resource==='courses')rows=[{id:course}];
   if(resource==='enrollments')rows=[{course_id:course,access_start_date:null,access_end_date:null}];
-  if(resource==='club_subscriptions')rows=[];
+  if(resource==='club_subscriptions')rows=opts.paid?[{status:'active',start_date:null,end_date:null}]:[];
   if(resource==='course_blocks')rows=[
    {id:pre,block_number:0,title:'Предобучение'},
    {id:core,block_number:1,title:'Быт и правила дома'}
@@ -68,7 +68,7 @@ async function run(action,lessonId,opts={}){
  };
  const res={statusCode:200,setHeader(){return this},status(s){this.statusCode=s;return this},json(v){this.body=v;return this}};
  try{
-  await (await handler())({method:'POST',body:{action,initData:init(),lessonId,completed:opts.mark,watchedSeconds:opts.watchedSeconds,durationSeconds:opts.durationSeconds}},res);
+  await (await handler())({method:'POST',body:{action,initData:init(),lessonId,streamId:opts.streamId,completed:opts.mark,watchedSeconds:opts.watchedSeconds,durationSeconds:opts.durationSeconds}},res);
   return {code:res.statusCode,body:res.body,visited};
  }finally{global.fetch=old;}
 }
@@ -120,3 +120,17 @@ test('Cloudflare actual duration is required before any lesson completion',async
  assert.equal(spoofed.visited.some(x=>x.resource==='noya_material_state'&&x.method==='POST'),false);
 });
 test.after(()=>{for(const k of ['NOYA_TELEGRAM_BOT_TOKEN','NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLOUDFLARE_ACCOUNT_ID','CLOUDFLARE_API_TOKEN']){if(Object.hasOwn(base,k))process.env[k]=base[k];else delete process.env[k];}});
+
+test('the podcast folder serves its own episode and signs playback only for club members',async()=>{
+ const streamId='evgeniy-antoine-nadzharyan';
+ const forbidden=await run('podcast_watch',null,{streamId});
+ assert.equal(forbidden.code,403);
+ assert.equal(forbidden.visited.some(x=>x.host==='api.cloudflare.com'),false);
+ const catalog=await run('podcast_list',null,{paid:true});
+ assert.deepEqual(catalog.body.streams,[{id:streamId,title:'Евгений и Антуан Наджарян'}]);
+ assert.equal(catalog.visited.some(x=>x.resource==='course_live_streams'||x.resource==='courses'),false);
+ assert.equal((await run('podcast_watch',null,{paid:true,streamId:'unknown'})).code,404);
+ const allowed=await run('podcast_watch',null,{paid:true,streamId});
+ assert.equal(allowed.code,200);
+ assert.equal(allowed.body.token,'test-signed-stream-token');
+});

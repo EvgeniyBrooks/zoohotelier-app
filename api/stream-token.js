@@ -1,6 +1,7 @@
 
 import crypto from 'node:crypto';
 import courseDrip from '../lib/course-drip.cjs';
+const podcastEpisodes=[{id:'evgeniy-antoine-nadzharyan',title:'Евгений и Антуан Наджарян',videoId:'19f836f4dd2121f66c1ba4279ef123f1'}];
 async function live(req,res){
  res.setHeader('Cache-Control','private, no-store');
  const fail=(s,m)=>Object.assign(new Error(m),{status:s});
@@ -26,19 +27,36 @@ async function live(req,res){
   const students=await db('students?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1');
   if(!students.length)throw fail(403,'Course access required');
   const student=students[0].id;
-  const [enrollments,admins,courses,clubSubscriptions]=await Promise.all([
-   db('enrollments?select=course_id,access_start_date,access_end_date&student_id=eq.'+student+'&status=eq.active&limit=20'),
+  const [admins,clubSubscriptions]=await Promise.all([
    db('admins?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1'),
-   db('courses?select=id&title=eq.'+encodeURIComponent('Управление вниманием')+'&limit=1'),
    db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+student+'&status=eq.active&limit=20')
   ]);
-  if(!courses.length)throw fail(503,'Course unavailable');
-  const courseId=courses[0].id,now=Date.now();
+  const now=Date.now();
   const paidClub=clubSubscriptions.some(s=>s.status==='active'&&
    (!s.start_date||Number.isFinite(Date.parse(s.start_date))&&Date.parse(s.start_date)<=now)&&
    (!s.end_date||Number.isFinite(Date.parse(s.end_date))&&Date.parse(s.end_date)>now));
-  if(!admins.length&&!paidClub&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   const action=req.body.action;
+  async function signVideo(videoId){
+   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Video service unavailable');
+   const cf=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+videoId+'/token',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),signal:AbortSignal.timeout(10000)});
+   const data=await cf.json().catch(()=>null);
+   if(!cf.ok||!data?.success||!data.result?.token)throw fail(502,'Video unavailable');
+   return data.result.token;
+  }
+  if(action==='podcast_list'||action==='podcast_watch'){
+   if(!admins.length&&!paidClub)throw fail(403,'Подкаст доступен при активной подписке NOYA CLUB');
+   if(action==='podcast_list')return res.status(200).json({ok:true,streams:podcastEpisodes.map(({id,title})=>({id,title}))});
+   const episode=podcastEpisodes.find(item=>item.id===req.body.streamId);
+   if(!episode)throw fail(404,'Выпуск не найден');
+   return res.status(200).json({ok:true,token:await signVideo(episode.videoId)});
+  }
+  const [enrollments,courses]=await Promise.all([
+   db('enrollments?select=course_id,access_start_date,access_end_date&student_id=eq.'+student+'&status=eq.active&limit=20'),
+   db('courses?select=id&title=eq.'+encodeURIComponent('Управление вниманием')+'&limit=1')
+  ]);
+  if(!courses.length)throw fail(503,'Course unavailable');
+  const courseId=courses[0].id;
+  if(!admins.length&&!paidClub&&!enrollments.some(e=>e.course_id===courseId&&(!e.access_start_date||Date.parse(e.access_start_date)<=now)&&(!e.access_end_date||Date.parse(e.access_end_date)>now)))throw fail(403,'Course access required');
   // Signed video tokens and completions use the same server-side gate.
   let scheduled=null;
   async function gate(){
@@ -206,18 +224,12 @@ async function live(req,res){
    await mirrorState('live',streamId,'completed',true);
    return res.status(200).json({ok:true,watched:true});
   }
-  if(action==='live_watch'){
-   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Video service unavailable');
-   const cf=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+streams[0].cloudflare_video_id+'/token',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({exp:Math.floor(Date.now()/1000)+900,downloadable:false}),signal:AbortSignal.timeout(10000)});
-   const data=await cf.json().catch(()=>null);
-   if(!cf.ok||!data?.success||!data.result?.token)throw fail(502,'Video unavailable');
-   return res.status(200).json({ok:true,token:data.result.token});
-  }
+  if(action==='live_watch')return res.status(200).json({ok:true,token:await signVideo(streams[0].cloudflare_video_id)});
   throw fail(400,'Unknown action');
  }catch(e){if(!e.status)console.error('Course live error',e.message);return res.status(e.status||500).json({error:e.status?e.message:'Server error'})}
 }
 export default async function handler(req, res) {
-  if(req.method==='POST'&&/^(live_|course_|folder_)/.test(String(req.body?.action||'')))return live(req,res);
+  if(req.method==='POST'&&/^(live_|course_|folder_|podcast_)/.test(String(req.body?.action||'')))return live(req,res);
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Allow','POST');
   return res.status(405).json({error:'Use authenticated POST for video playback'});
