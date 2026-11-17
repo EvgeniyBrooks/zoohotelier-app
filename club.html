@@ -17,6 +17,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 /* Material folders — dark photo-cover cards with a raised folder tab */
 .noya-material-folders{margin-top:22px}
 .noya-media-folders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+@media(min-width:480px){.noya-media-folders{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .noya-media-folder{position:relative;display:block;min-width:0;height:clamp(166px,43vw,205px);padding-top:16px;color:#fff;isolation:isolate;transition:transform .16s ease}
 .noya-media-folder:active{transform:scale(.97)}
 .noya-media-folder:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:18px}
@@ -223,6 +224,15 @@ body.noya-guided-home #noya-next-route{display:none!important}
     </span>
    </span>
   </a>
+  <a class="noya-media-folder" href="#materials" aria-label="База материалов — открыть папку">
+   <span class="noya-media-folder-tab" aria-hidden="true"></span>
+   <span class="noya-media-folder-frame">
+    <span class="noya-media-folder-cover noya-podcast-cover">
+     <span class="noya-podcast-icon" aria-hidden="true">📚</span>
+     <strong class="noya-media-folder-title">БАЗА МАТЕРИАЛОВ</strong>
+    </span>
+   </span>
+  </a>
  </div>
 </div><button class="nav noya-admin-shortcut" id="admin-nav" data-screen="admin" style="display:none"><span class="ico">⚙</span><span>Админ</span></button></section>
 <section id="route" class="screen" hidden><h1>МОЙ МАРШРУТ</h1><p>Твой план занятий с собакой.</p><label for="route-dog">Выбери собаку</label><select class="route-select" id="route-dog"><option value="">Нет собак</option></select><div id="route-status" class="notice" aria-live="polite">Загружаем персональный маршрут…</div><div id="route-topics"></div><a class="button secondary" href="./club-demo.html" style="margin-top:18px">Профиль собаки <span>↗</span></a></section>
@@ -254,6 +264,10 @@ body.noya-guided-home #noya-next-route{display:none!important}
  <div id="noya-member-filter-panel" class="noya-member-filter-panel" hidden><label for="noya-members-city-search">Поиск по городу</label><input class="route-select" id="noya-members-city-search" type="search" placeholder="Например, Сочи" autocomplete="off" style="grid-column:1/-1;margin:0"><select class="route-select" id="noya-members-city" aria-label="Выбрать город"><option value="">Все города</option></select><button type="button" id="noya-member-filter-reset">Сбросить</button></div>
  <details class="noya-member-points-info noya-disclosure"><summary>Как начисляются баллы</summary><p>С 12 декабря 2026 года — 1 балл за каждые полные сутки оплаченного участия и 30 баллов за первую оплату каждого приглашённого. При равных баллах выше тот, кто раньше оплатил вступление в клуб.</p></details>
  <div id="noya-members-list" aria-live="polite"><div class="noya-member-empty">Загружаем участников…</div></div>
+</section>
+<section id="materials" class="screen" hidden aria-labelledby="materials-title">
+ <h1 id="materials-title">БАЗА МАТЕРИАЛОВ</h1>
+ <div class="empty">Материалов пока нет.</div>
 </section>
 <section id="library" class="screen" hidden>
  <h1>МОЯ БИБЛИОТЕКА</h1>

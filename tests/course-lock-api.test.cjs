@@ -127,7 +127,7 @@ test('the podcast folder serves its own episode and signs playback only for club
  assert.equal(forbidden.code,403);
  assert.equal(forbidden.visited.some(x=>x.host==='api.cloudflare.com'),false);
  const catalog=await run('podcast_list',null,{paid:true});
- assert.deepEqual(catalog.body.streams,[{id:streamId,title:'Евгений и Антуан Наджарян'}]);
+ assert.deepEqual(catalog.body.streams,[{id:streamId,title:'Евгений и Антуан Наджарян',cover_url:'/assets/noya-podcast-antoine.jpg'}]);
  assert.equal(catalog.visited.some(x=>x.resource==='course_live_streams'||x.resource==='courses'),false);
  assert.equal((await run('podcast_watch',null,{paid:true,streamId:'unknown'})).code,404);
  const allowed=await run('podcast_watch',null,{paid:true,streamId});

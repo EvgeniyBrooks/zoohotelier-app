@@ -1,7 +1,7 @@
 
 import crypto from 'node:crypto';
 import courseDrip from '../lib/course-drip.cjs';
-const podcastEpisodes=[{id:'evgeniy-antoine-nadzharyan',title:'Евгений и Антуан Наджарян',videoId:'19f836f4dd2121f66c1ba4279ef123f1'}];
+const podcastEpisodes=[{id:'evgeniy-antoine-nadzharyan',title:'Евгений и Антуан Наджарян',cover_url:'/assets/noya-podcast-antoine.jpg',videoId:'19f836f4dd2121f66c1ba4279ef123f1'}];
 async function live(req,res){
  res.setHeader('Cache-Control','private, no-store');
  const fail=(s,m)=>Object.assign(new Error(m),{status:s});
@@ -45,7 +45,7 @@ async function live(req,res){
   }
   if(action==='podcast_list'||action==='podcast_watch'){
    if(!admins.length&&!paidClub)throw fail(403,'Подкаст доступен при активной подписке NOYA CLUB');
-   if(action==='podcast_list')return res.status(200).json({ok:true,streams:podcastEpisodes.map(({id,title})=>({id,title}))});
+   if(action==='podcast_list')return res.status(200).json({ok:true,streams:podcastEpisodes.map(({id,title,cover_url})=>({id,title,cover_url}))});
    const episode=podcastEpisodes.find(item=>item.id===req.body.streamId);
    if(!episode)throw fail(404,'Выпуск не найден');
    return res.status(200).json({ok:true,token:await signVideo(episode.videoId)});

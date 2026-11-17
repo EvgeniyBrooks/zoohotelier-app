@@ -120,7 +120,7 @@ function render(){
   const title=document.createElement('h2');title.textContent=s.title;
   head.append(title);card.append(head);
   const cover=document.createElement('button');cover.className='cover';cover.type='button';cover.setAttribute('aria-label','Смотреть: '+s.title);
-  if(s.cover_url&&/^https:\/\//.test(s.cover_url)){
+  if(s.cover_url&&(/^(https:\/\/|\/assets\/)/).test(s.cover_url)){
    const img=document.createElement('img');img.src=s.cover_url;img.alt='Обложка: '+s.title;img.loading='lazy';img.decoding='async';
    cover.append(img);
   }else{
@@ -194,7 +194,9 @@ async function watch(s){
   const dialog=document.createElement('dialog');activeDialog=dialog;
   const heading=document.createElement('h2');heading.textContent=s.title;dialog.append(heading);
   const iframe=document.createElement('iframe');iframe.title=s.title;
-  iframe.src='https://customer-9y0wom20nneqpu4g.cloudflarestream.com/'+encodeURIComponent(data.token)+'/iframe';
+  const playerUrl=new URL('https://customer-9y0wom20nneqpu4g.cloudflarestream.com/'+encodeURIComponent(data.token)+'/iframe');
+  if(isPodcast&&s.cover_url)playerUrl.searchParams.set('poster',new URL(s.cover_url,location.origin).href);
+  iframe.src=playerUrl.href;
   iframe.allow='accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture';
   iframe.allowFullscreen=true;dialog.append(iframe);
   const actions=document.createElement('div');actions.className='dialog-actions';
