@@ -40,6 +40,7 @@ h1{font:700 clamp(26px,6.9vw,40px)/1.05 Oswald,Impact,"Arial Narrow",sans-serif;
 .cover-placeholder{display:grid;place-items:center;height:100%;font:700 clamp(21px,5vw,32px)/1.1 Oswald,sans-serif;padding:20px}
 .cover-play{position:absolute;left:12px;bottom:12px;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#f5fa45;color:#101010;font-size:20px;box-shadow:0 3px 18px #0009}
 .watched-tag{display:inline-flex;align-items:center;gap:4px;margin-top:10px;color:#3b4d0c;font-size:11px;font-weight:900;letter-spacing:.3px}
+.video-actions{display:flex;gap:10px;align-items:stretch;margin-top:12px}.video-count{display:grid;place-items:center;border:2px solid #555;border-radius:16px;padding:9px 13px;white-space:nowrap;font:700 18px Oswald,sans-serif}.video-start{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:1;border:0;border-radius:16px;padding:13px 16px;background:#f5fa45;color:#111;font-weight:800}.video-start:focus-visible{outline:3px solid #111;outline-offset:3px}
 .empty{margin-top:12px;border:1px dashed #444;background:#171717;border-radius:15px;padding:25px 17px;text-align:center;color:#aaa}
 .muted{margin:20px 0 0;font-size:12px;color:#999}
 dialog{width:min(95vw,650px);max-height:min(90dvh,900px);overflow:auto;padding:19px;background:#151515;color:#fff;border:1px solid #444;border-radius:20px;box-shadow:0 20px 80px #000b}
@@ -67,7 +68,7 @@ dialog iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:
  
 </main>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="./assets/noya-navigation.js?v=1"></script><script src="./assets/noya-video-actions.js?v=3"></script>
+<script src="./assets/noya-navigation.js?v=1"></script><script src="./assets/noya-video-actions.js?v=3"></script><script src="./assets/noya-watch-progress.js?v=1"></script>
 <script>
 "use strict";
 let streams=[],favorites=new Set(),watched=new Set(),loading=false,activeDialog=null,playerSdkPromise=null;
@@ -81,7 +82,6 @@ const counter=document.getElementById('live-numbers'),statusEl=document.getEleme
 if(folderTitle){
  document.title=folderTitle+' · NOYA CLUB';
  document.getElementById('library-heading').textContent=folderTitle;
- document.getElementById('live-count').hidden=true;
  search.setAttribute('aria-label','Поиск по видео');
 }
 window.Telegram?.WebApp?.ready();
@@ -98,7 +98,6 @@ function api(action,extra){
  });
 }
 function updateCounter(){
- if(folderTitle)return;
  const valid=new Set(streams.map(s=>s.id));
  let count=0;
  for(const id of watched)if(valid.has(id))count++;
@@ -130,6 +129,12 @@ function render(){
   }
   const play=document.createElement('span');play.className='cover-play';play.textContent='▶';play.setAttribute('aria-hidden','true');cover.append(play);
   cover.onclick=()=>watch(s);card.append(cover);
+  const actions=document.createElement('div');actions.className='video-actions';
+  const progress=document.createElement('span');progress.className='video-count';progress.textContent=(watched.has(s.id)?1:0)+' из 1';
+  progress.setAttribute('aria-label','Просмотрено '+(watched.has(s.id)?1:0)+' из 1 видео');
+  const start=document.createElement('button');start.className='video-start';start.type='button';start.textContent='Начать путь';
+  const arrow=document.createElement('span');arrow.textContent='→';arrow.setAttribute('aria-hidden','true');start.append(arrow);start.onclick=()=>watch(s);
+  actions.append(progress,start);card.append(actions);
   if(!folderTitle&&window.NOYAMaterials){
    const widget=window.NOYAMaterials.controls('live',s.id,{onChanged(action,state){
     if(action==='favorite'){if(state.favorited)favorites.add(s.id);else favorites.delete(s.id);}
@@ -162,17 +167,19 @@ async function reload(){
   if(!streams.length){list.replaceChildren();const empty=document.createElement('div');empty.className='empty';empty.textContent='Не удалось загрузить записи.';list.append(empty);}
  }finally{loading=false;}
 }
-async function markWatched(s,button){
- if(watched.has(s.id))return;
+async function markWatched(s,button,proof={}){
+ if(watched.has(s.id))return true;
  if(button){button.disabled=true;button.textContent='Сохраняем…';}
  try{
-  await api('live_mark_watched',{streamId:s.id});
+  await api(videoAction+'_mark_watched',{streamId:s.id,...proof});
   watched.add(s.id);
   render();
   if(button)button.textContent='✓ Просмотрено';
+  return true;
  }catch(error){
   statusEl.textContent='Не удалось сохранить просмотр: '+error.message;
   if(button){button.disabled=false;button.textContent='✓ Отметить просмотренным';}
+  return false;
  }
 }
 function ensurePlayerSdk(){
@@ -216,24 +223,29 @@ async function watch(s){
   dialog.addEventListener('close',()=>{iframe.src='about:blank';dialog.remove();activeDialog=null;},{once:true});
   document.body.append(dialog);dialog.showModal();
   if(!folderTitle&&window.NOYAMaterials)window.NOYAMaterials.touch('live',s.id).catch(error=>console.warn('Live history unavailable:',error.message));
-  if(folderTitle)return;
   // Cloudflare Stream fires playback events from its iframe API. Mark as watched
   // near the end of playback, not when a person merely opens a recording.
   ensurePlayerSdk().then(()=>{
    if(!dialog.open)return;
    const player=window.Stream(iframe);
-   let autoSaved=false;
+   const tracker=window.NOYAWatchProgress.createTracker();
+   tracker.observe(0,1,Date.now());
+   let autoSaved=false,watchedSeconds=0,retryAt=0;
    const finish=async()=>{
-    if(autoSaved||watched.has(s.id))return;
+    const duration=Number(player.duration);
+    if(autoSaved||watched.has(s.id)||Date.now()<retryAt||!Number.isFinite(duration)||duration<=0||watchedSeconds<duration*.9)return;
     autoSaved=true;
-    await markWatched(s,null);
+    const saved=await markWatched(s,null,{watchedSeconds,durationSeconds:duration});
+    if(!saved){autoSaved=false;retryAt=Date.now()+10000;}
     if(dialogWidget&&watched.has(s.id))dialogWidget.refresh().catch(()=>{});
    };
-   player.addEventListener('ended',finish);
-   player.addEventListener('timeupdate',()=>{
+   const update=()=>{
     const duration=Number(player.duration),position=Number(player.currentTime);
-    if(Number.isFinite(duration)&&duration>0&&Number.isFinite(position)&&position/duration>=0.9)finish();
-   });
+    watchedSeconds=tracker.observe(position,duration,Date.now());
+    finish();
+   };
+   player.addEventListener('ended',update);
+   player.addEventListener('timeupdate',update);
   }).catch(error=>{console.warn('Automatic playback tracking unavailable:',error.message);});
  }catch(error){statusEl.textContent=error.message;}
 }

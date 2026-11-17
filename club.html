@@ -35,6 +35,8 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-media-folder-cover:after{content:"";position:absolute;z-index:2;inset:27% 0 0;background:linear-gradient(transparent 4%,#0009 63%,#000e)}
 .noya-media-folder-title{position:absolute;z-index:3;left:2px;right:2px;bottom:6px;text-align:center;color:#fff;font:700 clamp(16px,4.2vw,24px)/1 Oswald,Impact,sans-serif;white-space:normal;letter-spacing:-.25px;text-shadow:0 1px 6px #000,0 2px 10px #000}
 .noya-media-folder-counter{position:absolute;right:7px;top:7px;z-index:4;padding:4px 7px;border:1px solid #7a7c45;border-radius:14px;background:#090909df;color:#f5fa45;font:700 11px/1 Oswald,Impact,sans-serif;letter-spacing:.5px;white-space:nowrap}
+.noya-media-folder[href^="./course-live"] .noya-media-folder-title{bottom:43px}
+.noya-media-folder-start{position:absolute;z-index:4;bottom:6px;left:5px;right:5px;padding:8px 4px;border-radius:11px;background:#f5fa45;color:#111;text-align:center;font-size:11px;font-weight:800}
 @media(max-width:355px){.noya-media-folders{gap:9px}.noya-media-folder-frame{padding:5px}.noya-media-folder-title{font-size:15px}}
 </style><style>
 .noya-library-tabs{gap:0;margin:16px 0 12px;justify-content:space-between}
@@ -137,7 +139,7 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 .noya-next-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}.noya-next-heading h2{margin:0;font-size:28px}
 #noya-next-route{background:#f5fa45;color:#111;border:0;padding:20px;margin:20px 0}#noya-next-route p{color:#393b18;margin:8px 0}#noya-next-route .button{background:#111;color:#f5fa45;margin-top:15px}#noya-next-route .noya-icon-button{background:transparent;color:#111;border-color:#c8cc35}
 .home-start{margin-top:18px}.home-start .tile{min-height:110px;padding:15px}.home-start .tile strong{font-size:22px}.home-start .tile small{display:none}
-.attention-course-card{background:#171717;border:1px solid #373737;color:#fff}.attention-course-card h2{color:#fff;font-size:32px;margin-bottom:20px}.attention-course-count{border:1px solid #595c2a;color:#f5fa45}.attention-course-link{background:#f5fa45;color:#111}
+.attention-course-card{background:#f5fa45;border:1px solid #f5fa45;color:#111}.attention-course-card h2{color:#111;font-size:32px;margin-bottom:20px}.attention-course-count{border:2px solid #595c2a;color:#f5fa45}.attention-course-link{background:#f5fa45;color:#111}.attention-course-card .attention-course-count{color:#111;border-color:#b5bc40}.attention-course-card .attention-course-link{background:#111;color:#f5fa45}
 .noya-admin-shortcut{flex-direction:row;gap:8px;padding:10px;margin:20px auto 0;width:max-content;font-size:12px;background:none!important}
 .noya-bonus-card{display:flex;align-items:center;gap:14px;width:100%;padding:22px 18px;margin:14px 0;border:1px solid #373737;border-radius:20px;background:#171717;color:#fff;text-align:left;text-decoration:none}
 .noya-bonus-icon{font-size:35px;color:#f5fa45}.noya-bonus-card>span:nth-child(2){flex:1}.noya-bonus-card strong{display:block;font:600 26px/1.15 Oswald,sans-serif}.noya-bonus-card small{display:block;color:#aaa;margin-top:6px}
@@ -191,15 +193,15 @@ body.noya-guided-home #noya-next-route{display:none!important}
   <h2>КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ</h2>
   <div class="attention-course-actions">
    <span class="attention-course-count" id="attention-course-progress" aria-label="Загружаем прогресс курса">— из —</span>
-   <a class="attention-course-link" href="./index.html">Перейти в курс <span aria-hidden="true">→</span></a>
+   <a class="attention-course-link" href="./index.html">Начать путь <span aria-hidden="true">→</span></a>
   </div>
  </div>
 </div>
 <article class="noya-training-card" aria-label="Виды наказания и поощрения">
  <img src="./assets/noya-training-four-principles.jpg" width="1672" height="941" alt="4 принципа поощрения и наказания. Как правильно использовать поощрение и наказание" decoding="async">
  <div class="attention-course-actions">
-  <span class="attention-course-count">1 видео</span>
-  <a class="attention-course-link" href="./course-live.html?folder=training">Открыть папку <span aria-hidden="true">→</span></a>
+  <span class="attention-course-count" id="noya-training-folder-progress" aria-label="Загружаем прогресс просмотра">— из —</span>
+  <a class="attention-course-link" href="./course-live.html?folder=training">Начать путь <span aria-hidden="true">→</span></a>
  </div>
 </article>
 <div class="section noya-material-folders" aria-label="Папки с материалами">
@@ -223,6 +225,7 @@ body.noya-guided-home #noya-next-route{display:none!important}
       <rect x="123" y="68" width="7" height="42" rx="3" fill="#f5fa45" transform="rotate(-8 123 68)"/><circle cx="125" cy="65" r="10" fill="#eee"/>
      </svg>
      <strong class="noya-media-folder-title">ПРЯМЫЕ ЭФИРЫ</strong>
+     <span class="noya-media-folder-start">Начать путь →</span>
     </span>
    </span>
   </a>
@@ -230,8 +233,10 @@ body.noya-guided-home #noya-next-route{display:none!important}
    <span class="noya-media-folder-tab" aria-hidden="true"></span>
    <span class="noya-media-folder-frame">
     <span class="noya-media-folder-cover noya-podcast-cover">
+     <span class="noya-media-folder-counter" id="noya-podcast-folder-progress" aria-label="Загружаем прогресс подкаста">— ИЗ —</span>
      <span class="noya-podcast-icon" aria-hidden="true">🎙</span>
      <strong class="noya-media-folder-title">ПОДКАСТ</strong>
+     <span class="noya-media-folder-start">Начать путь →</span>
     </span>
    </span>
   </a>
@@ -585,6 +590,13 @@ async function loadAttentionCourseProgress(){
   if(live&&liveIndicator){
    liveIndicator.textContent='✓ '+live.watched+' ИЗ '+live.total;
    liveIndicator.setAttribute('aria-label','Просмотрено '+live.watched+' из '+live.total+' прямых эфиров');
+  }
+  for(const folder of ['training','podcast']){
+   const summary=data.folders[folder],indicator=document.getElementById('noya-'+folder+'-folder-progress');
+   if(summary&&indicator){
+    indicator.textContent=summary.watched+' из '+summary.total;
+    indicator.setAttribute('aria-label','Просмотрено '+summary.watched+' из '+summary.total+' видео');
+   }
   }
  }catch(error){console.warn('Folder progress unavailable');}
  finally{noyaFolderProgressLoading=false;}

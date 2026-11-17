@@ -52,7 +52,7 @@ test('NOYA club Attention Management card is yellow, loads dynamic progress and 
  assert.match(html,/background:var\(--accent\);color:#111/);
  assert.match(html,/КУРС<br>УПРАВЛЕНИЕ ВНИМАНИЕМ/);
  assert.match(html,/id="attention-course-progress"[^>]*>— из —<\/span>/);
- assert.match(html,/href="\.\/index\.html">Перейти в курс/);
+ assert.match(html,/href="\.\/index\.html">Начать путь/);
  assert.match(html,/action:'folder_summary',initData/);
  assert.match(html,/courseIndicator\.textContent=course\.watched\+' из '\+course\.total/);
  assert.match(html,/liveIndicator\.textContent='✓ '\+live\.watched\+' ИЗ '\+live\.total/);

@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import courseDrip from '../lib/course-drip.cjs';
 const videoFolders={
  podcast:[{id:'evgeniy-antoine-nadzharyan',title:'Евгений и Антуан Наджарян',cover_url:'/assets/noya-podcast-antoine.jpg',videoId:'19f836f4dd2121f66c1ba4279ef123f1'}],
- training:[{id:'reinforcement-and-punishment',title:'Виды наказания и поощрения',cover_url:'https://customer-9y0wom20nneqpu4g.cloudflarestream.com/a5b1de60220c861b0e41c3b56db6a618/thumbnails/thumbnail.jpg?time=25s&width=900',videoId:'a5b1de60220c861b0e41c3b56db6a618'}]
+ training:[{id:'reinforcement-and-punishment',title:'Виды наказания и поощрения',cover_url:'/assets/noya-training-four-principles.jpg',videoId:'a5b1de60220c861b0e41c3b56db6a618'}]
 };
 async function live(req,res){
  res.setHeader('Cache-Control','private, no-store');
@@ -46,14 +46,32 @@ async function live(req,res){
    if(!cf.ok||!data?.success||!data.result?.token)throw fail(502,'Video unavailable');
    return data.result.token;
   }
-  const folderAction=/^(podcast|training)_(list|watch)$/.exec(action);
+  const folderAction=/^(podcast|training)_(list|watch|mark_watched)$/.exec(action);
   if(folderAction){
    if(!admins.length&&!paidClub)throw fail(403,'Видео доступно при активной подписке NOYA CLUB');
    const [,folder,operation]=folderAction;
    const videos=videoFolders[folder];
-   if(operation==='list')return res.status(200).json({ok:true,streams:videos.map(({id,title,cover_url})=>({id,title,cover_url}))});
+   const views=await db('noya_video_views?select=video_id&student_id=eq.'+student+'&folder=eq.'+folder+'&limit=1000');
+   const watched=[...new Set(views.map(v=>v.video_id).filter(id=>videos.some(v=>v.id===id)))];
+   if(operation==='list')return res.status(200).json({ok:true,streams:videos.map(({id,title,cover_url})=>({id,title,cover_url})),watched});
    const episode=videos.find(item=>item.id===req.body.streamId);
    if(!episode)throw fail(404,'Выпуск не найден');
+   if(operation==='mark_watched'){
+    if(watched.includes(episode.id))return res.status(200).json({ok:true,watched:true});
+    const seconds=Number(req.body.watchedSeconds),duration=Number(req.body.durationSeconds);
+    if(!Number.isFinite(seconds)||!Number.isFinite(duration)||duration<5||seconds<duration*.9||seconds>duration*1.05)
+     throw fail(403,'Просмотри не менее 90% видео');
+    if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)throw fail(503,'Video service unavailable');
+    const response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/stream/'+episode.videoId,{
+     headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN},signal:AbortSignal.timeout(10000)
+    });
+    const metadata=await response.json().catch(()=>null),actualDuration=Number(metadata?.result?.duration);
+    if(!response.ok||!metadata?.success||!Number.isFinite(actualDuration)||actualDuration<5)throw fail(502,'Не удалось проверить длительность видео');
+    if(Math.abs(duration-actualDuration)>Math.max(2,actualDuration*.02)||seconds<actualDuration*.9-1)
+     throw fail(403,'Досмотри видео перед завершением');
+    await db('noya_video_views?on_conflict=student_id,folder,video_id','POST',{student_id:student,folder,video_id:episode.id});
+    return res.status(200).json({ok:true,watched:true});
+   }
    return res.status(200).json({ok:true,token:await signVideo(episode.videoId)});
   }
   const [enrollments,courses]=await Promise.all([
@@ -179,19 +197,23 @@ async function live(req,res){
   }
   if(action==='folder_summary'){
    // Folder counters are derived from currently published entries, never hardcoded.
-   const [liveStreams,liveViews,courseBlocks,courseLessons,courseDone]=await Promise.all([
+   const [liveStreams,liveViews,courseBlocks,courseLessons,courseDone,videoViews]=await Promise.all([
     db('course_live_streams?select=id&course_id=eq.'+courseId+'&is_published=eq.true&limit=1000'),
     db('course_live_views?select=stream_id&student_id=eq.'+student+'&limit=1000'),
     db('course_blocks?select=id&course_id=eq.'+courseId+'&limit=100'),
     db('lessons?select=id,block_id,is_published&is_published=eq.true&limit=1000'),
-    db('course_lesson_completions?select=lesson_id&student_id=eq.'+student+'&limit=1000')
+    db('course_lesson_completions?select=lesson_id&student_id=eq.'+student+'&limit=1000'),
+    db('noya_video_views?select=folder,video_id&student_id=eq.'+student+'&limit=1000')
    ]);
    const liveIds=new Set(liveStreams.map(s=>s.id));
    const blockIds=new Set(courseBlocks.map(b=>b.id));
    const lessonIds=new Set(courseLessons.filter(l=>blockIds.has(l.block_id)).map(l=>l.id));
    return res.status(200).json({ok:true,folders:{
     live:{total:liveIds.size,watched:new Set(liveViews.map(v=>v.stream_id).filter(id=>liveIds.has(id))).size},
-    course:{total:lessonIds.size,watched:new Set(courseDone.map(v=>v.lesson_id).filter(id=>lessonIds.has(id))).size}
+    course:{total:lessonIds.size,watched:new Set(courseDone.map(v=>v.lesson_id).filter(id=>lessonIds.has(id))).size},
+    ...Object.fromEntries(Object.entries(videoFolders).map(([folder,videos])=>[folder,{
+     total:videos.length,watched:new Set(videoViews.filter(v=>v.folder===folder&&videos.some(e=>e.id===v.video_id)).map(v=>v.video_id)).size
+    }]))
    }});
   }
   if(action==='live_list'){

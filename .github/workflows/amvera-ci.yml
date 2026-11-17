@@ -30,6 +30,8 @@ jobs:
           persist-credentials: false
       - name: Verify payment and wallet transactions
         run: psql postgresql://postgres:postgres@localhost/postgres -f tests/club-renewal-reward.sql
+      - name: Verify isolated and idempotent standalone video progress
+        run: psql postgresql://postgres:postgres@localhost/postgres -f tests/noya-video-views.sql
   smoke:
     runs-on: ubuntu-latest
     steps:

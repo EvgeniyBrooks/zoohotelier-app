@@ -41,7 +41,7 @@ async function run(action,lessonId,opts={}){
  const completed=opts.completed||[];
  global.fetch=async(url,req={})=>{
   const u=new URL(url),resource=u.pathname.split('/').pop(),method=req.method||'GET';
-  visited.push({resource,method,host:u.hostname});
+  visited.push({resource,method,host:u.hostname,query:u.search,body:req.body?JSON.parse(req.body):null});
   if(u.hostname==='api.cloudflare.com'){
    return new Response(JSON.stringify({success:true,result:method==='GET'
     ? {duration:opts.actualDuration||100}
@@ -63,6 +63,7 @@ async function run(action,lessonId,opts={}){
   if(resource==='noya_course_drip_starts')rows=[{started_at:new Date().toISOString()}];
   if(resource==='noya_course_watch_sessions')rows=opts.hasReceipt?[{opened_at:new Date(Date.now()-150000).toISOString()}]:[];
   if(resource==='noya_material_state')rows=method==='POST'?[{favorited:false,completed:true}]:[];
+  if(resource==='noya_video_views')rows=(opts.videoViews||[]).filter(v=>!u.searchParams.has('folder')||u.searchParams.get('folder')==='eq.'+v.folder);
   if(resource==='noya_course_watch_begin')rows=new Date().toISOString();
   return new Response(JSON.stringify(rows),{status:200,headers:{'Content-Type':'application/json'}});
  };
@@ -143,4 +144,40 @@ test('the training folder opens its own video without mixing it with the podcast
  assert.equal((await run('training_watch',null,{paid:true,streamId})).code,200);
  assert.equal((await run('podcast_watch',null,{paid:true,streamId})).code,404);
  assert.equal((await run('training_watch',null,{streamId})).code,403);
+});
+
+test('folder counts preserve course progress and ignore unrelated or duplicate video completions',async()=>{
+ const videoViews=[{folder:'training',video_id:'reinforcement-and-punishment'},{folder:'training',video_id:'reinforcement-and-punishment'},
+  {folder:'podcast',video_id:'removed-video'},{folder:'training',video_id:'evgeniy-antoine-nadzharyan'}];
+ const empty=await run('folder_summary',null,{paid:true});
+ assert.deepEqual(empty.body.folders.training,{total:1,watched:0});
+ assert.deepEqual(empty.body.folders.podcast,{total:1,watched:0});
+ const result=await run('folder_summary',null,{paid:true,completed:[p1],videoViews});
+ assert.equal(result.body.folders.course.watched,1);
+ assert.deepEqual(result.body.folders.training,{total:1,watched:1});
+ assert.deepEqual(result.body.folders.podcast,{total:1,watched:0});
+ assert.ok(result.visited.filter(v=>v.resource==='noya_video_views').every(v=>v.query.includes('student_id=eq.'+student)));
+ const catalog=await run('training_list',null,{paid:true,videoViews});
+ assert.deepEqual(catalog.body.watched,['reinforcement-and-punishment']);
+});
+
+test('standalone completion requires membership, known video and actual playback duration',async()=>{
+ const streamId='reinforcement-and-punishment';
+ const opts={paid:true,streamId,watchedSeconds:91,durationSeconds:100};
+ assert.equal((await run('training_mark_watched',null,{...opts,paid:false})).code,403);
+ assert.equal((await run('training_mark_watched',null,{...opts,streamId:'unknown'})).code,404);
+ for(const bad of [{watchedSeconds:0},{watchedSeconds:89},{actualDuration:1200}]){
+  const result=await run('training_mark_watched',null,{...opts,...bad});
+  assert.equal(result.code,403);
+  assert.equal(result.visited.some(v=>v.resource==='noya_video_views'&&v.method==='POST'),false);
+ }
+ const result=await run('training_mark_watched',null,opts);
+ assert.equal(result.code,200);
+ const write=result.visited.find(v=>v.resource==='noya_video_views'&&v.method==='POST');
+ assert.deepEqual(write.body,{student_id:student,folder:'training',video_id:streamId});
+ const repeat=await run('training_mark_watched',null,{...opts,videoViews:[{folder:'training',video_id:streamId}]});
+ assert.equal(repeat.code,200);
+ assert.equal(repeat.visited.some(v=>v.method==='POST'),false);
+ const open=await run('training_watch',null,{paid:true,streamId});
+ assert.equal(open.visited.some(v=>v.resource==='noya_video_views'&&v.method==='POST'),false);
 });
