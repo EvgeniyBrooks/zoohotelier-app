@@ -15,11 +15,9 @@ html.noya-payment-checking body>main{visibility:hidden!important;pointer-events:
 @keyframes noya-rotate{to{transform:rotate(360deg)}}
 </style><script>document.documentElement.classList.add('noya-payment-checking');</script><style>
 /* Material folders — dark photo-cover cards with a raised folder tab */
-.noya-training-card{position:relative;isolation:isolate;overflow:hidden;display:flex;min-height:250px;flex-direction:column;justify-content:space-between;gap:24px;padding:19px;margin-top:19px;border:1px solid #393939;border-radius:23px;background:#111}
-.noya-training-card>img{position:absolute;z-index:-2;inset:0 0 0 auto;width:77%;height:100%;object-fit:cover;object-position:center}
-.noya-training-card::before{content:'';position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#090909 4%,#090909df 27%,#09090935 100%),linear-gradient(0deg,#090909d0,transparent 50%)}
-.noya-training-card h2{max-width:77%;margin:2px 0 0;font-size:clamp(25px,6.4vw,36px);line-height:1.08}
-.noya-training-card h2 span{color:var(--accent)}
+.noya-training-card{overflow:hidden;margin-top:19px;border:1px solid #393939;border-radius:23px;background:#111}
+.noya-training-card>img{display:block;width:100%;height:auto}
+.noya-training-card .attention-course-actions{padding:12px}
 .noya-training-card .attention-course-count{background:#141414db}
 .noya-material-folders{margin-top:22px}
 .noya-media-folders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
@@ -197,9 +195,8 @@ body.noya-guided-home #noya-next-route{display:none!important}
   </div>
  </div>
 </div>
-<article class="noya-training-card" aria-labelledby="training-card-title">
- <img src="https://customer-9y0wom20nneqpu4g.cloudflarestream.com/a5b1de60220c861b0e41c3b56db6a618/thumbnails/thumbnail.jpg?time=25s&width=900" alt="" loading="lazy" decoding="async">
- <h2 id="training-card-title">Виды наказания<br><span>и поощрения</span></h2>
+<article class="noya-training-card" aria-label="Виды наказания и поощрения">
+ <img src="./assets/noya-training-four-principles.jpg" width="1672" height="941" alt="4 принципа поощрения и наказания. Как правильно использовать поощрение и наказание" decoding="async">
  <div class="attention-course-actions">
   <span class="attention-course-count">1 видео</span>
   <a class="attention-course-link" href="./course-live.html?folder=training">Открыть папку <span aria-hidden="true">→</span></a>
