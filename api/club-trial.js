@@ -31,13 +31,14 @@ module.exports=async(req,res)=>{
    const [admins,trials,subs]=await Promise.all([
     db('admins?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1'),
     student?db('noya_club_trials?select=starts_at,ends_at&student_id=eq.'+student+'&limit=1'):Promise.resolve([]),
-    student?db('club_subscriptions?select=status,start_date,end_date&student_id=eq.'+student+'&status=eq.active&limit=20'):Promise.resolve([])
+    student?db('club_subscriptions?select=status,start_date,end_date,gift_campaign_id&student_id=eq.'+student+'&status=eq.active&limit=20'):Promise.resolve([])
    ]);
    const adminPreview=admins.length>0;
    const now=Date.now();
    const trialActive=trials.some(t=>Date.parse(t.starts_at)<=now&&Date.parse(t.ends_at)>now);
    const paidActive=subs.some(t=>t.status==='active'&&(!t.start_date||Date.parse(t.start_date)<=now)&&(!t.end_date||Date.parse(t.end_date)>now));
-   return reply(res,200,{ok:true,adminPreview,trialActive:trialActive&&!paidActive,paidActive,trialEndsAt:trialActive&&!paidActive?trials[0].ends_at:null,courseEnabled:paidActive});
+   const freeAccess=subs.some(t=>t.gift_campaign_id&&t.status==='active'&&(!t.start_date||Date.parse(t.start_date)<=now)&&(!t.end_date||Date.parse(t.end_date)>now));
+   return reply(res,200,{ok:true,adminPreview,trialActive:trialActive&&!paidActive,paidActive,freeAccess,trialEndsAt:trialActive&&!paidActive?trials[0].ends_at:null,courseEnabled:paidActive});
   }
   if(req.body?.action==='redeem'){
    const code=req.body?.code;
@@ -50,7 +51,7 @@ module.exports=async(req,res)=>{
    const rows=await response.json();
    const result=rows?.[0];
    if(!result)return reply(res,502,{error:'Invalid trial response'});
-   return reply(res,result.applied?200:409,{ok:result.applied,trialActive:result.applied,endsAt:result.ends_at,reason:result.reason});
+   return reply(res,result.applied?200:409,{ok:result.applied,trialActive:result.applied&&result.reason!=='permanent',freeAccess:result.applied&&result.reason==='permanent',endsAt:result.ends_at,reason:result.reason});
   }
   if(req.body?.action==='create'){
    const admin=await db('admins?select=id&telegram_id=eq.'+encodeURIComponent(user.id)+'&limit=1');

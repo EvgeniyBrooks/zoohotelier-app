@@ -5,6 +5,7 @@
 // No Supabase data, Cloudflare videos, or payment secrets are stored here.
 const http = require('node:http');
 const fs = require('node:fs');
+const zlib = require('node:zlib');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 
@@ -51,6 +52,7 @@ const MIME = Object.freeze({
   '.ico':'image/x-icon',
   '.woff':'font/woff',
   '.woff2':'font/woff2'
+  ,'.ttf':'font/ttf'
 });
 
 const loaded = new Map();
@@ -181,14 +183,19 @@ async function serveStatic(req,res,pathname){
     if(!stat.isFile())return json(res,404,{error:'Not found'});
     res.statusCode=200;
     res.setHeader('Content-Type',MIME[path.extname(filename).toLowerCase()]||'text/html; charset=utf-8');
-    res.setHeader('Cache-Control','no-cache, must-revalidate');
-    res.setHeader('Content-Length',stat.size);
+    const versioned=pathname.startsWith('/assets/')&&new URL(req.url,'http://localhost').searchParams.has('v');
+    res.setHeader('Cache-Control',versioned?'public, max-age=86400':'no-cache, must-revalidate');
+    const acceptsGzip=(req.headers['accept-encoding']||'').split(',').some(value=>/^\s*gzip(?:\s*;|\s*$)/i.test(value)&&!/\bq\s*=\s*0(?:\.0*)?\s*$/i.test(value));
+    const compress=req.method==='GET'&&stat.size>1024&&/\.(html|js|mjs|css|svg)$/.test(filename)&&acceptsGzip;
+    res.setHeader('Vary','Accept-Encoding');
+    if(compress)res.setHeader('Content-Encoding','gzip');else res.setHeader('Content-Length',stat.size);
     if(req.method==='HEAD'){res.end();return;}
-    fs.createReadStream(filename).on('error',err=>{
+    const stream=fs.createReadStream(filename).on('error',err=>{
       console.error('Static file stream error',err.code);
       if(!res.headersSent)json(res,500,{error:'Static file unavailable'});
       else res.destroy();
-    }).pipe(res);
+    });
+    if(compress)stream.pipe(zlib.createGzip()).on('error',()=>res.destroy()).pipe(res);else stream.pipe(res);
   }catch(err){
     if(err.code==='ENOENT'||err.code==='ENOTDIR')return json(res,404,{error:'Not found'});
     throw err;
