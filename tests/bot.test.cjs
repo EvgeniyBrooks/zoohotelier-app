@@ -14,13 +14,14 @@ test('menu and support have expected destinations',()=>{
  assert.deepEqual(menu().reply_markup.inline_keyboard.map(r=>r[0].text),['Перейти в канал','Личный кабинет','Подписка','Служба заботы']);
  assert.equal(SUPPORT,'https://t.me/m/RC7qGJtgNWVi');
 });
-function fixture({admin=false,existingWebhook=''}={}){
+function fixture({admin=false,existingWebhook='',expiredAck=false}={}){
  const calls=[],env={NOYA_TELEGRAM_BOT_TOKEN:'test-token',NEXT_PUBLIC_SUPABASE_URL:'https://db.example',SUPABASE_SERVICE_ROLE_KEY:'test-service'};
  const fetcher=async(url,options)=>{
   calls.push({url,body:options.body?JSON.parse(options.body):null});
   if(url.startsWith('https://api.telegram.org/')){
    const method=url.split('/').at(-1);
-   return {ok:true,json:async()=>({ok:true,result:method==='getWebhookInfo'?{url:existingWebhook}:method==='createChatInviteLink'?{invite_link:'https://t.me/+test'}:{}})};
+   if(expiredAck&&method==='answerCallbackQuery')return {ok:false,status:400,json:async()=>({ok:false,error_code:400})};
+   return {ok:true,json:async()=>({ok:true,result:method==='getMe'?{username:'NoyaClubBrooksBot'}:method==='getWebhookInfo'?{url:existingWebhook}:method==='createChatInviteLink'?{invite_link:'https://t.me/+test'}:{}})};
   }
   return {ok:true,json:async()=>url.includes('/admins?')?(admin?[{id:'admin'}]:[]):url.includes('/students?')?[{id:'student-42'}]:[]};
  };
@@ -46,6 +47,10 @@ test('foreign chat and group cannot expose personal status',async()=>{
  const f=fixture(),u=f.update();u.callback_query.message.chat.id=99;await f.request(u);assert.equal(f.calls.length,0);
  u.update_id=2;u.callback_query.message.chat={id:42,type:'group'};await f.request(u);assert.equal(f.calls.length,0);
 });
+test('expired callback acknowledgement cannot block webhook retries',async()=>{
+ const f=fixture({expiredAck:true});assert.equal((await f.request(f.update('noya:cancel'))).code,200);
+ assert.ok(f.calls.some(c=>c.url.endsWith('/sendMessage')));
+});
 test('channel refuses nonmember and gives admin expiring join-request invite',async()=>{
  let f=fixture();await f.request(f.update('noya:channel'));assert.ok(!f.calls.some(c=>c.url.endsWith('/createChatInviteLink')));
  f=fixture({admin:true});await f.request(f.update('noya:channel'));
@@ -64,7 +69,7 @@ test('cancel provides actual assistance without changing billing or falsely conf
  assert.ok(f.calls.every(c=>c.url.startsWith('https://api.telegram.org/')));
 });
 test('bootstrap preserves another webhook and configures only empty/owned webhook',async()=>{
- let f=fixture({existingWebhook:'https://another.example/hook'});await f.bot.bootstrap();assert.equal(f.calls.length,1);
+ let f=fixture({existingWebhook:'https://another.example/hook'});await f.bot.bootstrap();assert.equal(f.calls.length,2);
  f=fixture();await f.bot.bootstrap();const hook=f.calls.find(c=>c.url.endsWith('/setWebhook')).body;
  assert.equal(hook.secret_token.length,64);assert.equal(hook.drop_pending_updates,undefined);
  assert.ok(f.calls.some(c=>c.url.endsWith('/setChatMenuButton')));
