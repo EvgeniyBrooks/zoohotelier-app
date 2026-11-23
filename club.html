@@ -520,9 +520,35 @@ async function makeNoyaTrialCampaign(){
   const data=await response.json();
   if(!response.ok)throw Error(data.error||'Не удалось создать акцию');
   const link='https://t.me/NoyaClubBrooksBot?startapp=trial_'+encodeURIComponent(data.code);
-  if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(link);
-  prompt('Ссылка акции (скопирована, если Telegram разрешил):',link);
-  alert('Акция на 48 часов создана. Автоматическое списание после 2 дней ещё НЕ подключено к Prodamus. Не публикуй ссылку как автопродление до проверки платёжного сценария.');
+  let result=document.getElementById('noya-trial-result');
+  if(!result){
+   result=document.createElement('div');
+   result.id='noya-trial-result';
+   result.style.cssText='margin:12px 0;padding:16px;border:1px solid #555;border-radius:14px';
+   document.getElementById('admin').prepend(result);
+  }
+  const title=document.createElement('p');
+  title.textContent='Акция «'+name+'» создана. Отправь друзьям эту ссылку.';
+  const input=document.createElement('input');
+  input.type='text';input.readOnly=true;input.value=link;
+  input.setAttribute('aria-label','Пригласительная ссылка на 2 дня');
+  input.style.cssText='display:block;width:100%;box-sizing:border-box;margin:12px 0;padding:12px;font-size:16px';
+  input.addEventListener('click',()=>input.select());
+  const copy=document.createElement('button');
+  copy.type='button';copy.textContent='Скопировать ссылку';
+  const status=document.createElement('p');
+  status.setAttribute('role','status');
+  status.textContent='Доступ действует 48 часов после активации.';
+  copy.addEventListener('click',async()=>{
+   try{
+    await navigator.clipboard.writeText(link);
+    status.textContent='Ссылка скопирована. Отправь её друзьям.';
+   }catch{
+    input.focus();input.select();input.setSelectionRange(0,input.value.length);
+    status.textContent='Зажми выделенную ссылку и выбери «Скопировать».';
+   }
+  });
+  result.replaceChildren(title,input,copy,status);
  }catch(e){alert(e.message||'Не удалось создать акцию')}
 }
 const noyaAdminNav=document.getElementById('admin-nav');
