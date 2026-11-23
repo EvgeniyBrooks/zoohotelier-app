@@ -63,10 +63,10 @@ test('join requests approved only for eligible users in NOYA channel',async()=>{
  const n=fixture();await n.request({update_id:1,chat_join_request:{chat:{id:-1004454031969},from:{id:42}}});
  assert.ok(!n.calls.some(c=>c.url.endsWith('/approveChatJoinRequest')));
 });
-test('cancel provides actual assistance without changing billing or falsely confirming',async()=>{
+test('cancel without paid subscription does not call payment provider',async()=>{
  const f=fixture();await f.request(f.update('noya:cancel'));
- assert.match(f.calls.find(c=>c.url.endsWith('/sendMessage')).body.text,/само по себе не отключает/);
- assert.ok(f.calls.every(c=>c.url.startsWith('https://api.telegram.org/')));
+ assert.match(f.calls.find(c=>c.url.endsWith('/sendMessage')).body.text,/Нет активной платной/);
+ assert.ok(!f.calls.some(c=>c.url.includes('payform.ru')));
 });
 test('bootstrap preserves another webhook and configures only empty/owned webhook',async()=>{
  let f=fixture({existingWebhook:'https://another.example/hook'});await f.bot.bootstrap();assert.equal(f.calls.length,2);
