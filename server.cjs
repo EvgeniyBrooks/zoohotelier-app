@@ -34,7 +34,7 @@ const REWRITES = Object.freeze({
 const ENDPOINTS = new Set([
   'admin-cohorts','club-diagnostic','club-lessons','club-members',
   'club-progress','club-shop','club-trial','club-video-token',
-  'member-materials','stream-token','telegram-auth','club-journey'
+  'member-materials','stream-token','telegram-auth','club-journey','telegram-bot'
 ]);
 
 const MIME = Object.freeze({
@@ -218,6 +218,7 @@ if(require.main===module){
   if(!Number.isInteger(PORT)||PORT<1||PORT>65535)throw new Error('Invalid PORT');
   server.listen(PORT,HOST,()=>{
     console.log('NOYA CLUB listening on '+HOST+':'+PORT);
+    require('./lib/noya-bot.cjs').bootstrap().catch(()=>console.error('NOYA member bot setup failed'));
   });
   for(const signal of ['SIGTERM','SIGINT']) {
     process.on(signal,()=>server.close(()=>process.exit(0)));
@@ -225,3 +226,4 @@ if(require.main===module){
 }
 
 module.exports={server,REWRITES,ENDPOINTS,assetPath};
+
