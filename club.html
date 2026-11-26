@@ -178,22 +178,26 @@ body.noya-guided-home #noya-next-route{display:none!important}
  <p id="noya-next-lesson"></p>
  <button class="button" type="button" id="noya-next-button">Продолжить</button>
  </section><div id="telegram-auth-state" class="notice" role="status" hidden style="margin-bottom:20px">Проверяем подключение Telegram…</div>
-<style>#home-shortcut[hidden]{display:none}</style><button type="button" class="button secondary" id="home-shortcut" hidden>Добавить NOYA CLUB на главный экран</button>
-<p id="home-shortcut-help" hidden></p>
+<button type="button" class="button secondary" id="home-shortcut" aria-describedby="home-shortcut-help">Добавить NOYA CLUB на главный экран</button>
+<p id="home-shortcut-help" role="status" hidden></p>
 <script>
 (()=>{
  const tg=window.Telegram?.WebApp,button=document.getElementById('home-shortcut'),help=document.getElementById('home-shortcut-help');
- if(!tg||!['ios','android','android_x'].includes(tg.platform))return;
- button.hidden=false;
- const hint=()=>{help.textContent='Обнови Telegram и открой NOYA CLUB в приложении, чтобы добавить значок.';help.hidden=false;};
- button.onclick=()=>{if(tg.isVersionAtLeast?.('8.0')&&tg.addToHomeScreen){try{tg.addToHomeScreen();}catch{hint();}}else hint();};
- if(!tg.isVersionAtLeast?.('8.0'))return;
- const installed=()=>{button.hidden=true;help.hidden=true;};
- tg.onEvent('homeScreenAdded',installed);
- tg.checkHomeScreenStatus?.(status=>{
-  if(status==='added')installed();
-  if(status==='unsupported')button.onclick=hint;
- });
+ const hint=text=>{help.textContent=text;help.hidden=false;};
+ const installed=()=>{button.textContent='✓ NOYA CLUB на главном экране';button.disabled=true;};
+ const fallback=()=>hint('Открой @NoyaClubBrooksBot в Telegram на телефоне и нажми «Личный кабинет». Если пункт добавления недоступен, обнови Telegram.');
+ let supported=Boolean(tg?.initData && tg.isVersionAtLeast?.('8.0') && typeof tg.addToHomeScreen==='function');
+ button.onclick=()=>{
+  if(!supported){fallback();return;}
+  try{
+   tg.addToHomeScreen();
+   hint(tg.platform==='ios'?'На открывшейся странице нажми «Поделиться», затем «На экран Домой».':'Подтверди добавление значка на телефоне.');
+  }catch{fallback();}
+ };
+ if(supported){
+  tg.onEvent?.('homeScreenAdded',installed);
+  tg.checkHomeScreenStatus?.(status=>{if(status==='added')installed();if(status==='unsupported')supported=false;});
+ }
 })();
 </script>
 <div class="section home-start"><div class="tiles">
