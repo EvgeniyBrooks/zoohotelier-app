@@ -68,7 +68,7 @@ dialog iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:
  
 </main>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="./assets/noya-navigation.js?v=1"></script><script src="./assets/noya-video-actions.js?v=3"></script><script src="./assets/noya-watch-progress.js?v=1"></script>
+<script src="./assets/noya-navigation.js?v=1"></script><script src="./assets/noya-video-actions.js?v=3"></script><script src="./assets/noya-watch-progress.js?v=2"></script>
 <script>
 "use strict";
 let streams=[],favorites=new Set(),watched=new Set(),loading=false,activeDialog=null,playerSdkPromise=null;
@@ -167,21 +167,6 @@ async function reload(){
   if(!streams.length){list.replaceChildren();const empty=document.createElement('div');empty.className='empty';empty.textContent='Не удалось загрузить записи.';list.append(empty);}
  }finally{loading=false;}
 }
-async function markWatched(s,button,proof={}){
- if(watched.has(s.id))return true;
- if(button){button.disabled=true;button.textContent='Сохраняем…';}
- try{
-  await api(videoAction+'_mark_watched',{streamId:s.id,...proof});
-  watched.add(s.id);
-  render();
-  if(button)button.textContent='✓ Просмотрено';
-  return true;
- }catch(error){
-  statusEl.textContent='Не удалось сохранить просмотр: '+error.message;
-  if(button){button.disabled=false;button.textContent='✓ Отметить просмотренным';}
-  return false;
- }
-}
 function ensurePlayerSdk(){
  if(typeof window.Stream==='function')return Promise.resolve();
  if(!playerSdkPromise){
@@ -225,28 +210,17 @@ async function watch(s){
   if(!folderTitle&&window.NOYAMaterials)window.NOYAMaterials.touch('live',s.id).catch(error=>console.warn('Live history unavailable:',error.message));
   // Cloudflare Stream fires playback events from its iframe API. Mark as watched
   // near the end of playback, not when a person merely opens a recording.
+  const progress=document.createElement('p');dialog.insertBefore(progress,actions);
   ensurePlayerSdk().then(()=>{
    if(!dialog.open)return;
    const player=window.Stream(iframe);
-   const tracker=window.NOYAWatchProgress.createTracker();
-   tracker.observe(0,1,Date.now());
-   let autoSaved=false,watchedSeconds=0,retryAt=0;
-   const finish=async()=>{
-    const duration=Number(player.duration);
-    if(autoSaved||watched.has(s.id)||Date.now()<retryAt||!Number.isFinite(duration)||duration<=0||watchedSeconds<duration*.9)return;
-    autoSaved=true;
-    const saved=await markWatched(s,null,{watchedSeconds,durationSeconds:duration});
-    if(!saved){autoSaved=false;retryAt=Date.now()+10000;}
-    if(dialogWidget&&watched.has(s.id))dialogWidget.refresh().catch(()=>{});
-   };
-   const update=()=>{
-    const duration=Number(player.duration),position=Number(player.currentTime);
-    watchedSeconds=tracker.observe(position,duration,Date.now());
-    finish();
-   };
-   player.addEventListener('ended',update);
-   player.addEventListener('timeupdate',update);
-  }).catch(error=>{console.warn('Automatic playback tracking unavailable:',error.message);});
+   if(watched.has(s.id)){progress.textContent='✓ Просмотрено';return;}
+   window.NOYAWatchProgress.bindPlayer(player,progress,videoAction+':'+s.id,async proof=>{
+    await api(videoAction+'_mark_watched',{streamId:s.id,...proof});
+    watched.add(s.id);render();
+    if(dialogWidget&&dialog.open)dialogWidget.refresh().catch(()=>{});
+   },()=>dialog.open);
+  }).catch(error=>{playerSdkPromise=null;progress.textContent='Плеер не подключился. Открой видео ещё раз.';});
  }catch(error){statusEl.textContent=error.message;}
 }
 search.addEventListener('input',render);

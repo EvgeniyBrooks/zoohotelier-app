@@ -178,6 +178,24 @@ body.noya-guided-home #noya-next-route{display:none!important}
  <p id="noya-next-lesson"></p>
  <button class="button" type="button" id="noya-next-button">Продолжить</button>
  </section><div id="telegram-auth-state" class="notice" role="status" hidden style="margin-bottom:20px">Проверяем подключение Telegram…</div>
+<style>#home-shortcut[hidden]{display:none}</style><button type="button" class="button secondary" id="home-shortcut" hidden>Добавить NOYA CLUB на главный экран</button>
+<p id="home-shortcut-help" hidden></p>
+<script>
+(()=>{
+ const tg=window.Telegram?.WebApp,button=document.getElementById('home-shortcut'),help=document.getElementById('home-shortcut-help');
+ if(!tg||!['ios','android','android_x'].includes(tg.platform))return;
+ button.hidden=false;
+ const hint=()=>{help.textContent='Обнови Telegram и открой NOYA CLUB в приложении, чтобы добавить значок.';help.hidden=false;};
+ button.onclick=()=>{if(tg.isVersionAtLeast?.('8.0')&&tg.addToHomeScreen){try{tg.addToHomeScreen();}catch{hint();}}else hint();};
+ if(!tg.isVersionAtLeast?.('8.0'))return;
+ const installed=()=>{button.hidden=true;help.hidden=true;};
+ tg.onEvent('homeScreenAdded',installed);
+ tg.checkHomeScreenStatus?.(status=>{
+  if(status==='added')installed();
+  if(status==='unsupported')button.onclick=hint;
+ });
+})();
+</script>
 <div class="section home-start"><div class="tiles">
 <a class="tile" href="./journey.html?tab=profile"><span class="glyph">◇</span><strong>МОЯ СОБАКА</strong><small>Карточка, цель и дневник</small></a>
 <button class="tile" type="button" data-screen="ai" style="color:inherit;text-align:left;cursor:pointer"><img class="noya-avatar-small" src="data:image/webp;base64,UklGRpwDAABXRUJQVlA4IJADAADQFgCdASpgAGAAPqVGnUkmJCMqrjgMAVAUiWcAzYr1/lLEjHeICG6Vk6LFEvBAenHl/V2ocWfqBDwDMoWJmuekeaojmzf7rr1hazhgHH0YAJp2asQbV5StpZ5EHVPa+/EqKlq8KlMl7jz57ujSc1Xav61yOWcFPFMSbzy79d1Hu/qbshWtLkJkpZ1cxx/eTnjaXXjq3s8hr+++fPgNuRjpXHiW1NiYOrSmhAYo4r6HDPn23GIvpdUUoD5/fhiCcAD++qgI3WS/9BrWmA3mKv9ELuYmvV/y2pYomGA9SuA5xCoJ8sPYILjFaSDvHdd9HunPzosEcnj4uK63pX3VqjAJlcnERnxXifcrQqdLqoVp2HcuRBs9kmBL7ckb/Dl7XMWRh+DZqkDMHVNZNi3ZcnXpMfOE9GlxcRSVFUHbV58C+1qumm8OpJjGnjUFxpjeRmX7Yvouas+lVPySLp3YomWzu9sQqacMN3OXAppxaJwHchz2IGUKoFOr5VcRHt78FXAHI8WGl60kUCQw2OEvWKF8ZGA//CKCqaY1I0Wwj3T3wLRBRLyF8m9eyKSI1rr2Mc0qWkgwObYPt0FM+eEisSy/u7FBC4emk0wI6qxhDM8ig8wFKXrF+yzEmVToToNh6OA/S6E5CP0mCSVlQruJK2N1fvCxNqe9LDOWrsY99uhFrntQlsdf8KToLzHvd386L4URDUho86CGgMaIyTfToZnvrT/tBOykAYV1m6mFXYJMhQqMTjDVbwuPds47vUns4tRrrZe7AetdRl8VOmI5Rn4qmKftepxLmz85LLoTaWIgghU8Ol+qvWv6QWNcDJPgJ2uh3Y/+TiTIISBL6dyXtkxg5EFrA8EMQsWJLQqNMxwo5Big7YO9MYcLHG9+5XLneJnK3v2dGOkNNVRoQpSgnwsMccKbIqGmCXOtR4u1w20cGsZmn62DmU1oQOXiG16t/FQLKrojakH6MRGhMm0Ms80PiP/GFq3lytuAZhfHnTwXi+PRsgLSs2Hg2V+V5RIyZSUgmGBftP+o0NEjT0LAMv5MyvkaNMLrHNvr27flmFMEuG/IFNU1R+zhoCXTx1nKzT79XI2EhPcGtnDX64SfFBzfKouAVQ6zIZwZiX68vR/1eh5M2NUu4Yk6wih7a+1D08rZ83X1rHFPDXg2g00giOU7eGh4x9WMeJnqfKKzupZiK3+uD4fhf71tj31wp6zRoAA=" alt="Ноя — собака клуба"><strong>ИИ НОЯ</strong><small>Помощник по воспитанию собак</small></button></div></div>

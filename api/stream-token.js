@@ -172,7 +172,7 @@ async function live(req,res){
      throw fail(403,'Просмотри не менее 90% настоящего видеоурока');
     const elapsed=(Date.now()-Date.parse(receipt[0].opened_at))/1000;
     // Playback-time proof is backed by a signed token session and elapsed wall-clock time.
-    if(!Number.isFinite(elapsed)||elapsed+5<watched)
+    if(!Number.isFinite(elapsed)||elapsed*2+5<watched)
      throw fail(403,'Досмотри урок в плеере перед завершением');
    }
    await db('course_lesson_completions?on_conflict=student_id,lesson_id','POST',{student_id:student,lesson_id:lessonId});
