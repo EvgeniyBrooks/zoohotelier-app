@@ -104,6 +104,8 @@ test('server protects lesson details, Cloudflare token and completion against lo
  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
  assert.match(html,/course-locked/);
  assert.match(html,/courseLockText/);
- assert.match(html,/watchedSeconds:Math\.min/);
+ assert.match(html,/NOYAWatchProgress\.bindPlayer/);
+ const tracker=fs.readFileSync(path.join(__dirname,'../assets/noya-watch-progress.js'),'utf8');
+ assert.match(tracker,/watchedSeconds:watched,durationSeconds:duration/);
  assert.doesNotMatch(html,/id="course-manual-complete"/);
 });
