@@ -14,7 +14,7 @@ test('menu and support have expected destinations',()=>{
  assert.deepEqual(menu().reply_markup.inline_keyboard.map(r=>r[0].text),['Перейти в канал','Личный кабинет','Подписка','Служба заботы']);
  assert.equal(SUPPORT,'https://t.me/m/RC7qGJtgNWVi');
 });
-function fixture({admin=false,existingWebhook='',expiredAck=false}={}){
+function fixture({admin=false,existingWebhook='',expiredAck=false,subscriptions=[],payments=[]}={}){
  const calls=[],env={NOYA_TELEGRAM_BOT_TOKEN:'test-token',NEXT_PUBLIC_SUPABASE_URL:'https://db.example',SUPABASE_SERVICE_ROLE_KEY:'test-service'};
  const fetcher=async(url,options)=>{
   calls.push({url,body:options.body?JSON.parse(options.body):null});
@@ -23,6 +23,8 @@ function fixture({admin=false,existingWebhook='',expiredAck=false}={}){
    if(expiredAck&&method==='answerCallbackQuery')return {ok:false,status:400,json:async()=>({ok:false,error_code:400})};
    return {ok:true,json:async()=>({ok:true,result:method==='getMe'?{username:'NoyaClubBrooksBot'}:method==='getWebhookInfo'?{url:existingWebhook}:method==='createChatInviteLink'?{invite_link:'https://t.me/+test'}:{}})};
   }
+  if(url.includes('/club_subscriptions?'))return {ok:true,json:async()=>subscriptions};
+  if(url.includes('/payments?'))return {ok:true,json:async()=>payments};
   return {ok:true,json:async()=>url.includes('/admins?')?(admin?[{id:'admin'}]:[]):url.includes('/students?')?[{id:'student-42'}]:[]};
  };
  const bot=createBot({env,fetcher,now:()=>now});
@@ -62,6 +64,23 @@ test('join requests approved only for eligible users in NOYA channel',async()=>{
  assert.ok(f.calls.some(c=>c.url.endsWith('/approveChatJoinRequest')));
  const n=fixture();await n.request({update_id:1,chat_join_request:{chat:{id:-1004454031969},from:{id:42}}});
  assert.ok(!n.calls.some(c=>c.url.endsWith('/approveChatJoinRequest')));
+});
+test('channel invitation and join approval require a confirmed payment for the active paid period',async()=>{
+ for(const paid of [false,true]){
+  const f=fixture({subscriptions:[{prodamus_subscription_id:'profile'}],payments:paid?[{id:'payment'}]:[]});
+  await f.request(f.update('noya:channel'));
+  await f.request({update_id:2,chat_join_request:{chat:{id:-1004454031969},from:{id:42}}});
+  const called=method=>f.calls.some(c=>c.url.endsWith('/'+method));
+  assert.equal(called('createChatInviteLink'),paid);
+  assert.equal(called('approveChatJoinRequest'),paid);
+  assert.equal(called('declineChatJoinRequest'),!paid);
+  const period=new URL(f.calls.find(c=>c.url.includes('/club_subscriptions?')).url).searchParams;
+  for(const [k,v] of Object.entries({student_id:'eq.student-42',status:'eq.active',price:'gt.0',gift_campaign_id:'is.null',start_date:'lte.'+new Date(now).toISOString(),end_date:'gt.'+new Date(now).toISOString()}))assert.equal(period.get(k),v);
+  const receipt=new URL(f.calls.find(c=>c.url.includes('/payments?')).url).searchParams;
+  assert.equal(receipt.get('product_id'),'eq.noya:profile');
+  assert.equal(receipt.get('student_id'),'eq.student-42');
+  assert.equal(receipt.get('status'),'eq.paid');
+ }
 });
 test('cancel without paid subscription does not call payment provider',async()=>{
  const f=fixture();await f.request(f.update('noya:cancel'));
